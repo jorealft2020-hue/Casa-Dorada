@@ -1033,10 +1033,36 @@ main.app-content {
   border-color: var(--gold);
 }
 
+
+  /* Animaciones y estilos operacionales corporativos */
+  @keyframes pulsoLead { 0%, 100% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.02); } }
+  .grabando-activo { animation: pulsoMicrofono 1.2s infinite ease-in-out !important; background: linear-gradient(135deg, #B4453C 0%, #E65100 100%) !important; }
+  @keyframes pulsoMicrofono { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); box-shadow: 0 0 0 14px rgba(180,69,60,0); } }
+  .badge-tacna{ background:#E0F2FE; color:#0369A1; border: 1px solid #BAE6FD; }
+
 </style>
 </head>
 <body>
 <div id="app">
+
+  <!-- 1. SPEED TO LEAD: ALERTA REACTIVA INMEDIATA (<90S) -->
+  <div id="alertaSpeedToLead" class="hidden" style="position:fixed; top:12px; left:50%; transform:translateX(-50%); width:92%; max-width:440px; background:linear-gradient(135deg, #B4453C 0%, #E65100 100%); color:#fff; padding:14px 16px; border-radius:16px; box-shadow:0 12px 30px rgba(180,69,60,0.5); z-index:999999; animation:pulsoLead 1.8s infinite;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:22px;">⚡</span>
+        <div>
+          <h4 style="margin:0; font-size:13.5px; font-weight:800;">¡NUEVO LEAD EN CALIENTE!</h4>
+          <p id="stl_nombre_tiempo" style="margin:2px 0 0; font-size:11px; opacity:0.95;">Tienes <b id="stl_segundos_restantes">300s</b> antes de reasignación al ranking</p>
+        </div>
+      </div>
+      <button onclick="cerrarAlertaSpeedToLead()" style="background:none; border:none; color:#fff; font-size:16px; cursor:pointer;">✕</button>
+    </div>
+    <div style="display:flex; gap:8px; margin-top:10px;">
+      <button id="btnStlLlamar" class="chip-btn" style="flex:1; background:#25D366; color:#fff; border:none; font-weight:800; justify-content:center; padding:9px;">💬 WhatsApp Ya</button>
+      <button id="btnStlFicha" class="chip-btn" style="background:rgba(255,255,255,0.2); color:#fff; border:1px solid rgba(255,255,255,0.4); font-weight:700;">Ver Ficha</button>
+    </div>
+  </div>
+
   <!-- MENÚ LATERAL DESLIZANTE (DRAWER) -->
   <div class="drawer-backdrop" id="drawerBackdrop">
     <div class="drawer-panel" id="drawerPanel">
@@ -1056,6 +1082,16 @@ main.app-content {
           <span class="dr-icon">🏠</span>
           <span class="dr-label">Inicio / Portada</span>
         </button>
+
+        <!-- SITIO WEB OFICIAL (CLIENTES) -->
+        <button class="drawer-item" id="drNavWebOficial" onclick="abrirWebOficial(); cerrarDrawer();" style="color:#0284c7; font-weight:700;">
+          <span class="dr-icon">🌐</span>
+          <span class="dr-label">Ver Sitio Web Oficial (Clientes)</span>
+        </button>
+        <a href="web_costadorada.html" target="_blank" class="drawer-item" style="color:var(--gold); font-weight:700;">
+          <span class="dr-icon">🌐</span>
+          <span class="dr-label">Ver Sitio Web Oficial (Clientes)</span>
+        </a>
 
         <!-- 1. DEPARTAMENTO COMERCIAL -->
         <div class="dr-dept-group" data-dept="comercial">
@@ -1237,6 +1273,9 @@ main.app-content {
         <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84c-.21 1.13-.84 2.09-1.8 2.73v2.27h2.91c1.7-1.57 2.69-3.88 2.69-6.64z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.17l-2.91-2.27c-.81.54-1.84.86-3.05.86-2.34 0-4.33-1.58-5.04-3.71H.96v2.34C2.44 15.98 5.48 18 9 18z"/><path fill="#FBBC05" d="M3.96 10.71A5.4 5.4 0 013.68 9c0-.6.1-1.18.28-1.71V4.96H.96A9 9 0 000 9c0 1.45.35 2.83.96 4.04l3-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.96l3 2.33C4.67 5.16 6.66 3.58 9 3.58z"/></svg>
         Continuar con Google
       </button>
+      <a href="web_costadorada.html" class="chip-btn" style="margin-top:16px; padding:10px 18px; border-color:var(--gold); color:var(--gold-soft); background:rgba(200,155,60,0.12); font-weight:700; border-radius:100px; text-decoration:none;">
+        🌐 Ver Página Web Oficial Costa Dorada →
+      </a>
       <img src="logo-crm-majo-icono.png" alt="CRM Majo" style="width:44px; height:44px; object-fit:contain; margin-top:32px; opacity:0.9;">
       <p style="font-size:10.5px; color:#9A9384; margin-top:4px; letter-spacing:0.03em;">Powered by CRM MAJO</p>
     </div>
@@ -1253,6 +1292,9 @@ main.app-content {
         </div>
       </div>
       <div class="topbar-actions">
+        <!-- BOTONES OPERATIVOS RÁPIDOS EN TOPBAR -->
+        <button class="bell" onclick="abrirModalDictadoVoz()" title="Dictado por voz en campo">🎙️</button>
+        <button class="bell" onclick="abrirModalHerramientasTacna()" title="Herramientas tácticas Tacna">🏛️</button>
         <button class="bell" id="btnBell"><span class="dot" id="bellDot"></span>🔔</button>
         <button class="bell majo-fab-btn" id="btnMajoRapido" title="MAJO · Inteligencia Corporativa (Conocimiento Unificado)">😊</button>
         <button class="bell" id="btnRefrescarApp" title="Refrescar aplicación">🔄</button>
@@ -1316,10 +1358,26 @@ main.app-content {
 
           <!-- Botones de acción rápida -->
           <div style="display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;">
-            <button class="chip-btn gold" onclick="abrirModalActividad()" style="font-size:11.5px; padding:7px 12px; font-weight:700;">+ Registrar Actividad</button>
-            <button class="chip-btn" onclick="abrirModalAgenda()" style="font-size:11.5px; padding:7px 12px; border-color:var(--gold); color:var(--navy); background:#fff; font-weight:700;">📅 Agendar Cita</button>
-            <button class="chip-btn" onclick="irARegistrarSolicitudDesdeInicio()" style="font-size:11.5px; padding:7px 12px; border-color:#CBD5E1; color:var(--navy); background:#fff; font-weight:700;">📝 Registrar Solicitud</button>
-            <button class="chip-btn" onclick="irAVista('agenda')" style="font-size:11.5px; padding:7px 10px; color:var(--ink-dim); background:#fff; margin-left:auto;">Agenda →</button>
+            <button class="chip-btn gold" onclick="abrirModalDictadoVoz()" style="font-size:11.5px; padding:8px 12px; font-weight:700;">🎙️ Dictar Bitácora</button>
+            <button class="chip-btn" onclick="abrirModalPreReservaEnTerreno('B','12', 500)" style="font-size:11.5px; padding:8px 12px; border-color:var(--gold); color:var(--navy); background:#fff; font-weight:700;">⚡ QR Pre-Reserva</button>
+            <button class="chip-btn" onclick="abrirModalHerramientasTacna()" style="font-size:11.5px; padding:8px 12px; border-color:#0369A1; color:#0369A1; background:#fff; font-weight:700;">🏛️ Cierre Tacna</button>
+            <button class="chip-btn" onclick="abrirModalActividad()" style="font-size:11.5px; padding:8px 12px; font-weight:700;">+ Tarea</button>
+            <button class="chip-btn" onclick="irAVista('agenda')" style="font-size:11.5px; padding:8px 10px; color:var(--ink-dim); background:#fff; margin-left:auto;">Agenda →</button>
+          </div>
+        </div>
+
+        <!-- CONTROL OPERATIVO VISUAL DE LA VAN (14 ASIENTOS) EN INICIO -->
+        <div class="card" style="border:1.5px solid #BFDBFE; background:#F8FAFC; margin-bottom:14px; padding:14px 16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <span style="font-size:12.5px; font-weight:800; color:var(--navy);">🚐 Van Salida a La Yarada (14 Asientos)</span>
+            <span class="badge badge-completada" id="vis_badge_asientos_inicio">14 Cupos Libres</span>
+          </div>
+          <div style="width:100%; height:10px; background:#E2E8F0; border-radius:6px; overflow:hidden; margin-bottom:8px;">
+            <div id="vis_barra_inicio" style="width:0%; height:100%; background:linear-gradient(90deg, #3B82F6 0%, #10B981 100%); transition:width .3s;"></div>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--ink-dim);">
+            <span>Salidas guiadas: Fin de semana · Oficina Central</span>
+            <button class="chip-btn gold" onclick="abrirModalNuevaVisita()" style="font-size:10.5px; padding:4px 10px; font-weight:700;">+ Reservar Cupos</button>
           </div>
         </div>
 
@@ -2490,6 +2548,17 @@ main.app-content {
         </div>
       </div>
 
+      <!-- TÁCTICAS TACNA: DÚO INVERSIONISTA & RETORNO AIRBNB -->
+      <div style="background:#F7F4EC; border:1px solid #E5DFCF; border-radius:10px; padding:10px 12px; margin-top:12px;">
+        <label style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:700; color:var(--navy); cursor:pointer; margin-bottom:6px;">
+          <input type="checkbox" id="chkDuoInversionista" onchange="calcularCotizadorMatematica()" style="width:16px !important; height:16px !important; accent-color:var(--gold);">
+          👥 Estrategia "Dúo Inversionista" (2 Lotes contiguos - Bono S/ 1,000 en inicial)
+        </label>
+        <div style="font-size:11px; color:#2E7D32; font-weight:700; background:#DCFCE7; padding:6px 8px; border-radius:6px; margin-top:4px;">
+          🏖️ <b>Simulador Retorno Verano (Airbnb):</b> En temporada alta (Dic-Mar) se alquila a S/ 2,500/semana, cubriendo la anualidad completa del financiamiento.
+        </div>
+      </div>
+
       <!-- TARJETA RESUMEN DE INVERSIÓN MENSUAL -->
       <div class="card" style="background:#FBF6EC; border:1.5px solid #E8D9B5; margin-top:12px; padding:14px;">
         <span style="font-size:11px; font-weight:800; color:var(--gold); text-transform:uppercase; letter-spacing:0.5px;">Valor de Inversión Mensual</span>
@@ -2542,6 +2611,7 @@ main.app-content {
       </div>
       <div class="modal-actions" style="margin-top:8px; flex-wrap:wrap; gap:8px;">
         <button class="btn-secondary" onclick="descargarCotizacionPDF()" style="flex:1;">📄 Descargar PDF</button>
+        <button class="btn-secondary" onclick="descargarHojaResumen1PaginaPDF()" style="flex:1; border-color:var(--gold); color:var(--navy); font-weight:700;">📑 Hoja Resumen (1 Pág)</button>
         <button class="btn-primary" onclick="pasarCotizacionASeparacion()" style="flex:1;">🏷️ Pasar a Separación</button>
       </div>
     </div>
@@ -3212,6 +3282,116 @@ main.app-content {
       <div id="caja_recibo_generado" class="hidden"></div>
     </div>
   </div>
+
+  <!-- MODAL: DICTADO POR VOZ (IA & NOTAS DE TERRENO EN CAMPO) -->
+  <div class="modal-backdrop" id="modalDictadoVoz">
+    <div class="modal-sheet" style="text-align:center;">
+      <button class="modal-x-close" data-close="modalDictadoVoz">✕</button>
+      <h3 style="margin-top:0;">🎙️ Registro Rápido por Voz</h3>
+      <p style="font-size:12px; color:var(--ink-dim); margin-top:-6px;">Habla con naturalidad en el terreno o regreso de la Van. La app estructurará los acuerdos en tu bitácora de actividades.</p>
+
+      <div style="margin:20px 0;">
+        <button type="button" id="btnGrabarMicrofono" style="width:80px; height:80px; border-radius:50%; background:linear-gradient(135deg, var(--gold) 0%, #D4A74F 100%); border:none; color:#fff; font-size:32px; cursor:pointer;" onclick="toggleGrabacionVoz()">🎙️</button>
+        <p id="dictado_estado" style="font-size:12px; font-weight:700; color:var(--navy); margin-top:10px;">Toca para hablar</p>
+      </div>
+
+      <div class="field" style="text-align:left;">
+        <label>Transcripción detectada en vivo:</label>
+        <textarea id="dictado_transcripcion" style="min-height:85px;" placeholder="Ej: Recorrí el lote 12 Mz B con el Sr. Juan. Le gustó la vista al parque, financiamiento a 36 meses con S/ 8,000 inicial. Su cónyuge aprueba si cerramos antes del viernes..."></textarea>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-secondary" data-close="modalDictadoVoz">Cancelar</button>
+        <button class="btn-primary" id="btnProcesarDictadoIA" onclick="procesarDictadoConIA()">Guardar en Bitácora</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CADENCIAS GUIADAS DE 1 TOQUE (ACTION PLANS) -->
+  <div class="modal-backdrop" id="modalCadenciasSeguimiento">
+    <div class="modal-sheet" style="max-height:86vh; overflow-y:auto;">
+      <button class="modal-x-close" data-close="modalCadenciasSeguimiento">✕</button>
+      <h3 style="margin-top:0;" id="cad_cliente_nombre">Cadencia de Seguimiento</h3>
+      
+      <div class="field">
+        <label>Plan Estratégico de Contacto</label>
+        <select id="cad_tipo_plan" onchange="renderizarPasosCadencia()">
+          <option value="prospeccion_fria">🧊 Prospección Fría / Ferias Cenepa y Boliviana (7 Días)</option>
+          <option value="post_visita">🏡 Post-Visita en Terreno (Cierre Rápido 48h)</option>
+          <option value="reactivacion">🔥 Reactivación de Cliente en Riesgo (>7 Días)</option>
+          <option value="chile_inversion">🇨🇱 Inversionista de Arica / Iquique (Chile)</option>
+        </select>
+      </div>
+
+      <div id="cad_contenedor_pasos" style="display:flex; flex-direction:column; gap:8px; margin:14px 0;"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: PRE-RESERVA DIGITAL CON QR IN SITU (RESPALDO OFFLINE) -->
+  <div class="modal-backdrop" id="modalPreReservaQR">
+    <div class="modal-sheet" style="text-align:center;">
+      <button class="modal-x-close" data-close="modalPreReservaQR">✕</button>
+      <h3 style="margin-top:0; color:var(--navy);">⚡ Congelar Lote por 48 Horas</h3>
+      <p id="qr_lote_subtitulo" style="font-size:12px; color:var(--ok); font-weight:700; margin:0 0 10px;">Manzana — · Lote — (S/ 500.00)</p>
+
+      <div style="background:#fff; border:2px dashed var(--gold); border-radius:14px; padding:12px; display:inline-block; margin-bottom:10px;">
+        <img id="qr_imagen_pago" src="" alt="QR Transferencia" style="width:160px; height:160px; display:block;">
+      </div>
+
+      <div style="background:#FBF6EC; border:1px solid #EAD8B1; border-radius:8px; padding:8px 12px; text-align:left; font-size:11px; margin-bottom:10px; line-height:1.4;">
+        <div>🏦 <b>BCP Soles:</b> 191-12345678-0-12 (CCI: 002-191-0012345678012-52)</div>
+        <div>⚡ <b>Yape / Plin Empresa:</b> 942 236 677 · Casa Dorada S.A.C.</div>
+        <div>🇨🇱 <b>Chile (Pesos CLP):</b> BancoEstado / Transferencia Arica</div>
+      </div>
+
+      <button class="chip-btn" style="width:100%; justify-content:center; margin-bottom:10px;" onclick="descargarQRParaCliente()">💾 Guardar Datos en Celular del Cliente</button>
+
+      <div class="field" style="text-align:left;">
+        <label>Voucher o constancia provisional (efectivo / transferencia):</label>
+        <input type="file" id="qr_file_voucher" accept="image/*" capture="environment">
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-primary" onclick="confirmarPreReservaEnTerreno()">Confirmar Congelamiento</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: HERRAMIENTAS TÁCTICAS DE CIERRE TACNA -->
+  <div class="modal-backdrop" id="modalHerramientasTacna">
+    <div class="modal-sheet">
+      <button class="modal-x-close" data-close="modalHerramientasTacna">✕</button>
+      <h3 style="margin-top:0;">🏛️ Herramientas de Cierre · Tacna</h3>
+      <p style="font-size:12px; color:var(--ink-dim); margin-top:-6px;">Prueba social, conectividad y legalidad inmediata para responder objeciones en 1 toque:</p>
+
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <button class="chip-btn" style="padding:10px; justify-content:space-between; border-color:#0369A1;" onclick="enviarPruebaSocialSUNARP()">
+          <span>📄 <b>Garantía SUNARP:</b> Partida Matriz & Saneamiento</span>
+          <span>📲</span>
+        </button>
+
+        <button class="chip-btn" style="padding:10px; justify-content:space-between; border-color:#0369A1;" onclick="enviarPruebaPortico()">
+          <span>🏗️ <b>Hito Tangible:</b> Video Pórtico Terminado & Vías</span>
+          <span>📲</span>
+        </button>
+
+        <button class="chip-btn" style="padding:10px; justify-content:space-between; border-color:#0369A1;" onclick="enviarFichaConectividad()">
+          <span>🚗 <b>Conectividad:</b> 20 Minutos al Óvalo Tarapacá</span>
+          <span>📲</span>
+        </button>
+
+        <button class="chip-btn" style="padding:10px; justify-content:space-between; border-color:#0369A1;" onclick="abrirModalConversorDivisas()">
+          <span>💵 <b>Conversor Multidivisa:</b> Soles (PEN) · Dólar · Pesos CLP</span>
+          <span>↗️</span>
+        </button>
+      </div>
+
+      <div class="modal-actions" style="margin-top:16px;">
+        <button class="btn-secondary" data-close="modalHerramientasTacna">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
 <div class="toast" id="toast"></div>
 </div>
 <script>
@@ -3496,6 +3676,7 @@ const PERMISOS_CATALOGO = [
   { key: 'eliminar_separaciones',     label: 'Eliminar / Anular Separaciones',         dept: 'Comercial', default: false },
 
   // 📣 DEPARTAMENTO MARKETING & PROSPECCIÓN
+  { key: 'ver_sitio_web',              label: 'Ver Sitio Web Oficial (Clientes)',       dept: 'Marketing', default: true },
   { key: 'ver_planos',               label: 'Ver Planos Interactivos Costa Dorada',   dept: 'Marketing', default: true },
   { key: 'ver_cotizador',            label: 'Usar Cotizador Rápido de Lotes',         dept: 'Marketing', default: true },
   { key: 'ver_comision_cotizador',   label: 'Ver Calculadora de Comisiones (6 Lotes)', dept: 'Marketing', default: true },
@@ -4107,6 +4288,7 @@ function actualizarDatosDrawer(){
   };
 
   // Módulos del menú lateral gobernados 100% por el checklist del usuario (SuperAdmin tiene bypass maestro)
+    showDr('drNavWebOficial', tienePermiso('ver_sitio_web'));
   showDr('drNavControl', tienePermiso('ver_control'));
   showDr('drNavClientes', tienePermiso('ver_clientes'));
   showDr('drNavTareas', tienePermiso('ver_actividades'));
@@ -11792,6 +11974,370 @@ Constructora e Inmobiliaria Casa Dorada · Tacna, Perú.`;
 
   window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
 }
+
+/* =========================================================================
+   MEJORAS CORPORATIVAS INTEGRADAS: SPEED TO LEAD, DICTADO, QR, CADENCIAS, TACNA
+   ========================================================================= */
+
+/* 1. SPEED TO LEAD: ALERTA REACTIVA INMEDIATA (<90S) */
+let timerSpeedToLead = null;
+let leadActivoSpeedToLead = null;
+
+function iniciarListenerSpeedToLead() {
+  if (!currentUser) return;
+  try {
+    sb.channel('leads-inmediatos')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'clientes'
+      }, (payload) => {
+        if (payload.new) {
+          activarAlertaSpeedToLead(payload.new);
+          if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400]);
+        }
+      })
+      .subscribe();
+  } catch(e) { console.warn('Canal Speed to Lead:', e); }
+}
+
+function activarAlertaSpeedToLead(lead) {
+  leadActivoSpeedToLead = lead;
+  const banner = document.getElementById('alertaSpeedToLead');
+  if (!banner) return;
+  banner.classList.remove('hidden');
+  let segundosRestantes = 300;
+  const elSeg = document.getElementById('stl_segundos_restantes');
+  const btnWsp = document.getElementById('btnStlLlamar');
+  const btnFicha = document.getElementById('btnStlFicha');
+  if (btnWsp) {
+    btnWsp.onclick = () => {
+      cerrarAlertaSpeedToLead();
+      const tel = (lead.celular || lead.telefono || '').replace(/\D/g, '');
+      const url = `https://wa.me/51${tel.slice(-9)}?text=${encodeURIComponent(`¡Hola ${lead.nombre}! Te saluda ${currentProfile?.nombre || 'Jorge Luque'} de Casa Dorada. Vi tu consulta sobre los lotes de Costa Dorada en La Yarada...`)}`;
+      window.open(url, '_blank');
+    };
+  }
+  if (btnFicha) {
+    btnFicha.onclick = () => {
+      cerrarAlertaSpeedToLead();
+      irAVista('clientes');
+      filtrarClientesEnVivo(lead.nombre);
+    };
+  }
+  if (timerSpeedToLead) clearInterval(timerSpeedToLead);
+  timerSpeedToLead = setInterval(() => {
+    segundosRestantes--;
+    if (elSeg) elSeg.textContent = `${segundosRestantes}s`;
+    if (segundosRestantes <= 0) {
+      clearInterval(timerSpeedToLead);
+      cerrarAlertaSpeedToLead();
+      toast('⚠️ Tiempo de Speed to Lead agotado.');
+    }
+  }, 1000);
+}
+
+function cerrarAlertaSpeedToLead() {
+  if (timerSpeedToLead) clearInterval(timerSpeedToLead);
+  document.getElementById('alertaSpeedToLead')?.classList.add('hidden');
+}
+
+/* 2. DICTADO POR VOZ EN CAMPO (WEB SPEECH API) */
+let recognition = null;
+let estaGrabando = false;
+
+function iniciarReconocimientoVoz() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    toast('Dictado por voz no disponible en este navegador');
+    return;
+  }
+  recognition = new SpeechRecognition();
+  recognition.lang = 'es-PE';
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.onstart = () => {
+    estaGrabando = true;
+    document.getElementById('btnGrabarMicrofono')?.classList.add('grabando-activo');
+    const el = document.getElementById('dictado_estado');
+    if (el) el.textContent = '🔴 Escuchando... habla libremente';
+  };
+  recognition.onresult = (event) => {
+    let transcriptFinal = '';
+    for (let i = event.resultIndex; i < event.results.length; ++i) {
+      transcriptFinal += event.results[i][0].transcript;
+    }
+    const txt = document.getElementById('dictado_transcripcion');
+    if (txt) txt.value = transcriptFinal;
+  };
+  recognition.onerror = () => detenerGrabacionVoz();
+  recognition.onend = () => detenerGrabacionVoz();
+}
+
+function toggleGrabacionVoz() {
+  if (!recognition) iniciarReconocimientoVoz();
+  if (!recognition) return;
+  if (estaGrabando) {
+    recognition.stop();
+    detenerGrabacionVoz();
+  } else {
+    recognition.start();
+  }
+}
+
+function detenerGrabacionVoz() {
+  estaGrabando = false;
+  document.getElementById('btnGrabarMicrofono')?.classList.remove('grabando-activo');
+  const el = document.getElementById('dictado_estado');
+  if (el) el.textContent = 'Toca para hablar o guarda la bitácora';
+}
+
+function abrirModalDictadoVoz() {
+  const txt = document.getElementById('dictado_transcripcion');
+  if (txt) txt.value = '';
+  detenerGrabacionVoz();
+  openModal('modalDictadoVoz');
+}
+
+async function procesarDictadoConIA() {
+  const texto = document.getElementById('dictado_transcripcion')?.value.trim();
+  if (!texto) { toast('Dicta notas de la visita primero'); return; }
+  const btn = document.getElementById('btnProcesarDictadoIA');
+  if (btn) btn.disabled = true;
+  try {
+    await sb.from('actividades').insert({
+      usuario_id: currentUser.id,
+      titulo: 'Bitácora Dictada: ' + texto.slice(0, 45) + '...',
+      locacion: 'Visita / Terreno',
+      fecha_programada: obtenerHoyLocal(),
+      estado: 'completada',
+      temas_acuerdos: [{ tema: 'Registro de Voz en Campo', acuerdo: texto }]
+    });
+    toast('¡Bitácora guardada en Tareas! ✓');
+    closeModal('modalDictadoVoz');
+    cargarPendientesInicio();
+    cargarActividadesHoy();
+  } catch (e) {
+    toast('Error al guardar');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+/* 3. PRE-SEPARACIÓN DIGITAL CON QR IN SITU (RESPALDO OFFLINE) */
+let preReservaData = null;
+
+function abrirModalPreReservaEnTerreno(manzana = 'B', lote = '12', monto = 500) {
+  preReservaData = { manzana, lote, monto };
+  const sub = document.getElementById('qr_lote_subtitulo');
+  if (sub) sub.textContent = `Manzana ${manzana} · Lote ${lote} (S/ ${monto}.00)`;
+  const qrData = encodeURIComponent(`PAGO COSTA DORADA - MZ ${manzana} LT ${lote} - MONTO S/${monto}`);
+  const img = document.getElementById('qr_imagen_pago');
+  if (img) img.src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${qrData}`;
+  openModal('modalPreReservaQR');
+}
+
+function descargarQRParaCliente() {
+  const link = document.createElement('a');
+  link.href = document.getElementById('qr_imagen_pago')?.src;
+  link.download = `Reserva_CostaDorada_Mz${preReservaData?.manzana}Lt${preReservaData?.lote}.png`;
+  link.click();
+  toast('Datos y QR guardados en celular del cliente ✓');
+}
+
+async function confirmarPreReservaEnTerreno() {
+  toast('Registrando congelamiento por 48 horas…');
+  try {
+    const dVence = new Date();
+    dVence.setHours(dVence.getHours() + 48);
+    await sb.from('separaciones').insert({
+      vendedor_id: currentUser.id,
+      manzana: preReservaData?.manzana || 'B',
+      lote: preReservaData?.lote || '12',
+      monto_separacion: preReservaData?.monto || 500,
+      valor_total: 55400,
+      fecha_separacion: obtenerHoyLocal(),
+      fecha_vencimiento: dVence.toISOString().slice(0, 10),
+      condicion: 'contado',
+      estado: 'activa'
+    });
+    toast('🎉 ¡LOTE CONGELADO POR 48 HORAS!');
+    closeModal('modalPreReservaQR');
+    cargarSeparacionesTodas();
+    cargarPendientesInicio();
+  } catch (e) {
+    toast('Error al registrar separación');
+  }
+}
+
+/* 4. CADENCIAS GUIADAS DE SEGUIMIENTO (ACTION PLANS DE 1 TOQUE) */
+const CADENCIAS_CONFIG = {
+  prospeccion_fria: [
+    { dia: 'Día 1', titulo: 'Bienvenida + Respaldo SUNARP Tacna', plantilla: '¡Hola {nombre}! Te saluda {asesor} de Casa Dorada. Te comparto la partida matriz de Costa Dorada inscrita en Registros Públicos de Tacna para tu total tranquilidad.' },
+    { dia: 'Día 3', titulo: 'Video de Avance del Pórtico & Carretera Costanera', plantilla: 'Hola {nombre}, te muestro el avance real de obras en La Yarada Los Palos a 20 min del centro de Tacna.' },
+    { dia: 'Día 5', titulo: 'Invitación a la Van del Fin de Semana (2 Cupos)', plantilla: 'Estimado(a) {nombre}, tenemos 2 cupos en la Van corporativa este fin de semana con refrigerio incluido. ¿Te reservo los asientos para ti y tu familia?' }
+  ],
+  post_visita: [
+    { dia: '+2 Horas', titulo: 'Cotización Formal en PDF (1 Hoja Resumen)', plantilla: 'Estimado(a) {nombre}, un gusto haber recorrido el terreno hoy. Te adjunto el plan de financiamiento directo en soles sin intereses bancarios.' },
+    { dia: '+24 Horas', titulo: 'Urgencia de Manzana (Pre-Reserva)', plantilla: 'Hola {nombre}, te comento que acaban de consultar por los lotes contiguos en tu misma manzana. Podemos congelarlo por 48 horas con S/ 500.' }
+  ],
+  reactivacion: [
+    { dia: 'Día 1', titulo: 'Facilidades Comerciales Post-Feria', plantilla: 'Hola {nombre}, abrimos facilidades especiales de inicial fraccionada en Costa Dorada para comerciantes y familias de Tacna.' }
+  ],
+  chile_inversion: [
+    { dia: 'Día 1', titulo: 'Inversión Tacna - Arica / Iquique', plantilla: '¡Hola {nombre}! Te saluda {asesor} desde Tacna. Costa Dorada te permite rentabilizar tu inversión con casas de playa en temporada de verano y plusvalía garantizada.' }
+  ]
+};
+
+let clienteCadenciaActual = null;
+
+function abrirModalCadencias(nombre, celular) {
+  clienteCadenciaActual = { nombre, celular };
+  const el = document.getElementById('cad_cliente_nombre');
+  if (el) el.textContent = `Cadencia · ${nombre}`;
+  renderizarPasosCadencia();
+  openModal('modalCadenciasSeguimiento');
+}
+
+function renderizarPasosCadencia() {
+  const tipo = document.getElementById('cad_tipo_plan')?.value || 'prospeccion_fria';
+  const pasos = CADENCIAS_CONFIG[tipo] || [];
+  const cont = document.getElementById('cad_contenedor_pasos');
+  if (!cont) return;
+  cont.innerHTML = pasos.map((p, idx) => {
+    const txt = p.plantilla.replace('{nombre}', clienteCadenciaActual?.nombre?.split(' ')[0] || 'Cliente').replace('{asesor}', currentProfile?.nombre?.split(' ')[0] || 'tu asesor');
+    const tel = (clienteCadenciaActual?.celular || '').replace(/\D/g, '');
+    const url = `https://wa.me/51${tel.slice(-9)}?text=${encodeURIComponent(txt)}`;
+    return `
+      <div class="card" style="border-left:4px solid var(--gold); padding:10px; margin-bottom:8px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:10.5px; font-weight:800; color:var(--gold);">${p.dia}</span>
+          <span class="badge badge-pendiente" style="font-size:9px;">1 Toque</span>
+        </div>
+        <p style="font-size:12px; font-weight:800; margin:2px 0 4px; color:var(--navy);">${p.titulo}</p>
+        <p style="font-size:11px; color:var(--ink-dim); margin:0 0 8px; line-height:1.35;">"${txt}"</p>
+        <a href="${url}" target="_blank" class="chip-btn gold" style="text-decoration:none; font-size:11px; padding:5px 10px; display:inline-block;">📲 Enviar por WhatsApp</a>
+      </div>
+    `;
+  }).join('');
+}
+
+/* 5. HERRAMIENTAS TÁCTICAS TACNA (SUNARP, PÓRTICO, CONECTIVIDAD) */
+function abrirModalHerramientasTacna() {
+  openModal('modalHerramientasTacna');
+}
+
+function enviarPruebaSocialSUNARP() {
+  const msg = `🏛️ *GARANTÍA JURÍDICA & SANEAMIENTO NOTARIAL · COSTA DORADA*\n` +
+    `Constructora e Inmobiliaria Casa Dorada S.A.C.\n` +
+    `• Partida Matriz inscrita en la Zona Registral de Tacna (SUNARP).\n` +
+    `• Terreno independizado sin gravámenes ni cargas comunitarias.\n` +
+    `• Firma de Escritura Pública ante Notario de Tacna.\n` +
+    `¡Tu inversión patrimonial 100% segura y formal!`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+function enviarPruebaPortico() {
+  const msg = `🏗️ *AVANCE REAL DE OBRAS · COSTA DORADA (LA YARADA LOS PALOS)*\n` +
+    `• Pórtico de ingreso terminado y consolidado.\n` +
+    `• Vías principales afirmadas y señalizadas.\n` +
+    `• Hitos de manzaneo y lotización física en terreno.\n` +
+    `Agenda tu visita en nuestra Van guiada y compruébalo tú mismo.`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+function enviarFichaConectividad() {
+  const msg = `🚗 *CONECTIVIDAD RÁPIDA TACNA - COSTA DORADA*\n` +
+    `• A solo 20 minutos desde el Óvalo Tarapacá por la autopista Costanera.\n` +
+    `• A 15 minutos de la Playa Los Palos.\n` +
+    `• A 35 minutos del Complejo Fronterizo Santa Rosa (Arica - Chile).\n` +
+    `Disfruta de sol todo el año y alta valorización garantizada.`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+/* 7. HOJA RESUMEN DE CONDICIONES EN PDF (1 PÁGINA NOTARIAL) */
+function descargarHojaResumen1PaginaPDF() {
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    const cli = document.getElementById('cot_cliente')?.value || 'Cliente Inversionista';
+    const dni = document.getElementById('cot_dni')?.value || '—';
+    const total = document.getElementById('cot_valor_total')?.value || '38000';
+    const inicial = document.getElementById('cot_inicial')?.value || '10000';
+    const meses = obtenerMesesFinanciamiento();
+    const cuota = document.getElementById('cot_cuota_display')?.textContent || '—';
+    const mz = document.getElementById('cot_manzana')?.value || 'B';
+    const lt = document.getElementById('cot_lote')?.value || '12';
+
+    doc.setFillColor(20, 42, 77);
+    doc.rect(0, 0, 210, 26, 'F');
+    doc.setTextColor(200, 155, 60);
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('CONSTRUCTORA E INMOBILIARIA CASA DORADA', 14, 13);
+    doc.setFontSize(8.5);
+    doc.setTextColor(255, 255, 255);
+    doc.text('Costa Dorada Ciudad Smart · La Yarada Los Palos, Tacna | Respaldo Notarial SUNARP', 14, 20);
+
+    doc.setTextColor(20, 42, 77);
+    doc.setFontSize(13);
+    doc.text('HOJA RESUMEN DE CONDICIONES Y FINANCIAMIENTO', 14, 38);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Cliente: ${cli}   ·   DNI/RUC: ${dni}`, 14, 48);
+    doc.text(`Ubicación: Manzana ${mz} - Lote ${lt}   ·   Fecha: ${new Date().toLocaleDateString('es-PE')} (Validez: 48h)`, 14, 54);
+    doc.text(`Valor Total del Lote: S/ ${Number(total).toLocaleString('es-PE')}`, 14, 60);
+    doc.text(`Cuota Inicial Pactada: S/ ${Number(inicial).toLocaleString('es-PE')}`, 14, 66);
+    doc.text(`Plazo Financiado: ${meses} meses directos en soles sin evaluación bancaria`, 14, 72);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(190, 130, 20);
+    doc.text(`Inversión Mensual: ${cuota}`, 14, 80);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(80, 80, 80);
+    doc.text('• Reserva válida por 48h con entrega de S/ 500.00 a cuenta de la cuota inicial.', 14, 92);
+    doc.text('• Vía y accesibilidad directa desde la Panamericana / Costanera a 20 min del Óvalo Tarapacá.', 14, 98);
+    doc.text('• Elevación directa a Escritura Pública ante notario de Tacna e inscripción en Sunarp.', 14, 104);
+
+    doc.line(14, 136, 85, 136);
+    doc.text('Firma Asesor Autorizado', 14, 142);
+    doc.text('Casa Dorada S.A.C.', 14, 147);
+
+    doc.line(120, 136, 195, 136);
+    doc.text('Firma del Titular / Cónyuge', 120, 142);
+    doc.text(`DNI: ${dni}`, 120, 147);
+
+    doc.save(`Hoja_Resumen_CasaDorada_${cli.replace(/\s+/g,'_')}.pdf`);
+    toast('Hoja Resumen (1 pág) descargada ✓');
+  } catch(e) {
+    toast('Error al generar la Hoja Resumen');
+    console.error(e);
+  }
+}
+
+/* 9. MÓDULO SITIO WEB OFICIAL (CLIENTES) */
+function abrirWebOficial() {
+  if (!tienePermiso('ver_sitio_web')) {
+    toast('No tienes permiso para acceder al Sitio Web Oficial');
+    return;
+  }
+  window.open('web.html', '_blank');
+}
+
+// Iniciar listener de Speed to Lead automáticamente al arrancar sesión
+const _mostrarApp_original = mostrarApp;
+mostrarApp = async function() {
+  await _mostrarApp_original();
+  iniciarListenerSpeedToLead();
+  const elVanInicio = document.getElementById('vis_barra_inicio');
+  if (elVanInicio) {
+    elVanInicio.style.width = '0%';
+  }
+};
+
 </script>
 </body>
 </html>
