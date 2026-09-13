@@ -1083,15 +1083,7 @@ main.app-content {
           <span class="dr-label">Inicio / Portada</span>
         </button>
 
-        <!-- SITIO WEB OFICIAL (CLIENTES) -->
-        <button class="drawer-item" id="drNavWebOficial" onclick="abrirWebOficial(); cerrarDrawer();" style="color:#0284c7; font-weight:700;">
-          <span class="dr-icon">🌐</span>
-          <span class="dr-label">Ver Sitio Web Oficial (Clientes)</span>
-        </button>
-        <a href="web_costadorada.html" target="_blank" class="drawer-item" style="color:var(--gold); font-weight:700;">
-          <span class="dr-icon">🌐</span>
-          <span class="dr-label">Ver Sitio Web Oficial (Clientes)</span>
-        </a>
+
 
         <!-- 1. DEPARTAMENTO COMERCIAL -->
         <div class="dr-dept-group" data-dept="comercial">
@@ -1099,6 +1091,27 @@ main.app-content {
             <span>💼 1. COMERCIAL (VENTAS & CIERRES)</span><span class="dr-dept-arrow">▾</span>
           </button>
           <div class="dr-dept-items">
+            <!-- ACCESOS DIRECTOS DE OPERACIÓN EN CAMPO -->
+            <button class="drawer-item" onclick="abrirModalDictadoVoz(); cerrarDrawer();" style="color:#0284c7; font-weight:700;">
+              <span class="dr-icon">🎙️</span>
+              <span class="dr-label">Dictado por Voz (Bitácora)</span>
+            </button>
+            <button class="drawer-item" onclick="abrirModalPreReservaEnTerreno('B','12',500); cerrarDrawer();" style="color:var(--gold); font-weight:700;">
+              <span class="dr-icon">⚡</span>
+              <span class="dr-label">Pre-Reserva QR in situ (S/ 500)</span>
+            </button>
+            <button class="drawer-item" onclick="abrirModalHerramientasTacna(); cerrarDrawer();" style="color:#0369A1; font-weight:700;">
+              <span class="dr-icon">🏛️</span>
+              <span class="dr-label">Cierre Rápido Tacna (SUNARP)</span>
+            </button>
+            <button class="drawer-item" onclick="abrirModalCadencias('Carlos Mamani', '952123456'); cerrarDrawer();" style="color:#10B981; font-weight:700;">
+              <span class="dr-icon">🎯</span>
+              <span class="dr-label">Cadencias de Seguimiento</span>
+            </button>
+            <button class="drawer-item" onclick="simularAlertaSpeedToLead(); cerrarDrawer();" style="color:#B4453C; font-weight:700;">
+              <span class="dr-icon">⚡</span>
+              <span class="dr-label">Probar Alerta Speed to Lead (&lt;90s)</span>
+            </button>
             <button class="drawer-item" data-nav="control" id="drNavControl" data-modkey="control">
               <span class="dr-icon">📊</span>
               <span class="dr-label">Tablero de Control & KPIs</span>
@@ -1273,9 +1286,7 @@ main.app-content {
         <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84c-.21 1.13-.84 2.09-1.8 2.73v2.27h2.91c1.7-1.57 2.69-3.88 2.69-6.64z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.17l-2.91-2.27c-.81.54-1.84.86-3.05.86-2.34 0-4.33-1.58-5.04-3.71H.96v2.34C2.44 15.98 5.48 18 9 18z"/><path fill="#FBBC05" d="M3.96 10.71A5.4 5.4 0 013.68 9c0-.6.1-1.18.28-1.71V4.96H.96A9 9 0 000 9c0 1.45.35 2.83.96 4.04l3-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.96l3 2.33C4.67 5.16 6.66 3.58 9 3.58z"/></svg>
         Continuar con Google
       </button>
-      <a href="web_costadorada.html" class="chip-btn" style="margin-top:16px; padding:10px 18px; border-color:var(--gold); color:var(--gold-soft); background:rgba(200,155,60,0.12); font-weight:700; border-radius:100px; text-decoration:none;">
-        🌐 Ver Página Web Oficial Costa Dorada →
-      </a>
+
       <img src="logo-crm-majo-icono.png" alt="CRM Majo" style="width:44px; height:44px; object-fit:contain; margin-top:32px; opacity:0.9;">
       <p style="font-size:10.5px; color:#9A9384; margin-top:4px; letter-spacing:0.03em;">Powered by CRM MAJO</p>
     </div>
@@ -1321,6 +1332,79 @@ main.app-content {
           <p class="welcome-sub" id="wb_subtitulo" style="margin-bottom:0;">Bienvenido a tu jornada comercial y de gestión. Enfoque total en metas y cierres.</p>
         </div>
       </div>
+
+        <!-- PANEL OPERATIVO RESALTANTE: 8 HERRAMIENTAS COMERCIALES & CAMPO -->
+        <div class="card" style="border:1.5px solid #EAD8B1; background:#FFFDF9; margin-bottom:14px; padding:16px; box-shadow:0 4px 14px rgba(20,42,77,0.06);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <div>
+              <span style="font-size:11px; font-weight:800; color:var(--gold); text-transform:uppercase; letter-spacing:0.5px;">Panel Operativo de Campo</span>
+              <h3 style="margin:2px 0 0; font-size:15px; font-weight:800; color:var(--navy);">🚀 Herramientas Comerciales y de Terreno</h3>
+            </div>
+            <span class="badge" style="background:#EBF3FC; color:#1E4B82; font-weight:700;">8 Módulos Activos</span>
+          </div>
+
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:10px;">
+            <!-- 1. Speed to Lead -->
+            <div style="background:#fff; border:1px solid #E2E8F0; border-radius:12px; padding:12px; display:flex; flex-direction:column; justify-content:space-between;">
+              <div>
+                <span style="font-size:20px;">⚡</span>
+                <h4 style="margin:4px 0 2px; font-size:12px; font-weight:800; color:var(--navy);">Speed to Lead</h4>
+                <p style="margin:0 0 8px; font-size:10.5px; color:var(--ink-dim); line-height:1.3;">Alerta inmediata (&lt;90s) con temporizador regresivo de 300s.</p>
+              </div>
+              <button class="chip-btn" onclick="simularAlertaSpeedToLead()" style="width:100%; justify-content:center; font-size:10.5px; font-weight:700; background:#FFF5F5; color:#B4453C; border-color:#FED7D7;">⚡ Probar Alerta</button>
+            </div>
+
+            <!-- 2. Dictado por voz -->
+            <div style="background:#fff; border:1px solid #E2E8F0; border-radius:12px; padding:12px; display:flex; flex-direction:column; justify-content:space-between;">
+              <div>
+                <span style="font-size:20px;">🎙️</span>
+                <h4 style="margin:4px 0 2px; font-size:12px; font-weight:800; color:var(--navy);">Dictado por Voz</h4>
+                <p style="margin:0 0 8px; font-size:10.5px; color:var(--ink-dim); line-height:1.3;">Graba acuerdos con clientes en campo con voz a texto.</p>
+              </div>
+              <button class="chip-btn gold" onclick="abrirModalDictadoVoz()" style="width:100%; justify-content:center; font-size:10.5px; font-weight:700;">🎙️ Dictar Audio</button>
+            </div>
+
+            <!-- 3. Pre-Reserva QR -->
+            <div style="background:#fff; border:1px solid #E2E8F0; border-radius:12px; padding:12px; display:flex; flex-direction:column; justify-content:space-between;">
+              <div>
+                <span style="font-size:20px;">📱</span>
+                <h4 style="margin:4px 0 2px; font-size:12px; font-weight:800; color:var(--navy);">Pre-Reserva QR</h4>
+                <p style="margin:0 0 8px; font-size:10.5px; color:var(--ink-dim); line-height:1.3;">Genera QR de S/ 500 para Yape/BCP/Chile con guardado offline.</p>
+              </div>
+              <button class="chip-btn" onclick="abrirModalPreReservaEnTerreno('B','12',500)" style="width:100%; justify-content:center; font-size:10.5px; font-weight:700; border-color:var(--gold); color:var(--navy); background:#fff;">⚡ Abrir QR</button>
+            </div>
+
+            <!-- 4. Cierre Rápido Tacna -->
+            <div style="background:#fff; border:1px solid #E2E8F0; border-radius:12px; padding:12px; display:flex; flex-direction:column; justify-content:space-between;">
+              <div>
+                <span style="font-size:20px;">🏛️</span>
+                <h4 style="margin:4px 0 2px; font-size:12px; font-weight:800; color:var(--navy);">Cierre Tacna</h4>
+                <p style="margin:0 0 8px; font-size:10.5px; color:var(--ink-dim); line-height:1.3;">Envía Partida SUNARP, video de vías y tiempos del Óvalo Tarapacá.</p>
+              </div>
+              <button class="chip-btn" onclick="abrirModalHerramientasTacna()" style="width:100%; justify-content:center; font-size:10.5px; font-weight:700; border-color:#0369A1; color:#0369A1; background:#fff;">🏛️ Ver Garantías</button>
+            </div>
+
+            <!-- 5. Cadencias Action Plans -->
+            <div style="background:#fff; border:1px solid #E2E8F0; border-radius:12px; padding:12px; display:flex; flex-direction:column; justify-content:space-between;">
+              <div>
+                <span style="font-size:20px;">🎯</span>
+                <h4 style="margin:4px 0 2px; font-size:12px; font-weight:800; color:var(--navy);">Cadencias 1-Toque</h4>
+                <p style="margin:0 0 8px; font-size:10.5px; color:var(--ink-dim); line-height:1.3;">Scripts guiados para Ferias (Cenepa, Leguía), Chile y Post-visita.</p>
+              </div>
+              <button class="chip-btn" onclick="abrirModalCadencias('Carlos Mamani', '952123456')" style="width:100%; justify-content:center; font-size:10.5px; font-weight:700; border-color:#10B981; color:#10B981; background:#fff;">🎯 Ver Cadencias</button>
+            </div>
+
+            <!-- 6. Cotizador & Dúo / Airbnb -->
+            <div style="background:#fff; border:1px solid #E2E8F0; border-radius:12px; padding:12px; display:flex; flex-direction:column; justify-content:space-between;">
+              <div>
+                <span style="font-size:20px;">👥</span>
+                <h4 style="margin:4px 0 2px; font-size:12px; font-weight:800; color:var(--navy);">Dúo Inversionista</h4>
+                <p style="margin:0 0 8px; font-size:10.5px; color:var(--ink-dim); line-height:1.3;">Bono S/ 1,000 inicial + Retorno Airbnb (en Cotizador).</p>
+              </div>
+              <button class="chip-btn" onclick="abrirCotizadorLote('B', '12', 150, 22000)" style="width:100%; justify-content:center; font-size:10.5px; font-weight:700; border-color:var(--gold); color:var(--gold); background:#fff;">🧮 Abrir Cotizador</button>
+            </div>
+          </div>
+        </div>
 
         <!-- TARJETA RESALTANTE DE PENDIENTES DEL DÍA -->
         <div class="card-pendientes-resaltante" id="cardPendientesInicio">
@@ -3676,7 +3760,6 @@ const PERMISOS_CATALOGO = [
   { key: 'eliminar_separaciones',     label: 'Eliminar / Anular Separaciones',         dept: 'Comercial', default: false },
 
   // 📣 DEPARTAMENTO MARKETING & PROSPECCIÓN
-  { key: 'ver_sitio_web',              label: 'Ver Sitio Web Oficial (Clientes)',       dept: 'Marketing', default: true },
   { key: 'ver_planos',               label: 'Ver Planos Interactivos Costa Dorada',   dept: 'Marketing', default: true },
   { key: 'ver_cotizador',            label: 'Usar Cotizador Rápido de Lotes',         dept: 'Marketing', default: true },
   { key: 'ver_comision_cotizador',   label: 'Ver Calculadora de Comisiones (6 Lotes)', dept: 'Marketing', default: true },
@@ -4288,7 +4371,7 @@ function actualizarDatosDrawer(){
   };
 
   // Módulos del menú lateral gobernados 100% por el checklist del usuario (SuperAdmin tiene bypass maestro)
-    showDr('drNavWebOficial', tienePermiso('ver_sitio_web'));
+  
   showDr('drNavControl', tienePermiso('ver_control'));
   showDr('drNavClientes', tienePermiso('ver_clientes'));
   showDr('drNavTareas', tienePermiso('ver_actividades'));
@@ -12318,13 +12401,14 @@ function descargarHojaResumen1PaginaPDF() {
   }
 }
 
-/* 9. MÓDULO SITIO WEB OFICIAL (CLIENTES) */
-function abrirWebOficial() {
-  if (!tienePermiso('ver_sitio_web')) {
-    toast('No tienes permiso para acceder al Sitio Web Oficial');
-    return;
-  }
-  window.open('web.html', '_blank');
+function simularAlertaSpeedToLead() {
+  activarAlertaSpeedToLead({
+    id: 'demo-lead-99',
+    nombre_contacto: 'Carlos Mamani Quispe (Interesado Mz B)',
+    celular: '952123456',
+    proyecto: 'Costa Dorada',
+    created_at: new Date().toISOString()
+  });
 }
 
 // Iniciar listener de Speed to Lead automáticamente al arrancar sesión
