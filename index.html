@@ -1092,6 +1092,18 @@ main.app-content {
           </button>
           <div class="dr-dept-items">
             <!-- ACCESOS DIRECTOS DE OPERACIÓN EN CAMPO -->
+            <button class="drawer-item" onclick="abrirModalDomingoDeCierres(); cerrarDrawer();" style="color:#D97706; font-weight:700;">
+              <span class="dr-icon">🎉</span>
+              <span class="dr-label">Domingo de Cierres (Showroom TV)</span>
+            </button>
+            <button class="drawer-item" onclick="abrirModalMinutaCompraventa(); cerrarDrawer();" style="color:#0F766E; font-weight:700;">
+              <span class="dr-icon">📑</span>
+              <span class="dr-label">Minuta Legal & Firma Táctil</span>
+            </button>
+            <button class="drawer-item" onclick="abrirModalEmbajadores(); cerrarDrawer();" style="color:#7C3AED; font-weight:700;">
+              <span class="dr-icon">🤝</span>
+              <span class="dr-label">Red de Embajadores (Referidos)</span>
+            </button>
             <button class="drawer-item" onclick="abrirModalDictadoVoz(); cerrarDrawer();" style="color:#0284c7; font-weight:700;">
               <span class="dr-icon">🎙️</span>
               <span class="dr-label">Dictado por Voz (Bitácora)</span>
@@ -1392,6 +1404,36 @@ main.app-content {
                 <p style="margin:0 0 8px; font-size:10.5px; color:var(--ink-dim); line-height:1.3;">Scripts guiados para Ferias (Cenepa, Leguía), Chile y Post-visita.</p>
               </div>
               <button class="chip-btn" onclick="abrirModalCadencias('Carlos Mamani', '952123456')" style="width:100%; justify-content:center; font-size:10.5px; font-weight:700; border-color:#10B981; color:#10B981; background:#fff;">🎯 Ver Cadencias</button>
+            </div>
+
+            <!-- 7. Domingo de Cierres (Showroom TV) -->
+            <div style="background:#fff; border:1px solid #FDE68A; border-radius:12px; padding:12px; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 2px 6px rgba(217,119,6,0.08);">
+              <div>
+                <span style="font-size:20px;">🎉</span>
+                <h4 style="margin:4px 0 2px; font-size:12px; font-weight:800; color:#B45309;">Domingo Cierres</h4>
+                <p style="margin:0 0 8px; font-size:10.5px; color:var(--ink-dim); line-height:1.3;">Showroom TV en vivo con campana de ventas, confeti y escasez.</p>
+              </div>
+              <button class="chip-btn" onclick="abrirModalDomingoDeCierres()" style="width:100%; justify-content:center; font-size:10.5px; font-weight:700; background:#FEF3C7; color:#B45309; border-color:#FCD34D;">🎉 Abrir Showroom</button>
+            </div>
+
+            <!-- 8. Minuta Legal con Firma Táctil -->
+            <div style="background:#fff; border:1px solid #99F6E4; border-radius:12px; padding:12px; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 2px 6px rgba(15,118,110,0.08);">
+              <div>
+                <span style="font-size:20px;">✍️</span>
+                <h4 style="margin:4px 0 2px; font-size:12px; font-weight:800; color:#0F766E;">Minuta & Firma</h4>
+                <p style="margin:0 0 8px; font-size:10.5px; color:var(--ink-dim); line-height:1.3;">Contrato formal con firma digital en pantalla táctil y PDF.</p>
+              </div>
+              <button class="chip-btn" onclick="abrirModalMinutaCompraventa()" style="width:100%; justify-content:center; font-size:10.5px; font-weight:700; background:#CCFBF1; color:#0F766E; border-color:#99F6E4;">✍️ Firmar Contrato</button>
+            </div>
+
+            <!-- 9. Red de Embajadores (Referidos) -->
+            <div style="background:#fff; border:1px solid #DDD6FE; border-radius:12px; padding:12px; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 2px 6px rgba(124,58,237,0.08);">
+              <div>
+                <span style="font-size:20px;">🤝</span>
+                <h4 style="margin:4px 0 2px; font-size:12px; font-weight:800; color:#6D28D9;">Red Embajadores</h4>
+                <p style="margin:0 0 8px; font-size:10.5px; color:var(--ink-dim); line-height:1.3;">Link de WhatsApp con bono de S/ 500 para clientes que refieran.</p>
+              </div>
+              <button class="chip-btn" onclick="abrirModalEmbajadores()" style="width:100%; justify-content:center; font-size:10.5px; font-weight:700; background:#EDE9FE; color:#6D28D9; border-color:#DDD6FE;">🤝 Ver Embajadores</button>
             </div>
 
             <!-- 6. Cotizador & Dúo / Airbnb -->
@@ -2552,6 +2594,21 @@ main.app-content {
     <div class="modal-sheet" style="max-height:88vh; overflow-y:auto;">
       <button class="modal-x-close" data-close="modalCotizador">✕</button>
       <h3 style="margin-top:0;">🧮 Cotizador Rápido de Lotes</h3>
+      <!-- 1. BANNER BLOQUEO CONCURRENTE DE LOTE EN TIEMPO REAL (ANTI-DOBLE VENTA) -->
+      <div id="cot_bloqueo_banner" style="background:#FFFBEB; border:1.5px solid #FCD34D; border-radius:10px; padding:10px 12px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:20px;" id="cot_bloqueo_icono">🔒</span>
+          <div>
+            <h5 id="cot_bloqueo_titulo" style="margin:0; font-size:12px; font-weight:800; color:#92400E;">Candado de Exclusividad en Terreno</h5>
+            <p id="cot_bloqueo_desc" style="margin:2px 0 0; font-size:11px; color:#B45309;">Bloqueado por ti para evitar que otro asesor venda este lote.</p>
+          </div>
+        </div>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <span id="cot_bloqueo_timer" style="font-size:12px; font-weight:800; color:#B45309; background:#FEF3C7; padding:4px 8px; border-radius:6px;">15:00 min</span>
+          <button type="button" class="chip-btn" id="btnLiberarBloqueoLote" onclick="liberarLoteActualManual()" style="font-size:10.5px; padding:4px 8px; background:#fff; border-color:#FCD34D; color:#92400E; font-weight:700;">🔓 Liberar</button>
+        </div>
+      </div>
+
       <!-- BANNER TIPO DE CAMBIO EN VIVO -->
       <div style="background:#EBF3FC; border:1px solid #CFE2F9; border-radius:10px; padding:8px 12px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
         <div style="display:flex; align-items:center; gap:8px; font-size:11.5px; color:#142A4D; font-weight:700;">
@@ -2643,6 +2700,17 @@ main.app-content {
         </div>
       </div>
 
+      <!-- 2. CUOTAS EXTRAORDINARIAS (JULIO & DICIEMBRE / CAMPAÑAS) -->
+      <div style="background:#EEF2FF; border:1.5px solid #C7D2FE; border-radius:10px; padding:10px 12px; margin-top:10px;">
+        <label style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:700; color:#3730A3; cursor:pointer;">
+          <input type="checkbox" id="chkCuotasExtraordinarias" onchange="calcularCotizadorMatematica()" style="width:16px !important; height:16px !important; accent-color:#4F46E5;">
+          📅 Plan Cuotas Dobles / Extraordinarias (Julio & Diciembre)
+        </label>
+        <div id="cuotas_extra_info" style="font-size:11px; color:#4338CA; margin-top:6px; line-height:1.4;">
+          💡 <b>Efecto Comercial Los Portales / Centenario:</b> 2 cuotas dobles al año (coincidentes con gratificaciones de Fiestas Patrias y Navidad) reducen tu cuota mensual ordinaria un <b>35%</b>, haciéndola inmediatamente accesible.
+        </div>
+      </div>
+
       <!-- TARJETA RESUMEN DE INVERSIÓN MENSUAL -->
       <div class="card" style="background:#FBF6EC; border:1.5px solid #E8D9B5; margin-top:12px; padding:14px;">
         <span style="font-size:11px; font-weight:800; color:var(--gold); text-transform:uppercase; letter-spacing:0.5px;">Valor de Inversión Mensual</span>
@@ -2696,6 +2764,7 @@ main.app-content {
       <div class="modal-actions" style="margin-top:8px; flex-wrap:wrap; gap:8px;">
         <button class="btn-secondary" onclick="descargarCotizacionPDF()" style="flex:1;">📄 Descargar PDF</button>
         <button class="btn-secondary" onclick="descargarHojaResumen1PaginaPDF()" style="flex:1; border-color:var(--gold); color:var(--navy); font-weight:700;">📑 Hoja Resumen (1 Pág)</button>
+        <button class="btn-primary" onclick="abrirMinutaDesdeCotizador()" style="flex:1; background:#0F766E; border-color:#0F766E; font-weight:700;">✍️ Generar Minuta & Firmar</button>
         <button class="btn-primary" onclick="pasarCotizacionASeparacion()" style="flex:1;">🏷️ Pasar a Separación</button>
       </div>
     </div>
@@ -3408,6 +3477,276 @@ main.app-content {
       </div>
 
       <div id="cad_contenedor_pasos" style="display:flex; flex-direction:column; gap:8px; margin:14px 0;"></div>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- MODAL 1: MODO PANTALLA GIGANTE "DOMINGO DE CIERRES" (SHOWROOM TV) -->
+  <!-- ============================================================== -->
+  <div class="modal-backdrop" id="modalDomingoDeCierres">
+    <div class="modal-sheet" style="max-width:820px; width:95%; max-height:92vh; overflow-y:auto; background:#101724; color:#fff; border:2px solid var(--gold);">
+      <button class="modal-x-close" data-close="modalDomingoDeCierres" style="color:#fff; background:rgba(255,255,255,0.15);">✕</button>
+      
+      <!-- Canvas de Confeti Animado -->
+      <canvas id="canvasConfetiCierres" style="position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:999999;"></canvas>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(200,155,60,0.3); padding-bottom:12px; margin-bottom:16px; flex-wrap:wrap; gap:8px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="font-size:26px;">🎉</span>
+          <div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <h3 style="margin:0; font-size:17px; color:var(--gold-soft); font-weight:800; letter-spacing:0.5px;">DOMINGO DE CIERRES · COSTA DORADA</h3>
+              <span style="background:#EF4444; color:#fff; font-size:10px; font-weight:800; padding:2px 8px; border-radius:100px; animation:pulsoLead 1.5s infinite;">🔴 EN VIVO</span>
+            </div>
+            <p style="margin:2px 0 0; font-size:11.5px; color:#94A3B8;">La Yarada Los Palos, Tacna · Jornada de Preventa Exclusiva</p>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <span id="relojEnVivoCierres" style="font-size:18px; font-weight:800; font-family:monospace; color:#FCD34D;">12:00:00 PM</span>
+        </div>
+      </div>
+
+      <!-- METRICAS DE ESCASEZ Y CIERRES EN VIVO -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:10px; margin-bottom:16px;">
+        <div style="background:rgba(255,255,255,0.05); border:1px solid rgba(200,155,60,0.35); border-radius:14px; padding:12px 14px; text-align:center;">
+          <span style="font-size:11px; color:#CBD5E1; text-transform:uppercase; font-weight:700; letter-spacing:0.5px;">Lotes Restantes (Etapa 1)</span>
+          <div id="cierres_num_restantes" style="font-size:26px; font-weight:900; color:#F87171; margin:4px 0 2px;">14 / 80</div>
+          <div style="width:100%; height:6px; background:rgba(255,255,255,0.15); border-radius:10px; overflow:hidden; margin-top:4px;">
+            <div id="cierres_barra_progreso" style="width:82.5%; height:100%; background:linear-gradient(90deg, #F59E0B 0%, #EF4444 100%);"></div>
+          </div>
+          <span style="font-size:10px; color:#FCD34D; font-weight:600; display:block; margin-top:4px;">82.5% Vendido · ¡Últimos lotes!</span>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.05); border:1px solid rgba(200,155,60,0.35); border-radius:14px; padding:12px 14px; text-align:center;">
+          <span style="font-size:11px; color:#CBD5E1; text-transform:uppercase; font-weight:700; letter-spacing:0.5px;">Monto Separado Hoy</span>
+          <div id="cierres_monto_hoy" style="font-size:24px; font-weight:900; color:#34D399; margin:4px 0 2px;">S/ 14,500.00</div>
+          <span style="font-size:10.5px; color:#A7F3D0; font-weight:600;">9 Separaciones concretadas</span>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.05); border:1px solid rgba(200,155,60,0.35); border-radius:14px; padding:12px 14px; text-align:center;">
+          <span style="font-size:11px; color:#CBD5E1; text-transform:uppercase; font-weight:700; letter-spacing:0.5px;">Top Closer de la Jornada</span>
+          <div id="cierres_top_asesor" style="font-size:18px; font-weight:900; color:#60A5FA; margin:6px 0 2px;">Jorge Luque</div>
+          <span style="font-size:10.5px; color:#BFDBFE; font-weight:600;">3 cierres en terreno</span>
+        </div>
+      </div>
+
+      <!-- BOTÓN PRINCIPAL: TOCAR CAMPANA Y ANUNCIAR CIERRE -->
+      <div style="background:linear-gradient(135deg, rgba(200,155,60,0.2) 0%, rgba(200,155,60,0.05) 100%); border:1.5px solid var(--gold); border-radius:16px; padding:14px; margin-bottom:16px; text-align:center;">
+        <h4 style="margin:0 0 6px; font-size:14px; color:var(--gold-soft); font-weight:800;">🔔 ¡TOCAR CAMPANA & ANUNCIAR CIERRE EN VIVO!</h4>
+        <p style="margin:0 0 12px; font-size:11.5px; color:#E2E8F0;">Reproduce la campana acústica en todo el showroom, lanza confeti y actualiza el marcador en tiempo real.</p>
+        
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:8px; margin-bottom:12px; text-align:left;">
+          <div>
+            <label style="font-size:11px; color:#CBD5E1; display:block; margin-bottom:2px;">Familia / Cliente:</label>
+            <input type="text" id="cierre_input_familia" placeholder="Ej. Familia Quispe Mamani" style="background:#1E293B; border:1px solid #475569; color:#fff; font-size:12px; padding:8px 10px; border-radius:8px; width:100%;">
+          </div>
+          <div>
+            <label style="font-size:11px; color:#CBD5E1; display:block; margin-bottom:2px;">Manzana & Lote:</label>
+            <input type="text" id="cierre_input_lote" placeholder="Ej. Mz B - Lote 12" style="background:#1E293B; border:1px solid #475569; color:#fff; font-size:12px; padding:8px 10px; border-radius:8px; width:100%;">
+          </div>
+          <div>
+            <label style="font-size:11px; color:#CBD5E1; display:block; margin-bottom:2px;">Monto Separación:</label>
+            <select id="cierre_input_monto" style="background:#1E293B; border:1px solid #475569; color:#fff; font-size:12px; padding:8px 10px; border-radius:8px; width:100%;">
+              <option value="500">S/ 500 (Pre-reserva)</option>
+              <option value="1000">S/ 1,000 (Separación formal)</option>
+              <option value="2000">S/ 2,000 (Inicial parcial)</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11px; color:#CBD5E1; display:block; margin-bottom:2px;">Asesor Comercial:</label>
+            <input type="text" id="cierre_input_asesor" placeholder="Nombre asesor" style="background:#1E293B; border:1px solid #475569; color:#fff; font-size:12px; padding:8px 10px; border-radius:8px; width:100%;">
+          </div>
+        </div>
+
+        <button type="button" class="btn-primary" onclick="ejecutarCierreConCampana()" style="font-size:14px; font-weight:800; padding:12px 24px; background:linear-gradient(135deg, #F59E0B 0%, #D97706 100%); color:#142A4D; border:none; border-radius:12px; box-shadow:0 4px 15px rgba(245,158,11,0.4); cursor:pointer; width:100%; max-width:340px;">
+          🔔 ¡TOCAR CAMPANA & CELEBRAR CIERRE!
+        </button>
+      </div>
+
+      <!-- FEED EN VIVO DE VENTAS Y FAMILIAS PROPIETARIAS -->
+      <h4 style="margin:0 0 10px; font-size:13px; color:#CBD5E1; font-weight:800; display:flex; align-items:center; gap:6px;">
+        <span>🔥</span> ÚLTIMAS SEPARACIONES CONFIRMADAS EN TERRENO:
+      </h4>
+      <div id="cierres_feed_lista" style="display:flex; flex-direction:column; gap:8px; max-height:220px; overflow-y:auto;">
+        <div style="background:rgba(255,255,255,0.06); border-left:4px solid #10B981; border-radius:8px; padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <h5 style="margin:0; font-size:13px; color:#fff; font-weight:800;">¡Familia Condori Flores aseguró su lote!</h5>
+            <p style="margin:2px 0 0; font-size:11px; color:#94A3B8;">Manzana B · Lote 08 (150 m²) · Asesor: Jorge Luque</p>
+          </div>
+          <span style="font-size:12px; font-weight:800; color:#34D399; background:rgba(52,211,153,0.15); padding:4px 8px; border-radius:6px;">S/ 500</span>
+        </div>
+        <div style="background:rgba(255,255,255,0.06); border-left:4px solid #3B82F6; border-radius:8px; padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <h5 style="margin:0; font-size:13px; color:#fff; font-weight:800;">¡Familia Ticona Mamani aseguró su lote!</h5>
+            <p style="margin:2px 0 0; font-size:11px; color:#94A3B8;">Manzana D · Lote 15 (160 m²) · Asesora: Esther Llano</p>
+          </div>
+          <span style="font-size:12px; font-weight:800; color:#60A5FA; background:rgba(96,165,250,0.15); padding:4px 8px; border-radius:6px;">S/ 1,000</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- MODAL 2: MINUTA DE COMPRAVENTA & FIRMA DIGITAL TÁCTIL (CANVAS) -->
+  <!-- ============================================================== -->
+  <div class="modal-backdrop" id="modalMinutaCompraventa">
+    <div class="modal-sheet" style="max-width:680px; width:95%; max-height:90vh; overflow-y:auto;">
+      <button class="modal-x-close" data-close="modalMinutaCompraventa">✕</button>
+      
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+        <span style="font-size:24px;">📑</span>
+        <div>
+          <h3 style="margin:0; color:var(--navy); font-size:16px;">Formalización de Minuta Legal & Firma Táctil</h3>
+          <p style="margin:2px 0 0; font-size:11.5px; color:var(--ink-dim);">Contrato Preparatorio de Compraventa con Financiamiento Directo · Costa Dorada</p>
+        </div>
+      </div>
+
+      <!-- DATOS DE LAS PARTES -->
+      <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:12px; padding:12px; margin-bottom:12px;">
+        <h4 style="margin:0 0 10px; font-size:12.5px; color:var(--navy); font-weight:800;">1. Datos del Comprador (Titular & Cónyuge)</h4>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:8px;">
+          <div>
+            <label style="font-size:11px; font-weight:700; color:var(--navy);">Nombres y Apellidos *</label>
+            <input type="text" id="min_comprador_nombre" placeholder="Nombre completo" style="width:100%; font-size:12px; padding:7px 9px;">
+          </div>
+          <div>
+            <label style="font-size:11px; font-weight:700; color:var(--navy);">DNI / CE / Pasaporte *</label>
+            <input type="text" id="min_comprador_dni" placeholder="N° Documento" style="width:100%; font-size:12px; padding:7px 9px;">
+          </div>
+          <div>
+            <label style="font-size:11px; font-weight:700; color:var(--navy);">Estado Civil *</label>
+            <select id="min_comprador_civil" style="width:100%; font-size:12px; padding:7px 9px;">
+              <option value="Soltero(a)">Soltero(a)</option>
+              <option value="Casado(a)">Casado(a)</option>
+              <option value="Conviviente">Conviviente</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11px; font-weight:700; color:var(--navy);">Celular WhatsApp *</label>
+            <input type="tel" id="min_comprador_tel" placeholder="9XXXXXXXX" style="width:100%; font-size:12px; padding:7px 9px;">
+          </div>
+          <div style="grid-column: 1 / -1;">
+            <label style="font-size:11px; font-weight:700; color:var(--navy);">Domicilio / Ciudad *</label>
+            <input type="text" id="min_comprador_domicilio" placeholder="Dirección completa y ciudad" style="width:100%; font-size:12px; padding:7px 9px;">
+          </div>
+        </div>
+      </div>
+
+      <!-- DATOS DEL LOTE Y PLAN FINANCIERO -->
+      <div style="background:#FBF6EC; border:1px solid #E8D9B5; border-radius:12px; padding:12px; margin-bottom:12px;">
+        <h4 style="margin:0 0 10px; font-size:12.5px; color:var(--navy); font-weight:800;">2. Datos del Lote y Condiciones Económicas</h4>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:8px;">
+          <div>
+            <label style="font-size:11px; font-weight:700; color:var(--navy);">Manzana</label>
+            <input type="text" id="min_lote_mz" value="B" style="width:100%; font-size:12px; padding:7px 9px; font-weight:700;">
+          </div>
+          <div>
+            <label style="font-size:11px; font-weight:700; color:var(--navy);">Lote</label>
+            <input type="text" id="min_lote_num" value="12" style="width:100%; font-size:12px; padding:7px 9px; font-weight:700;">
+          </div>
+          <div>
+            <label style="font-size:11px; font-weight:700; color:var(--navy);">Área (m²)</label>
+            <input type="number" id="min_lote_area" value="150" style="width:100%; font-size:12px; padding:7px 9px;">
+          </div>
+          <div>
+            <label style="font-size:11px; font-weight:700; color:var(--navy);">Precio Total (S/)</label>
+            <input type="number" id="min_lote_precio" value="22000" style="width:100%; font-size:12px; padding:7px 9px; font-weight:700;">
+          </div>
+          <div>
+            <label style="font-size:11px; font-weight:700; color:var(--navy);">Inicial Abonada (S/)</label>
+            <input type="number" id="min_lote_inicial" value="2000" style="width:100%; font-size:12px; padding:7px 9px; font-weight:700;">
+          </div>
+          <div>
+            <label style="font-size:11px; font-weight:700; color:var(--navy);">Plazo (Meses)</label>
+            <input type="number" id="min_lote_meses" value="36" style="width:100%; font-size:12px; padding:7px 9px;">
+          </div>
+        </div>
+      </div>
+
+      <!-- CANVAS DE FIRMA DIGITAL TÁCTIL -->
+      <div style="background:#fff; border:1.5px solid var(--gold); border-radius:12px; padding:14px; margin-bottom:14px; text-align:center;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <label style="font-size:12.5px; font-weight:800; color:var(--navy); display:flex; align-items:center; gap:6px;">
+            <span>✍️</span> Firma Táctil del Comprador (En Pantalla / Celular)
+          </label>
+          <button type="button" class="chip-btn" onclick="limpiarCanvasFirma()" style="font-size:11px; padding:4px 10px; color:#DC2626; border-color:#FCA5A5;">🧹 Limpiar</button>
+        </div>
+        
+        <canvas id="canvasFirmaLegal" width="460" height="150" style="width:100%; max-width:460px; height:150px; background:#FAFAF9; border:2px dashed #D6D3D1; border-radius:10px; touch-action:none; cursor:crosshair; display:block; margin:0 auto;"></canvas>
+        <p style="font-size:10.5px; color:var(--ink-dim); margin:6px 0 0;">Firma directamente con tu dedo en la pantalla o con el puntero del mouse.</p>
+      </div>
+
+      <!-- BOTONES DE ACCIÓN -->
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button type="button" class="btn-secondary" onclick="closeModal('modalMinutaCompraventa')" style="flex:1;">Cerrar</button>
+        <button type="button" class="btn-primary" onclick="descargarMinutaLegalPDF()" style="flex:2; background:#0F766E; border-color:#0F766E; font-weight:800; font-size:13px;">
+          📑 Descargar Minuta Legal Firmada (PDF 2 Págs)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- MODAL 3: RED DE EMBAJADORES & REFERIDOS ("CASA DORADA") -->
+  <!-- ============================================================== -->
+  <div class="modal-backdrop" id="modalEmbajadoresReferidos">
+    <div class="modal-sheet" style="max-width:620px; width:95%; max-height:88vh; overflow-y:auto;">
+      <button class="modal-x-close" data-close="modalEmbajadoresReferidos">✕</button>
+
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+        <span style="font-size:26px;">🤝</span>
+        <div>
+          <h3 style="margin:0; color:var(--navy); font-size:16px;">Programa Embajadores & Red de Referidos</h3>
+          <p style="margin:2px 0 0; font-size:11.5px; color:var(--ink-dim);">Comunidad de Propietarios e Inversionistas · Costa Dorada</p>
+        </div>
+      </div>
+
+      <!-- TU CODIGO DE EMBAJADOR -->
+      <div style="background:linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%); border:1.5px solid #C4B5FD; border-radius:14px; padding:14px 16px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div>
+          <span style="font-size:11px; font-weight:800; color:#6D28D9; text-transform:uppercase; letter-spacing:0.5px;">Tu Código Único de Embajador</span>
+          <div id="embajador_codigo_display" style="font-size:22px; font-weight:900; color:#5B21B6; font-family:monospace; margin-top:2px;">CD-EMB-JORGE2026</div>
+          <span style="font-size:11px; color:#7C3AED;">S/ 500 en efectivo o abono a cuotas por cada referido cerrado</span>
+        </div>
+        <button type="button" class="chip-btn" onclick="copiarCodigoEmbajador()" style="background:#fff; border-color:#8B5CF6; color:#6D28D9; font-weight:800; font-size:11.5px; padding:8px 14px;">
+          📋 Copiar Código
+        </button>
+      </div>
+
+      <!-- BOTÓN COMPARTIR EN WHATSAPP -->
+      <div style="background:#F0FDF4; border:1px solid #BBF7D0; border-radius:12px; padding:14px; margin-bottom:14px; text-align:center;">
+        <h4 style="margin:0 0 6px; font-size:13px; color:#166534; font-weight:800;">📲 Comparte tu Invitación Oficial por WhatsApp</h4>
+        <p style="margin:0 0 10px; font-size:11px; color:#15803D;">Envía el mensaje listo a tus familiares, amigos y comerciantes de Tacna, Moquegua, Arequipa o Chile.</p>
+        <button type="button" class="chip-btn" onclick="compartirInvitacionEmbajadorWsp()" style="background:#22C55E; color:#fff; border:none; font-weight:800; font-size:12.5px; padding:10px 18px; border-radius:100px; box-shadow:0 3px 10px rgba(34,197,94,0.3); width:100%; max-width:320px; justify-content:center;">
+          💬 Enviar a Grupos y Contactos
+        </button>
+      </div>
+
+      <!-- TABLA DE REFERIDOS Y BONIFICACIONES -->
+      <div style="margin-top:14px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <h4 style="margin:0; font-size:12.5px; color:var(--navy); font-weight:800;">Tus Referidos Registrados</h4>
+          <span class="badge badge-completada" id="emb_total_bonos">S/ 1,500 Ganados</span>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <div style="background:#fff; border:1px solid #E2E8F0; border-radius:10px; padding:10px 12px; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <h5 style="margin:0; font-size:12px; color:var(--navy); font-weight:800;">Raúl Valdivia (Feria Bolognesi)</h5>
+              <p style="margin:2px 0 0; font-size:10.5px; color:var(--ink-dim);">Cel: 952334455 · Separó Mz B Lote 04</p>
+            </div>
+            <span class="badge badge-completada">Bono Pagado (S/ 500)</span>
+          </div>
+
+          <div style="background:#fff; border:1px solid #E2E8F0; border-radius:10px; padding:10px 12px; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <h5 style="margin:0; font-size:12px; color:var(--navy); font-weight:800;">Marco Antonio Quispe (Iquique)</h5>
+              <p style="margin:2px 0 0; font-size:10.5px; color:var(--ink-dim);">Cel: +56 9 88776655 · Visita agendada domingo</p>
+            </div>
+            <span class="badge" style="background:#FEF3C7; color:#B45309;">En Proceso</span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -7061,18 +7400,42 @@ function calcularCotizadorMatematica(){
     inicial = 0;
   }
 
+  // Bonificación Estrategia Dúo Inversionista (-S/ 1,000 en inicial si adquiere 2 lotes)
+  const esDuo = document.getElementById('chkDuoInversionista')?.checked;
+  let bonoDuo = esDuo ? 1000 : 0;
+
   const saldo = Math.max(0, valorTotal - inicial);
   const elSaldoDisp = document.getElementById('cot_saldo_display');
   if (elSaldoDisp) elSaldoDisp.value = 'S/ ' + saldo.toLocaleString('es-PE', {minimumFractionDigits:2});
 
   const meses = obtenerMesesFinanciamiento();
-  const cuota = meses > 0 ? (saldo / meses) : 0;
+  const esCuotasExtra = document.getElementById('chkCuotasExtraordinarias')?.checked;
+
+  let cuota = 0;
+  let detalleResumen = '';
+
+  if (esCuotasExtra && meses >= 12) {
+    // Modelo Los Portales / Centenario: 2 cuotas dobles al año (Julio y Diciembre)
+    const numAnios = Math.floor(meses / 12);
+    const numCuotasDobles = numAnios * 2;
+    // Cuota ordinaria reducida
+    cuota = meses > 0 ? (saldo / (meses + numCuotasDobles)) : 0;
+    const cuotaDoble = cuota * 2;
+    detalleResumen = `Inicial: S/ ${inicial.toLocaleString('es-PE')} · Saldo en ${meses} m. con Cuotas Dobles Julio y Dic (S/ ${cuotaDoble.toLocaleString('es-PE', {minimumFractionDigits:2, maximumFractionDigits:2})})`;
+  } else {
+    cuota = meses > 0 ? (saldo / meses) : 0;
+    detalleResumen = `Inicial: S/ ${inicial.toLocaleString('es-PE')} · Saldo: S/ ${saldo.toLocaleString('es-PE')} en ${meses} cuotas fijas (Sin bancos)`;
+  }
+
+  if (bonoDuo > 0) {
+    detalleResumen += ` · [Bono Dúo Inversionista aplicado: -S/ 1,000]`;
+  }
 
   const disp = document.getElementById('cot_cuota_display');
   if (disp) disp.textContent = 'S/ ' + cuota.toLocaleString('es-PE', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' / mes';
 
   const resDisp = document.getElementById('cot_resumen_display');
-  if (resDisp) resDisp.textContent = `Inicial: S/ ${inicial.toLocaleString('es-PE')} · Saldo: S/ ${saldo.toLocaleString('es-PE')} en ${meses} cuotas fijas (Sin bancos)`;
+  if (resDisp) resDisp.textContent = detalleResumen;
 
   calcularComisionAsesorEscala();
 }
@@ -12399,6 +12762,494 @@ function descargarHojaResumen1PaginaPDF() {
     toast('Error al generar la Hoja Resumen');
     console.error(e);
   }
+}
+
+/* ============================================================== */
+/* 10. BLOQUEO CONCURRENTE DE LOTES EN TIEMPO REAL (ANTI-DOBLE VENTA) */
+/* ============================================================== */
+let loteBloqueadoActual = null;
+let timerBloqueoInterval = null;
+let canalRealtimeBloqueos = null;
+
+function iniciarCanalBloqueoRealtime() {
+  if (!sb || !currentUser) return;
+  try {
+    canalRealtimeBloqueos = sb.channel('lotes-bloqueos-realtime', {
+      config: { broadcast: { self: true } }
+    });
+    canalRealtimeBloqueos
+      .on('broadcast', { event: 'bloqueo' }, (payload) => {
+        const data = payload.payload;
+        if (data && loteBloqueadoActual && data.loteId === loteBloqueadoActual.loteId && data.asesor !== currentUser.nombre) {
+          toast(`⚠️ El lote ${data.loteId} ha sido solicitado por ${data.asesor}`);
+        }
+      })
+      .on('broadcast', { event: 'liberacion' }, (payload) => {
+        // Lote liberado
+      })
+      .subscribe();
+  } catch(e) { console.warn('Realtime Lotes Bloqueo:', e); }
+}
+
+function abrirCotizadorLote(mz = 'B', lote = '12', area = 150, precio = 22000) {
+  abrirModalCotizador('Prospecto Interesado', '952000000', mz, lote, area, (precio / area).toFixed(2), '', '', '', precio);
+  bloquearLoteActualTemporal(mz, lote, 15);
+}
+
+function bloquearLoteActualTemporal(manzana = 'B', lote = '12', minutos = 15) {
+  const loteId = `Mz ${manzana} - Lote ${lote}`;
+  loteBloqueadoActual = {
+    manzana,
+    lote,
+    loteId,
+    asesor: currentUser?.nombre || 'Jorge Luque (Asesor)',
+    expira: Date.now() + minutos * 60 * 1000
+  };
+
+  const timerEl = document.getElementById('cot_bloqueo_timer');
+  const descEl = document.getElementById('cot_bloqueo_desc');
+  if (descEl) descEl.textContent = `Lote ${loteId} bloqueado a tu nombre por 15 min para evitar dobles ventas.`;
+
+  clearInterval(timerBloqueoInterval);
+  actualizarDisplayTimerBloqueo();
+  timerBloqueoInterval = setInterval(actualizarDisplayTimerBloqueo, 1000);
+
+  // Broadcast si existe realtime
+  try {
+    if (canalRealtimeBloqueos) {
+      canalRealtimeBloqueos.send({
+        type: 'broadcast',
+        event: 'bloqueo',
+        payload: { loteId, asesor: loteBloqueadoActual.asesor }
+      });
+    }
+  } catch(e) {}
+}
+
+function actualizarDisplayTimerBloqueo() {
+  if (!loteBloqueadoActual) return;
+  const dif = Math.max(0, Math.floor((loteBloqueadoActual.expira - Date.now()) / 1000));
+  const m = Math.floor(dif / 60);
+  const s = dif % 60;
+  const timerEl = document.getElementById('cot_bloqueo_timer');
+  if (timerEl) {
+    timerEl.textContent = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')} min`;
+  }
+  if (dif <= 0) {
+    liberarLoteActualManual();
+    toast('El candado de exclusividad del lote ha expirado.');
+  }
+}
+
+function liberarLoteActualManual() {
+  clearInterval(timerBloqueoInterval);
+  if (loteBloqueadoActual && canalRealtimeBloqueos) {
+    try {
+      canalRealtimeBloqueos.send({
+        type: 'broadcast',
+        event: 'liberacion',
+        payload: { loteId: loteBloqueadoActual.loteId }
+      });
+    } catch(e) {}
+  }
+  loteBloqueadoActual = null;
+  const timerEl = document.getElementById('cot_bloqueo_timer');
+  const descEl = document.getElementById('cot_bloqueo_desc');
+  if (timerEl) timerEl.textContent = 'Libre';
+  if (descEl) descEl.textContent = 'Lote liberado en tiempo real para todos los asesores.';
+  toast('Lote liberado correctamente');
+}
+
+/* ============================================================== */
+/* 11. MODO PANTALLA GIGANTE "DOMINGO DE CIERRES" (SHOWROOM TV) */
+/* ============================================================== */
+let timerRelojCierres = null;
+
+function abrirModalDomingoDeCierres() {
+  openModal('modalDomingoDeCierres');
+  actualizarRelojCierres();
+  clearInterval(timerRelojCierres);
+  timerRelojCierres = setInterval(actualizarRelojCierres, 1000);
+
+  // Auto-cargar nombre del asesor activo
+  const elAsesor = document.getElementById('cierre_input_asesor');
+  if (elAsesor && (!elAsesor.value || elAsesor.value === '')) {
+    elAsesor.value = currentUser?.nombre || 'Jorge Luque';
+  }
+}
+
+function actualizarRelojCierres() {
+  const el = document.getElementById('relojEnVivoCierres');
+  if (!el) return;
+  const d = new Date();
+  el.textContent = d.toLocaleTimeString('es-PE', { hour12: true });
+}
+
+// SINTETIZADOR ACÚSTICO DE CAMPANA DE CIERRE (WEB AUDIO API NATIVO)
+function tocarCampanaCierre() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const now = ctx.currentTime;
+
+    // Frecuencias ricas de campana de barco / victoria
+    const acordes = [523.25, 659.25, 783.99, 1046.50];
+    acordes.forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.05);
+
+      gain.gain.setValueAtTime(0.35, now + idx * 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.8);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + idx * 0.05);
+      osc.stop(now + 2.9);
+    });
+
+    if (navigator.vibrate) navigator.vibrate([150, 100, 300, 100, 500]);
+  } catch(e) { console.warn('Error audio campana:', e); }
+}
+
+// ANIMACIÓN DE PARTÍCULAS CONFETI EN CANVAS
+function lanzarConfetiCierres() {
+  const canvas = document.getElementById('canvasConfetiCierres');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const particulas = [];
+  const colores = ['#C89B3C', '#E8CE8F', '#10B981', '#3B82F6', '#EF4444', '#F59E0B', '#FFF'];
+
+  for (let i = 0; i < 90; i++) {
+    particulas.push({
+      x: canvas.width / 2 + (Math.random() * 200 - 100),
+      y: canvas.height / 2,
+      vx: (Math.random() - 0.5) * 16,
+      vy: (Math.random() - 0.8) * 16,
+      size: Math.random() * 8 + 4,
+      color: colores[Math.floor(Math.random() * colores.length)],
+      alpha: 1,
+      decay: Math.random() * 0.015 + 0.008
+    });
+  }
+
+  function frame() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let vivas = 0;
+    particulas.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.35; // gravedad
+      p.alpha -= p.decay;
+      if (p.alpha > 0) {
+        vivas++;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, p.alpha);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, p.size, p.size);
+        ctx.restore();
+      }
+    });
+    if (vivas > 0) {
+      requestAnimationFrame(frame);
+    } else {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+function ejecutarCierreConCampana() {
+  const familia = document.getElementById('cierre_input_familia')?.value.trim() || 'Familia Compradora';
+  const lote = document.getElementById('cierre_input_lote')?.value.trim() || 'Mz B - Lote 12';
+  const monto = document.getElementById('cierre_input_monto')?.value || '500';
+  const asesor = document.getElementById('cierre_input_asesor')?.value.trim() || (currentUser?.nombre || 'Asesor Comercial');
+
+  // 1. Tocar campana acústica
+  tocarCampanaCierre();
+
+  // 2. Lanzar confeti
+  lanzarConfetiCierres();
+
+  // 3. Añadir al feed de ventas
+  const feed = document.getElementById('cierres_feed_lista');
+  if (feed) {
+    const item = document.createElement('div');
+    item.style.cssText = 'background:rgba(255,255,255,0.08); border-left:4px solid #F59E0B; border-radius:8px; padding:10px 14px; display:flex; justify-content:space-between; align-items:center; animation:pulsoLead 1.2s;';
+    item.innerHTML = `
+      <div>
+        <h5 style="margin:0; font-size:13px; color:#FCD34D; font-weight:800;">🎉 ¡${familia} aseguró su lote!</h5>
+        <p style="margin:2px 0 0; font-size:11px; color:#E2E8F0;">${lote} · Asesor: ${asesor}</p>
+      </div>
+      <span style="font-size:12px; font-weight:800; color:#34D399; background:rgba(52,211,153,0.2); padding:4px 8px; border-radius:6px;">S/ ${parseFloat(monto).toLocaleString('es-PE')}</span>
+    `;
+    feed.insertBefore(item, feed.firstChild);
+  }
+
+  // 4. Actualizar contadores
+  const elRestantes = document.getElementById('cierres_num_restantes');
+  if (elRestantes) {
+    const cur = parseInt(elRestantes.textContent) || 14;
+    const nuevo = Math.max(1, cur - 1);
+    elRestantes.textContent = `${nuevo} / 80`;
+    const barra = document.getElementById('cierres_barra_progreso');
+    if (barra) barra.style.width = `${((80 - nuevo) / 80 * 100).toFixed(1)}%`;
+  }
+
+  // Limpiar campos
+  if (document.getElementById('cierre_input_familia')) document.getElementById('cierre_input_familia').value = '';
+  toast(`¡Felicidades a ${familia} por su nuevo lote en Costa Dorada!`);
+}
+
+/* ============================================================== */
+/* 12. MINUTA LEGAL DE COMPRAVENTA & FIRMA DIGITAL TÁCTIL (CANVAS) */
+/* ============================================================== */
+let canvasFirma = null;
+let ctxFirma = null;
+let dibujandoFirma = false;
+
+function initCanvasFirma() {
+  canvasFirma = document.getElementById('canvasFirmaLegal');
+  if (!canvasFirma) return;
+  ctxFirma = canvasFirma.getContext('2d');
+  ctxFirma.lineWidth = 2.5;
+  ctxFirma.lineCap = 'round';
+  ctxFirma.lineJoin = 'round';
+  ctxFirma.strokeStyle = '#142A4D';
+
+  canvasFirma.addEventListener('pointerdown', (e) => {
+    dibujandoFirma = true;
+    const rect = canvasFirma.getBoundingClientRect();
+    ctxFirma.beginPath();
+    ctxFirma.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+  });
+
+  canvasFirma.addEventListener('pointermove', (e) => {
+    if (!dibujandoFirma) return;
+    const rect = canvasFirma.getBoundingClientRect();
+    ctxFirma.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+    ctxFirma.stroke();
+  });
+
+  canvasFirma.addEventListener('pointerup', () => { dibujandoFirma = false; });
+  canvasFirma.addEventListener('pointercancel', () => { dibujandoFirma = false; });
+}
+
+function limpiarCanvasFirma() {
+  if (!canvasFirma || !ctxFirma) return;
+  ctxFirma.clearRect(0, 0, canvasFirma.width, canvasFirma.height);
+}
+
+function abrirModalMinutaCompraventa() {
+  openModal('modalMinutaCompraventa');
+  setTimeout(initCanvasFirma, 200);
+}
+
+function abrirMinutaDesdeCotizador() {
+  const cliente = document.getElementById('cot_cliente')?.value || '';
+  const dni = document.getElementById('cot_dni')?.value || '';
+  const tel = document.getElementById('cot_celular')?.value || '';
+  const dir = document.getElementById('cot_direccion')?.value || '';
+  const mz = document.getElementById('cot_mz_display')?.textContent || 'B';
+  const lote = document.getElementById('cot_lote_display')?.textContent || '12';
+  const area = document.getElementById('cot_area')?.value || '150';
+  const precio = document.getElementById('cot_valor_total')?.value || '22000';
+  const inicial = document.getElementById('cot_inicial')?.value || '2000';
+  const meses = obtenerMesesFinanciamiento() || 36;
+
+  abrirModalMinutaCompraventa();
+
+  if (document.getElementById('min_comprador_nombre')) document.getElementById('min_comprador_nombre').value = cliente;
+  if (document.getElementById('min_comprador_dni')) document.getElementById('min_comprador_dni').value = dni;
+  if (document.getElementById('min_comprador_tel')) document.getElementById('min_comprador_tel').value = tel;
+  if (document.getElementById('min_comprador_domicilio')) document.getElementById('min_comprador_domicilio').value = dir || 'Tacna, Perú';
+  if (document.getElementById('min_lote_mz')) document.getElementById('min_lote_mz').value = mz;
+  if (document.getElementById('min_lote_num')) document.getElementById('min_lote_num').value = lote;
+  if (document.getElementById('min_lote_area')) document.getElementById('min_lote_area').value = area;
+  if (document.getElementById('min_lote_precio')) document.getElementById('min_lote_precio').value = precio;
+  if (document.getElementById('min_lote_inicial')) document.getElementById('min_lote_inicial').value = inicial;
+  if (document.getElementById('min_lote_meses')) document.getElementById('min_lote_meses').value = meses;
+}
+
+function descargarMinutaLegalPDF() {
+  const { jsPDF } = window.jspdf || {};
+  if (!jsPDF) {
+    toast('Librería PDF no disponible');
+    return;
+  }
+
+  const nombre = document.getElementById('min_comprador_nombre')?.value.trim() || 'CLIENTE COMPRADOR';
+  const dni = document.getElementById('min_comprador_dni')?.value.trim() || '—';
+  const estadoCivil = document.getElementById('min_comprador_civil')?.value || 'Soltero(a)';
+  const domicilio = document.getElementById('min_comprador_domicilio')?.value.trim() || 'Tacna, Perú';
+  const mz = document.getElementById('min_lote_mz')?.value.trim() || 'B';
+  const lote = document.getElementById('min_lote_num')?.value.trim() || '12';
+  const area = document.getElementById('min_lote_area')?.value || '150';
+  const precio = parseFloat(document.getElementById('min_lote_precio')?.value) || 22000;
+  const inicial = parseFloat(document.getElementById('min_lote_inicial')?.value) || 2000;
+  const meses = parseInt(document.getElementById('min_lote_meses')?.value) || 36;
+  const saldo = Math.max(0, precio - inicial);
+  const cuota = meses > 0 ? (saldo / meses) : 0;
+
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const fechaHoy = new Date().toLocaleDateString('es-PE', { day:'2-digit', month:'long', year:'numeric' });
+
+  // PÁGINA 1: CONTRATO LEGAL
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(20, 42, 77);
+  doc.text('CONSTRUCTORA E INMOBILIARIA CASA DORADA S.A.C.', 105, 18, { align: 'center' });
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(107, 114, 128);
+  doc.text('RUC: 20608554129 · Partida Matriz SUNARP Oficina Registral Tacna', 105, 23, { align: 'center' });
+
+  doc.setDrawColor(200, 155, 60);
+  doc.setLineWidth(0.6);
+  doc.line(16, 26, 194, 26);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11.5);
+  doc.setTextColor(20, 42, 77);
+  doc.text('CONTRATO PREPARATORIO DE COMPRAVENTA CON FINANCIAMIENTO DIRECTO', 105, 33, { align: 'center' });
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(30, 41, 59);
+
+  let p1 = `Conste por el presente documento privado, el Contrato Preparatorio de Compraventa de Lote de Terreno que celebran de una parte CONSTRUCTORA E INMOBILIARIA CASA DORADA S.A.C., con RUC N° 20608554129, debidamente representada por su Director Comercial, a quien en adelante se denominará LA VENDEDORA; y de otra parte don(ña) ${nombre.toUpperCase()}, identificado(a) con DNI N° ${dni}, estado civil ${estadoCivil}, domiciliado(a) en ${domicilio}, a quien en adelante se denominará EL(LA) COMPRADOR(A), bajo los términos y condiciones siguientes:`;
+  
+  let linesP1 = doc.splitTextToSize(p1, 178);
+  doc.text(linesP1, 16, 40);
+
+  let y = 40 + (linesP1.length * 4.2) + 4;
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('CLÁUSULA PRIMERA: ANTECEDENTES Y PARTIDA MATRIZ', 16, y); y += 4.5;
+  doc.setFont('helvetica', 'normal');
+  let c1 = `LA VENDEDORA es legítima propietaria del predio matriz debidamente inscrito en el Registro de Predios de la Zona Registral N° XIII - Sede Tacna (SUNARP), sobre el cual se desarrolla el Proyecto Inmobiliario Residencial "COSTA DORADA", ubicado en el distrito de La Yarada Los Palos, departamento de Tacna.`;
+  let lC1 = doc.splitTextToSize(c1, 178);
+  doc.text(lC1, 16, y); y += (lC1.length * 4.2) + 3;
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('CLÁUSULA SEGUNDA: IDENTIFICACIÓN DEL INMUEBLE', 16, y); y += 4.5;
+  doc.setFont('helvetica', 'normal');
+  let c2 = `Por el presente acto, LA VENDEDORA promete dar en venta real y enajenación perpetua a favor de EL(LA) COMPRADOR(A), el lote de terreno identificado como: MANZANA ${mz}, LOTE ${lote}, con un área total aproximada de ${area} m², independizado y delimitado según el Master Plan del proyecto Costa Dorada.`;
+  let lC2 = doc.splitTextToSize(c2, 178);
+  doc.text(lC2, 16, y); y += (lC2.length * 4.2) + 3;
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('CLÁUSULA TERCERA: PRECIO Y FINANCIAMIENTO DIRECTO SIN BANCOS', 16, y); y += 4.5;
+  doc.setFont('helvetica', 'normal');
+  let c3 = `El precio pactado de mutuo acuerdo asciende a la suma de S/ ${precio.toLocaleString('es-PE', {minimumFractionDigits:2})} (Nuevos Soles), pagadero bajo la modalidad de Financiamiento Directo a Sola Firma de la siguiente manera:
+a) Cuota Inicial: S/ ${inicial.toLocaleString('es-PE', {minimumFractionDigits:2})} que EL(LA) COMPRADOR(A) abona a la firma del presente acto.
+b) Saldo a Financiar: S/ ${saldo.toLocaleString('es-PE', {minimumFractionDigits:2})} que será amortizado en ${meses} cuotas mensuales y consecutivas de S/ ${cuota.toLocaleString('es-PE', {minimumFractionDigits:2})} cada una, sin intereses bancarios ni reajustes financieros.`;
+  let lC3 = doc.splitTextToSize(c3, 178);
+  doc.text(lC3, 16, y); y += (lC3.length * 4.2) + 3;
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('CLÁUSULA CUARTA: HABILITACIÓN URBANA Y POSESIÓN', 16, y); y += 4.5;
+  doc.setFont('helvetica', 'normal');
+  let c4 = `LA VENDEDORA se compromete a la ejecución de las obras de urbanización que comprenden: pórtico monumental de ingreso, vías afirmadas y trazado topográfico, así como la factibilidad de servicios. La toma de posesión física se otorgará conforme al cronograma de entrega de obra establecido.`;
+  let lC4 = doc.splitTextToSize(c4, 178);
+  doc.text(lC4, 16, y);
+
+  // PÁGINA 2: JURISDICCIÓN Y FIRMAS TÁCTILES
+  doc.addPage();
+  
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10.5);
+  doc.setTextColor(20, 42, 77);
+  doc.text('CLÁUSULA QUINTA: JURISDICCIÓN Y RESOLUCIÓN DE CONFLICTOS', 16, 22);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(30, 41, 59);
+  let c5 = `Para todos los efectos derivados del presente contrato, ambas partes renuncian expresamente al fuero de sus domicilios y se someten irrevocablemente a la competencia y jurisdicción de los Jueces y Tribunales del Distrito Judicial de Tacna, señalando como sus domicilios los consignados en la introducción del presente instrumento.`;
+  let lC5 = doc.splitTextToSize(c5, 178);
+  doc.text(lC5, 16, 27);
+
+  doc.text(`En señal de plena conformidad, ratificación y aceptación de todas y cada una de las cláusulas precedentes, firman las partes en la ciudad de Tacna, a los ${fechaHoy}.`, 16, 46);
+
+  // ESPACIO DE FIRMAS
+  doc.setDrawColor(180, 180, 180);
+  doc.setLineWidth(0.4);
+
+  // Firma Comprador (Canvas digital)
+  doc.line(22, 105, 95, 105);
+  doc.line(115, 105, 188, 105);
+
+  // Estampar trazo digital capturado en canvas
+  try {
+    if (canvasFirma) {
+      const imgData = canvasFirma.toDataURL('image/png');
+      doc.addImage(imgData, 'PNG', 26, 68, 62, 34);
+    }
+  } catch(e) { console.warn('Error estampar firma:', e); }
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
+  doc.setTextColor(20, 42, 77);
+  doc.text(nombre.toUpperCase(), 58, 110, { align: 'center' });
+  doc.setFont('helvetica', 'normal');
+  doc.text(`DNI: ${dni}`, 58, 114, { align: 'center' });
+  doc.text('EL(LA) COMPRADOR(A)', 58, 118, { align: 'center' });
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('CASA DORADA S.A.C.', 151, 110, { align: 'center' });
+  doc.setFont('helvetica', 'normal');
+  doc.text('RUC: 20608554129', 151, 114, { align: 'center' });
+  doc.text('LA VENDEDORA', 151, 118, { align: 'center' });
+
+  // Sello de seguridad digital
+  doc.setFillColor(248, 250, 252);
+  doc.roundedRect(16, 135, 178, 22, 3, 3, 'F');
+  doc.setFontSize(8);
+  doc.setTextColor(100, 116, 139);
+  doc.text('VALIDACIÓN DIGITAL · CONTRATO PREPARATORIO COSTA DORADA', 22, 142);
+  doc.text(`Identificador de Transacción: CD-MIN-${Date.now().toString(36).toUpperCase()} · Fecha y Hora: ${new Date().toISOString()}`, 22, 147);
+  doc.text('Documento formal emitido bajo la Ley N° 27269 de Firmas y Certificados Digitales en el Perú.', 22, 152);
+
+  doc.save(`Minuta_Preparatoria_CostaDorada_Mz${mz}_Lote${lote}.pdf`);
+  toast('Minuta formal descargada en PDF');
+}
+
+/* ============================================================== */
+/* 13. RED DE EMBAJADORES & REFERIDOS (CASA DORADA) */
+/* ============================================================== */
+function abrirModalEmbajadores() {
+  openModal('modalEmbajadoresReferidos');
+  const elCod = document.getElementById('embajador_codigo_display');
+  if (elCod && currentUser) {
+    const slug = (currentUser.nombre || 'JORGE').split(' ')[0].toUpperCase();
+    elCod.textContent = `CD-EMB-${slug}2026`;
+  }
+}
+
+function copiarCodigoEmbajador() {
+  const cod = document.getElementById('embajador_codigo_display')?.textContent || 'CD-EMB-JORGE2026';
+  navigator.clipboard?.writeText(cod);
+  toast(`Código ${cod} copiado al portapapeles`);
+}
+
+function compartirInvitacionEmbajadorWsp() {
+  const cod = document.getElementById('embajador_codigo_display')?.textContent || 'CD-EMB-JORGE2026';
+  const msg = `🏖️ *¡OPORTUNIDAD EXCLUSIVA EN COSTA DORADA · TACNA!*\n` +
+    `Constructora e Inmobiliaria Casa Dorada\n\n` +
+    `¡Hola! Te comparto esta gran oportunidad de inversión: aseguré mi lote en el Proyecto *Costa Dorada* (La Yarada Los Palos, Tacna a solo 20 min del Óvalo Tarapacá).\n\n` +
+    `🏛️ *Garantías del proyecto:*\n` +
+    `• Partida Matriz inscrita en SUNARP Tacna.\n` +
+    `• Financiamiento directo a sola firma (sin bancos ni intereses).\n` +
+    `• Pórtico monumental, áreas verdes y club resort.\n\n` +
+    `🎁 *Mi Regalo para ti:*\n` +
+    `Si te comunicas con Casa Dorada e indicas mi código de embajador *${cod}*, recibirás un *BONO DE S/ 500 DE DESCUENTO* en tu cuota inicial.\n\n` +
+    `📲 Escribe o llama a la oficina central de Casa Dorada en Tacna para agendar tu visita a terreno en la Van corporativa.`;
+
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
 function simularAlertaSpeedToLead() {
