@@ -37,7 +37,7 @@
     a { text-decoration: none; color: inherit; }
     button { cursor: pointer; font-family: inherit; }
 
-    /* BARRA LATERAL FIJA DE REDES */
+    /* ============ BARRA LATERAL FIJA DE REDES (ESTILO CASADORADA) ============ */
     .social-floating-sidebar {
       position: fixed;
       left: 0;
@@ -62,7 +62,7 @@
     }
     .social-floating-sidebar a:hover { transform: scale(1.15); }
 
-    /* HEADER */
+    /* ============ HEADER / CABECERA ============ */
     .header-nav {
       position: sticky;
       top: 0;
@@ -159,14 +159,9 @@
       display: flex;
       align-items: center;
       gap: 4px;
-      transition: all 0.2s;
-    }
-    .btn-intranet-link:hover {
-      background: var(--cyan-primary);
-      color: #FFF;
     }
 
-    /* HERO */
+    /* ============ HERO SECTION ============ */
     .hero-banner {
       position: relative;
       min-height: 85vh;
@@ -218,7 +213,7 @@
       box-shadow: 0 8px 24px rgba(88, 190, 230, 0.55);
     }
 
-    /* TICKER */
+    /* TICKER DE DIVISAS BAJO EL HERO */
     .rates-ticker-bar {
       background: #F1F4F7;
       border-bottom: 1px solid #E2E6EA;
@@ -241,7 +236,7 @@
       margin-left: 4px;
     }
 
-    /* SECCIÓN SOBRE NOSOTROS */
+    /* ============ SECCIÓN SOBRE NOSOTROS ============ */
     .section-padding { padding: 90px 6vw; }
     .nosotros-layout {
       max-width: 1200px;
@@ -293,7 +288,7 @@
     .ncd-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
     .ncd-desc { font-size: 12px; color: #D1D5DB; line-height: 1.5; }
 
-    /* PROYECTOS */
+    /* ============ SECCIÓN NUESTROS PROYECTOS ============ */
     .proyectos-section {
       background: var(--bg-light);
       border-top: 1px solid #EAECEE;
@@ -361,7 +356,9 @@
       padding: 4px 10px;
       border-radius: 6px;
     }
-    .pcb-body { padding: 26px 24px; }
+    .pcb-body {
+      padding: 26px 24px;
+    }
     .pcb-title {
       font-size: 21px;
       font-weight: 800;
@@ -383,7 +380,10 @@
       padding: 12px 0;
       margin-bottom: 20px;
     }
-    .pcb-spec-item { font-size: 12px; color: var(--text-muted); }
+    .pcb-spec-item {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
     .pcb-spec-item b { color: var(--text-dark); }
     .btn-proyecto-detalles {
       width: 100%;
@@ -402,7 +402,7 @@
     }
     .btn-proyecto-detalles:hover { background: var(--dark-btn-hover); }
 
-    /* BANNER */
+    /* ============ BANNER CITA INTERMEDIA ============ */
     .banner-quote {
       position: relative;
       background: linear-gradient(rgba(20, 30, 45, 0.75), rgba(20, 30, 45, 0.8)),
@@ -425,7 +425,7 @@
       margin: 0 auto;
     }
 
-    /* COTIZADOR */
+    /* ============ COTIZADOR MULTIDIVISA FLUIDO ============ */
     .cotizador-section {
       background: #FFF;
       padding: 80px 6vw;
@@ -508,7 +508,7 @@
     .rcb-number { font-size: 32px; font-weight: 900; color: var(--text-dark); margin: 4px 0; }
     .rcb-equiv { font-size: 12px; color: var(--text-muted); font-weight: 600; }
 
-    /* FAQ */
+    /* ============ ACORDEÓN DE FAQS ============ */
     .faq-section {
       background: var(--bg-light);
       padding: 80px 6vw;
@@ -559,7 +559,7 @@
     }
     .faq-item-card.open .faq-answer-content { display: block; }
 
-    /* CONTACTO */
+    /* ============ FORMULARIO DE CONTACTO (BLOQUE AZUL CELESTE) ============ */
     .contacto-block-cyan {
       background: var(--cyan-primary);
       color: #FFF;
@@ -635,7 +635,7 @@
     }
     .btn-enviar-contacto:hover { background: var(--dark-btn-hover); }
 
-    /* FOOTER */
+    /* ============ FOOTER (AZUL CELESTE) ============ */
     .footer-cyan {
       background: var(--cyan-primary);
       border-top: 1px solid rgba(255, 255, 255, 0.2);
@@ -667,6 +667,7 @@
       padding-top: 18px;
     }
 
+    /* RESPONSIVE */
     @media (max-width: 900px) {
       .nosotros-layout { grid-template-columns: 1fr; gap: 40px; }
       .cotizador-box-white { grid-template-columns: 1fr; padding: 24px; }
@@ -679,14 +680,14 @@
 </head>
 <body>
 
-  <!-- BARRA LATERAL FIJA DE REDES -->
+  <!-- BARRA LATERAL FIJA DE REDES (AZUL CELESTE) -->
   <aside class="social-floating-sidebar">
     <a href="https://instagram.com" target="_blank" title="Instagram">📷</a>
     <a href="https://facebook.com" target="_blank" title="Facebook">📘</a>
     <a href="https://tiktok.com" target="_blank" title="TikTok">🎵</a>
   </aside>
 
-  <!-- TICKER SUPERIOR -->
+  <!-- TICKER SUPERIOR DE TIPO DE CAMBIO Y ACCESO -->
   <div class="rates-ticker-bar">
     <div>
       <span>💵 Dólar SUNAT: <span class="pill-rate"><b>S/ 3.76</b></span></span>
@@ -694,17 +695,16 @@
       <span style="margin-left:8px;">📍 La Yarada Los Palos · Tacna</span>
     </div>
     <div>
-      <!-- ENLACE CORREGIDO AL CRM/PLANNER DE ASESORES -->
-      <a href="app.html" class="btn-intranet-link" title="Ingreso exclusivo para colaboradores y directores">
+      <a href="index.html" class="btn-intranet-link">
         <span>🔐 Intranet Asesores / CRM</span> →
       </a>
     </div>
   </div>
 
-  <!-- HEADER -->
+  <!-- HEADER / CABECERA -->
   <header class="header-nav">
     <div class="brand-container">
-      <img src="logo-casa-dorada.png" alt="Casa Dorada" class="brand-logo-img" onerror="this.style.display='none'">
+      <img src="logo-casa-dorada.png" alt="Casa Dorada" class="brand-logo-img">
       <div class="brand-title-box">
         <span class="brand-name">CASA DORADA</span>
         <span class="brand-tagline">CONSTRUCTORA - INMOBILIARIA</span>
@@ -725,7 +725,7 @@
     </div>
   </header>
 
-  <!-- HERO -->
+  <!-- BANNER PRINCIPAL (HERO) -->
   <section class="hero-banner" id="inicio">
     <div class="hero-content">
       <h1 class="hero-title">Lotes exclusivos para tu futuro en Tacna</h1>
@@ -736,7 +736,7 @@
     </div>
   </section>
 
-  <!-- SOBRE NOSOTROS -->
+  <!-- SECCIÓN SOBRE NOSOTROS -->
   <section class="section-padding" id="nosotros">
     <div class="nosotros-layout">
       <div>
@@ -775,7 +775,7 @@
     </div>
   </section>
 
-  <!-- PROYECTOS -->
+  <!-- SECCIÓN PROYECTOS -->
   <section class="section-padding proyectos-section" id="proyectos">
     <div class="center-header">
       <span class="tag-section-cyan">Proyectos</span>
@@ -784,7 +784,7 @@
     </div>
 
     <div class="proyectos-grid">
-      <!-- COSTA DORADA -->
+      <!-- PROYECTO 1: COSTA DORADA -->
       <div class="proyecto-card-box">
         <div class="pcb-img-container">
           <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80" alt="Costa Dorada" class="pcb-img">
@@ -807,7 +807,7 @@
         </div>
       </div>
 
-      <!-- VILLA EL SOL -->
+      <!-- PROYECTO 2: VILLA EL SOL -->
       <div class="proyecto-card-box">
         <div class="pcb-img-container">
           <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80" alt="Villa El Sol" class="pcb-img">
@@ -832,13 +832,13 @@
     </div>
   </section>
 
-  <!-- BANNER -->
+  <!-- BANNER INTERMEDIO -->
   <section class="banner-quote">
     <h2 class="bq-title">«Vive donde otros solo Sueñan con Vacacionar»</h2>
     <p class="bq-sub">Invierte en tu tranquilidad y asegura el patrimonio de tu familia con Casa Dorada.</p>
   </section>
 
-  <!-- COTIZADOR -->
+  <!-- COTIZADOR MULTIDIVISA (AMPLIADO Y MEJORADO) -->
   <section class="cotizador-section" id="cotizador">
     <div class="center-header">
       <span class="tag-section-cyan">Simulación Financiera</span>
@@ -913,12 +913,12 @@
     </div>
   </section>
 
-  <!-- FAQ -->
+  <!-- SECCIÓN FAQS -->
   <section class="faq-section" id="faq">
     <div class="center-header">
       <span class="tag-section-cyan">Preguntas Frecuentes</span>
       <h2 class="title-section">Resolvemos tus Dudas</h2>
-      <p class="text-section">Información clara y transparente sobre el proceso de compra de tu lote.</p>
+      <p class="text-section">Nuestro proyecto más ambicioso y exclusivo, diseñado para ofrecerte un estilo de vida único.</p>
     </div>
 
     <div class="faq-accordion-box">
@@ -974,7 +974,7 @@
     </div>
   </section>
 
-  <!-- CONTACTO -->
+  <!-- FORMULARIO DE CONTACTO (BLOQUE AZUL CELESTE IDÉNTICO A CASADORADA) -->
   <section class="contacto-block-cyan" id="contacto">
     <div class="contacto-container">
       <div style="text-align:center; margin-bottom:36px;">
@@ -982,6 +982,7 @@
         <h2 style="font-size:36px; font-weight:900; margin-top:4px;">Contáctanos</h2>
       </div>
 
+      <!-- 3 COLUMNAS DE INFORMACIÓN -->
       <div class="contacto-info-cards">
         <div class="cic-card">
           <div style="font-size:24px; margin-bottom:6px;">📍</div>
@@ -1000,6 +1001,7 @@
         </div>
       </div>
 
+      <!-- FORMULARIO DE CONTACTO BLANCO -->
       <div class="contacto-form-wrapper">
         <form onsubmit="enviarFormularioContactoDirecto(event)">
           <input type="text" id="fc_nombre" class="cf-input" placeholder="Nombres y Apellidos" required>
@@ -1012,10 +1014,10 @@
     </div>
   </section>
 
-  <!-- FOOTER -->
+  <!-- FOOTER (AZUL CELESTE) -->
   <footer class="footer-cyan">
     <div style="max-width:800px; margin:0 auto;">
-      <img src="logo-casa-dorada.png" alt="Casa Dorada" style="height:48px; object-fit:contain; filter:brightness(0) invert(1); margin-bottom:12px;" onerror="this.style.display='none'">
+      <img src="logo-casa-dorada.png" alt="Casa Dorada" style="height:48px; object-fit:contain; filter:brightness(0) invert(1); margin-bottom:12px;">
       <p style="font-size:14px; font-weight:600; color:#EBF8FD;">Construimos confianza, desarrollamos tus sueños.</p>
 
       <div class="footer-nav-links">
