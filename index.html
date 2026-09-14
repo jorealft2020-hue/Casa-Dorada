@@ -1091,38 +1091,23 @@ main.app-content {
             <span>💼 1. COMERCIAL (VENTAS & CIERRES)</span><span class="dr-dept-arrow">▾</span>
           </button>
           <div class="dr-dept-items">
-            <!-- ACCESOS DIRECTOS DE OPERACIÓN EN CAMPO -->
-            <button class="drawer-item" onclick="abrirModalDomingoDeCierres(); cerrarDrawer();" style="color:#D97706; font-weight:700;">
+            <!-- ACCESO DIRECTO AL PANEL OPERATIVO DE CAMPO -->
+            <button class="drawer-item" data-nav="operaciones_campo" id="drNavOperacionesCampo" data-modkey="operaciones_campo" style="color:var(--gold); font-weight:800;">
+              <span class="dr-icon">🚀</span>
+              <span class="dr-label">Panel Operativo de Campo</span>
+              <span class="badge" style="background:#FFF3E0; color:#E65100; font-size:10px; margin-left:auto;">9 Módulos</span>
+            </button>
+            <button class="drawer-item" onclick="abrirModalDomingoDeCierres(); cerrarDrawer();" id="drNavDomingoCierres" style="color:#D97706; font-weight:700;">
               <span class="dr-icon">🎉</span>
               <span class="dr-label">Domingo de Cierres (Showroom TV)</span>
             </button>
-            <button class="drawer-item" onclick="abrirModalMinutaCompraventa(); cerrarDrawer();" style="color:#0F766E; font-weight:700;">
+            <button class="drawer-item" onclick="abrirModalMinutaCompraventa(); cerrarDrawer();" id="drNavMinutaLegal" style="color:#0F766E; font-weight:700;">
               <span class="dr-icon">📑</span>
               <span class="dr-label">Minuta Legal & Firma Táctil</span>
             </button>
-            <button class="drawer-item" onclick="abrirModalEmbajadores(); cerrarDrawer();" style="color:#7C3AED; font-weight:700;">
+            <button class="drawer-item" onclick="abrirModalEmbajadores(); cerrarDrawer();" id="drNavEmbajadores" style="color:#7C3AED; font-weight:700;">
               <span class="dr-icon">🤝</span>
               <span class="dr-label">Red de Embajadores (Referidos)</span>
-            </button>
-            <button class="drawer-item" onclick="abrirModalDictadoVoz(); cerrarDrawer();" style="color:#0284c7; font-weight:700;">
-              <span class="dr-icon">🎙️</span>
-              <span class="dr-label">Dictado por Voz (Bitácora)</span>
-            </button>
-            <button class="drawer-item" onclick="abrirModalPreReservaEnTerreno('B','12',500); cerrarDrawer();" style="color:var(--gold); font-weight:700;">
-              <span class="dr-icon">⚡</span>
-              <span class="dr-label">Pre-Reserva QR in situ (S/ 500)</span>
-            </button>
-            <button class="drawer-item" onclick="abrirModalHerramientasTacna(); cerrarDrawer();" style="color:#0369A1; font-weight:700;">
-              <span class="dr-icon">🏛️</span>
-              <span class="dr-label">Cierre Rápido Tacna (SUNARP)</span>
-            </button>
-            <button class="drawer-item" onclick="abrirModalCadencias('Carlos Mamani', '952123456'); cerrarDrawer();" style="color:#10B981; font-weight:700;">
-              <span class="dr-icon">🎯</span>
-              <span class="dr-label">Cadencias de Seguimiento</span>
-            </button>
-            <button class="drawer-item" onclick="simularAlertaSpeedToLead(); cerrarDrawer();" style="color:#B4453C; font-weight:700;">
-              <span class="dr-icon">⚡</span>
-              <span class="dr-label">Probar Alerta Speed to Lead (&lt;90s)</span>
             </button>
             <button class="drawer-item" data-nav="control" id="drNavControl" data-modkey="control">
               <span class="dr-icon">📊</span>
@@ -1345,109 +1330,6 @@ main.app-content {
         </div>
       </div>
 
-        <!-- PANEL OPERATIVO RESALTANTE: 8 HERRAMIENTAS COMERCIALES & CAMPO -->
-        <div class="card" style="border:1.5px solid #EAD8B1; background:#FFFDF9; margin-bottom:14px; padding:16px; box-shadow:0 4px 14px rgba(20,42,77,0.06);">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-            <div>
-              <span style="font-size:11px; font-weight:800; color:var(--gold); text-transform:uppercase; letter-spacing:0.5px;">Panel Operativo de Campo</span>
-              <h3 style="margin:2px 0 0; font-size:15px; font-weight:800; color:var(--navy);">🚀 Herramientas Comerciales y de Terreno</h3>
-            </div>
-            <span class="badge" style="background:#EBF3FC; color:#1E4B82; font-weight:700;">8 Módulos Activos</span>
-          </div>
-
-          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:10px;">
-            <!-- 1. Speed to Lead -->
-            <div style="background:#fff; border:1px solid #E2E8F0; border-radius:12px; padding:12px; display:flex; flex-direction:column; justify-content:space-between;">
-              <div>
-                <span style="font-size:20px;">⚡</span>
-                <h4 style="margin:4px 0 2px; font-size:12px; font-weight:800; color:var(--navy);">Speed to Lead</h4>
-                <p style="margin:0 0 8px; font-size:10.5px; color:var(--ink-dim); line-height:1.3;">Alerta inmediata (&lt;90s) con temporizador regresivo de 300s.</p>
-              </div>
-              <button class="chip-btn" onclick="simularAlertaSpeedToLead()" style="width:100%; justify-content:center; font-size:10.5px; font-weight:700; background:#FFF5F5; color:#B4453C; border-color:#FED7D7;">⚡ Probar Alerta</button>
-            </div>
-
-            <!-- 2. Dictado por voz -->
-            <div style="background:#fff; border:1px solid #E2E8F0; border-radius:12px; padding:12px; display:flex; flex-direction:column; justify-content:space-between;">
-              <div>
-                <span style="font-size:20px;">🎙️</span>
-                <h4 style="margin:4px 0 2px; font-size:12px; font-weight:800; color:var(--navy);">Dictado por Voz</h4>
-                <p style="margin:0 0 8px; font-size:10.5px; color:var(--ink-dim); line-height:1.3;">Graba acuerdos con clientes en campo con voz a texto.</p>
-              </div>
-              <button class="chip-btn gold" onclick="abrirModalDictadoVoz()" style="width:100%; justify-content:center; font-size:10.5px; font-weight:700;">🎙️ Dictar Audio</button>
-            </div>
-
-            <!-- 3. Pre-Reserva QR -->
-            <div style="background:#fff; border:1px solid #E2E8F0; border-radius:12px; padding:12px; display:flex; flex-direction:column; justify-content:space-between;">
-              <div>
-                <span style="font-size:20px;">📱</span>
-                <h4 style="margin:4px 0 2px; font-size:12px; font-weight:800; color:var(--navy);">Pre-Reserva QR</h4>
-                <p style="margin:0 0 8px; font-size:10.5px; color:var(--ink-dim); line-height:1.3;">Genera QR de S/ 500 para Yape/BCP/Chile con guardado offline.</p>
-              </div>
-              <button class="chip-btn" onclick="abrirModalPreReservaEnTerreno('B','12',500)" style="width:100%; justify-content:center; font-size:10.5px; font-weight:700; border-color:var(--gold); color:var(--navy); background:#fff;">⚡ Abrir QR</button>
-            </div>
-
-            <!-- 4. Cierre Rápido Tacna -->
-            <div style="background:#fff; border:1px solid #E2E8F0; border-radius:12px; padding:12px; display:flex; flex-direction:column; justify-content:space-between;">
-              <div>
-                <span style="font-size:20px;">🏛️</span>
-                <h4 style="margin:4px 0 2px; font-size:12px; font-weight:800; color:var(--navy);">Cierre Tacna</h4>
-                <p style="margin:0 0 8px; font-size:10.5px; color:var(--ink-dim); line-height:1.3;">Envía Partida SUNARP, video de vías y tiempos del Óvalo Tarapacá.</p>
-              </div>
-              <button class="chip-btn" onclick="abrirModalHerramientasTacna()" style="width:100%; justify-content:center; font-size:10.5px; font-weight:700; border-color:#0369A1; color:#0369A1; background:#fff;">🏛️ Ver Garantías</button>
-            </div>
-
-            <!-- 5. Cadencias Action Plans -->
-            <div style="background:#fff; border:1px solid #E2E8F0; border-radius:12px; padding:12px; display:flex; flex-direction:column; justify-content:space-between;">
-              <div>
-                <span style="font-size:20px;">🎯</span>
-                <h4 style="margin:4px 0 2px; font-size:12px; font-weight:800; color:var(--navy);">Cadencias 1-Toque</h4>
-                <p style="margin:0 0 8px; font-size:10.5px; color:var(--ink-dim); line-height:1.3;">Scripts guiados para Ferias (Cenepa, Leguía), Chile y Post-visita.</p>
-              </div>
-              <button class="chip-btn" onclick="abrirModalCadencias('Carlos Mamani', '952123456')" style="width:100%; justify-content:center; font-size:10.5px; font-weight:700; border-color:#10B981; color:#10B981; background:#fff;">🎯 Ver Cadencias</button>
-            </div>
-
-            <!-- 7. Domingo de Cierres (Showroom TV) -->
-            <div style="background:#fff; border:1px solid #FDE68A; border-radius:12px; padding:12px; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 2px 6px rgba(217,119,6,0.08);">
-              <div>
-                <span style="font-size:20px;">🎉</span>
-                <h4 style="margin:4px 0 2px; font-size:12px; font-weight:800; color:#B45309;">Domingo Cierres</h4>
-                <p style="margin:0 0 8px; font-size:10.5px; color:var(--ink-dim); line-height:1.3;">Showroom TV en vivo con campana de ventas, confeti y escasez.</p>
-              </div>
-              <button class="chip-btn" onclick="abrirModalDomingoDeCierres()" style="width:100%; justify-content:center; font-size:10.5px; font-weight:700; background:#FEF3C7; color:#B45309; border-color:#FCD34D;">🎉 Abrir Showroom</button>
-            </div>
-
-            <!-- 8. Minuta Legal con Firma Táctil -->
-            <div style="background:#fff; border:1px solid #99F6E4; border-radius:12px; padding:12px; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 2px 6px rgba(15,118,110,0.08);">
-              <div>
-                <span style="font-size:20px;">✍️</span>
-                <h4 style="margin:4px 0 2px; font-size:12px; font-weight:800; color:#0F766E;">Minuta & Firma</h4>
-                <p style="margin:0 0 8px; font-size:10.5px; color:var(--ink-dim); line-height:1.3;">Contrato formal con firma digital en pantalla táctil y PDF.</p>
-              </div>
-              <button class="chip-btn" onclick="abrirModalMinutaCompraventa()" style="width:100%; justify-content:center; font-size:10.5px; font-weight:700; background:#CCFBF1; color:#0F766E; border-color:#99F6E4;">✍️ Firmar Contrato</button>
-            </div>
-
-            <!-- 9. Red de Embajadores (Referidos) -->
-            <div style="background:#fff; border:1px solid #DDD6FE; border-radius:12px; padding:12px; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 2px 6px rgba(124,58,237,0.08);">
-              <div>
-                <span style="font-size:20px;">🤝</span>
-                <h4 style="margin:4px 0 2px; font-size:12px; font-weight:800; color:#6D28D9;">Red Embajadores</h4>
-                <p style="margin:0 0 8px; font-size:10.5px; color:var(--ink-dim); line-height:1.3;">Link de WhatsApp con bono de S/ 500 para clientes que refieran.</p>
-              </div>
-              <button class="chip-btn" onclick="abrirModalEmbajadores()" style="width:100%; justify-content:center; font-size:10.5px; font-weight:700; background:#EDE9FE; color:#6D28D9; border-color:#DDD6FE;">🤝 Ver Embajadores</button>
-            </div>
-
-            <!-- 6. Cotizador & Dúo / Airbnb -->
-            <div style="background:#fff; border:1px solid #E2E8F0; border-radius:12px; padding:12px; display:flex; flex-direction:column; justify-content:space-between;">
-              <div>
-                <span style="font-size:20px;">👥</span>
-                <h4 style="margin:4px 0 2px; font-size:12px; font-weight:800; color:var(--navy);">Dúo Inversionista</h4>
-                <p style="margin:0 0 8px; font-size:10.5px; color:var(--ink-dim); line-height:1.3;">Bono S/ 1,000 inicial + Retorno Airbnb (en Cotizador).</p>
-              </div>
-              <button class="chip-btn" onclick="abrirCotizadorLote('B', '12', 150, 22000)" style="width:100%; justify-content:center; font-size:10.5px; font-weight:700; border-color:var(--gold); color:var(--gold); background:#fff;">🧮 Abrir Cotizador</button>
-            </div>
-          </div>
-        </div>
-
         <!-- TARJETA RESALTANTE DE PENDIENTES DEL DÍA -->
         <div class="card-pendientes-resaltante" id="cardPendientesInicio">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
@@ -1484,11 +1366,9 @@ main.app-content {
 
           <!-- Botones de acción rápida -->
           <div style="display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;">
-            <button class="chip-btn gold" onclick="abrirModalDictadoVoz()" style="font-size:11.5px; padding:8px 12px; font-weight:700;">🎙️ Dictar Bitácora</button>
-            <button class="chip-btn" onclick="abrirModalPreReservaEnTerreno('B','12', 500)" style="font-size:11.5px; padding:8px 12px; border-color:var(--gold); color:var(--navy); background:#fff; font-weight:700;">⚡ QR Pre-Reserva</button>
-            <button class="chip-btn" onclick="abrirModalHerramientasTacna()" style="font-size:11.5px; padding:8px 12px; border-color:#0369A1; color:#0369A1; background:#fff; font-weight:700;">🏛️ Cierre Tacna</button>
-            <button class="chip-btn" onclick="abrirModalActividad()" style="font-size:11.5px; padding:8px 12px; font-weight:700;">+ Tarea</button>
-            <button class="chip-btn" onclick="irAVista('agenda')" style="font-size:11.5px; padding:8px 10px; color:var(--ink-dim); background:#fff; margin-left:auto;">Agenda →</button>
+            <button class="chip-btn gold" onclick="abrirModalActividad()" style="font-size:11.5px; padding:8px 14px; font-weight:700;">+ Registrar Actividad</button>
+            <button class="chip-btn" onclick="abrirModalAgenda()" style="font-size:11.5px; padding:8px 14px; border-color:var(--gold); color:var(--navy); background:#fff; font-weight:700;">📅 Agendar Actividad</button>
+            <button class="chip-btn" onclick="irARegistrarSolicitudDesdeInicio()" style="font-size:11.5px; padding:8px 14px; border-color:#CBD5E1; color:var(--navy); background:#fff; font-weight:700;">📝 Agendar Solicitud</button>
           </div>
         </div>
 
@@ -2079,6 +1959,124 @@ main.app-content {
           <a href="https://jorealft2020-hue.github.io/casa-dorada-app/" target="_blank" rel="noopener" class="chip-btn gold" style="display:inline-block; text-decoration:none; margin-top:8px;">Abrir app</a>
         </div>
       </div>
+    
+      <!-- VISTA DEDICADA: PANEL OPERATIVO DE CAMPO (PANTALLA ÚNICA) -->
+      <div id="viewOperacionesCampo" class="hidden">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+          <div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:26px;">🚀</span>
+              <h2 style="margin:0; font-size:20px; font-weight:800; color:var(--navy); letter-spacing:-0.02em;">Panel Operativo de Campo</h2>
+            </div>
+            <p style="margin:3px 0 0; font-size:12.5px; color:var(--ink-dim);">Suite comercial y herramientas tácticas in situ · La Yarada Los Palos</p>
+          </div>
+          <button class="chip-btn" onclick="irAVista('inicio')" style="font-size:11.5px; font-weight:700; background:#fff; border-color:#CBD5E1; color:var(--navy); padding:6px 12px;">← Volver a Inicio</button>
+        </div>
+
+        <!-- TARJETA PRINCIPAL CON LOS 9 MÓDULOS DE TERRENO -->
+        <div class="card" style="border:1.5px solid #EAD8B1; background:#FFFDF9; padding:16px; box-shadow:0 4px 16px rgba(20,42,77,0.06); margin-bottom:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+            <div>
+              <span style="font-size:11px; font-weight:800; color:var(--gold); text-transform:uppercase; letter-spacing:0.5px;">Suite Comercial de Cierre</span>
+              <h3 style="margin:2px 0 0; font-size:15px; font-weight:800; color:var(--navy);">Herramientas Comerciales y de Terreno</h3>
+            </div>
+            <span class="badge" style="background:#EBF3FC; color:#1E4B82; font-weight:700;">9 Módulos Activos</span>
+          </div>
+
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:12px;">
+            <!-- 1. Speed to Lead -->
+            <div style="background:#fff; border:1px solid #E2E8F0; border-radius:12px; padding:14px; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
+              <div>
+                <span style="font-size:22px;">⚡</span>
+                <h4 style="margin:4px 0 2px; font-size:13px; font-weight:800; color:var(--navy);">Speed to Lead (&lt;90s)</h4>
+                <p style="margin:0 0 10px; font-size:11px; color:var(--ink-dim); line-height:1.35;">Alerta reactiva inmediata para contactar al prospecto en menos de 90 segundos con temporizador regresivo de 300s.</p>
+              </div>
+              <button class="chip-btn" onclick="simularAlertaSpeedToLead()" style="width:100%; justify-content:center; font-size:11px; font-weight:700; background:#FFF5F5; color:#B4453C; border-color:#FED7D7; padding:8px;">⚡ Probar Alerta en Vivo</button>
+            </div>
+
+            <!-- 2. Dictado por voz -->
+            <div style="background:#fff; border:1px solid #E2E8F0; border-radius:12px; padding:14px; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
+              <div>
+                <span style="font-size:22px;">🎙️</span>
+                <h4 style="margin:4px 0 2px; font-size:13px; font-weight:800; color:var(--navy);">Dictado por Voz en Campo</h4>
+                <p style="margin:0 0 10px; font-size:11px; color:var(--ink-dim); line-height:1.35;">Graba los acuerdos y requerimientos del cliente en terreno sin escribir a mano; transcripción automática a texto.</p>
+              </div>
+              <button class="chip-btn gold" onclick="abrirModalDictadoVoz()" style="width:100%; justify-content:center; font-size:11px; font-weight:700; padding:8px;">🎙️ Dictar Audio a Bitácora</button>
+            </div>
+
+            <!-- 3. Pre-Reserva QR -->
+            <div style="background:#fff; border:1px solid #E2E8F0; border-radius:12px; padding:14px; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
+              <div>
+                <span style="font-size:22px;">📱</span>
+                <h4 style="margin:4px 0 2px; font-size:13px; font-weight:800; color:var(--navy);">Pre-Reserva QR in situ</h4>
+                <p style="margin:0 0 10px; font-size:11px; color:var(--ink-dim); line-height:1.35;">Genera el código QR para congelar el lote por S/ 500 vía Yape/BCP/Chile, con guardado local offline para zonas sin señal.</p>
+              </div>
+              <button class="chip-btn" onclick="abrirModalPreReservaEnTerreno('B','12',500)" style="width:100%; justify-content:center; font-size:11px; font-weight:700; border-color:var(--gold); color:var(--navy); background:#fff; padding:8px;">⚡ Abrir QR de Separación</button>
+            </div>
+
+            <!-- 4. Cierre Rápido Tacna -->
+            <div style="background:#fff; border:1px solid #E2E8F0; border-radius:12px; padding:14px; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
+              <div>
+                <span style="font-size:22px;">🏛️</span>
+                <h4 style="margin:4px 0 2px; font-size:13px; font-weight:800; color:var(--navy);">Cierre Rápido Tacna (Garantías)</h4>
+                <p style="margin:0 0 10px; font-size:11px; color:var(--ink-dim); line-height:1.35;">Envía por WhatsApp en 1 toque la Partida Matriz de SUNARP Tacna, el video del pórtico monumental y los tiempos desde el Óvalo Tarapacá.</p>
+              </div>
+              <button class="chip-btn" onclick="abrirModalHerramientasTacna()" style="width:100%; justify-content:center; font-size:11px; font-weight:700; border-color:#0369A1; color:#0369A1; background:#fff; padding:8px;">🏛️ Ver Garantías Jurídicas</button>
+            </div>
+
+            <!-- 5. Cadencias Action Plans -->
+            <div style="background:#fff; border:1px solid #E2E8F0; border-radius:12px; padding:14px; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
+              <div>
+                <span style="font-size:22px;">🎯</span>
+                <h4 style="margin:4px 0 2px; font-size:13px; font-weight:800; color:var(--navy);">Cadencias de 1-Toque</h4>
+                <p style="margin:0 0 10px; font-size:11px; color:var(--ink-dim); line-height:1.35;">Guiones de contacto rápido listos para ferias (Cenepa, Bolognesi, Leguía), post-visita en terreno y compradores de Arica/Iquique.</p>
+              </div>
+              <button class="chip-btn" onclick="abrirModalCadencias('Carlos Mamani', '952123456')" style="width:100%; justify-content:center; font-size:11px; font-weight:700; border-color:#10B981; color:#10B981; background:#fff; padding:8px;">🎯 Ver Planes de Acción</button>
+            </div>
+
+            <!-- 6. Domingo de Cierres (Showroom TV) -->
+            <div style="background:#fff; border:1px solid #FDE68A; border-radius:12px; padding:14px; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 2px 8px rgba(217,119,6,0.08);">
+              <div>
+                <span style="font-size:22px;">🎉</span>
+                <h4 style="margin:4px 0 2px; font-size:13px; font-weight:800; color:#B45309;">Domingo de Cierres (Showroom TV)</h4>
+                <p style="margin:0 0 10px; font-size:11px; color:var(--ink-dim); line-height:1.35;">Vista para pantalla de TV en carpa de La Yarada: campana acústica de cierre, confeti animado y contador de escasez.</p>
+              </div>
+              <button class="chip-btn" onclick="abrirModalDomingoDeCierres()" style="width:100%; justify-content:center; font-size:11px; font-weight:700; background:#FEF3C7; color:#B45309; border-color:#FCD34D; padding:8px;">🎉 Abrir Pantalla Showroom</button>
+            </div>
+
+            <!-- 7. Minuta Legal con Firma Táctil -->
+            <div style="background:#fff; border:1px solid #99F6E4; border-radius:12px; padding:14px; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 2px 8px rgba(15,118,110,0.08);">
+              <div>
+                <span style="font-size:22px;">✍️</span>
+                <h4 style="margin:4px 0 2px; font-size:13px; font-weight:800; color:#0F766E;">Minuta Legal & Firma Táctil</h4>
+                <p style="margin:0 0 10px; font-size:11px; color:var(--ink-dim); line-height:1.35;">Formalización del contrato preparatorio con captura de firma en pantalla táctil y generación de PDF formal en 2 páginas.</p>
+              </div>
+              <button class="chip-btn" onclick="abrirModalMinutaCompraventa()" style="width:100%; justify-content:center; font-size:11px; font-weight:700; background:#CCFBF1; color:#0F766E; border-color:#99F6E4; padding:8px;">✍️ Formalizar Contrato</button>
+            </div>
+
+            <!-- 8. Red de Embajadores (Referidos) -->
+            <div style="background:#fff; border:1px solid #DDD6FE; border-radius:12px; padding:14px; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 2px 8px rgba(124,58,237,0.08);">
+              <div>
+                <span style="font-size:22px;">🤝</span>
+                <h4 style="margin:4px 0 2px; font-size:13px; font-weight:800; color:#6D28D9;">Red de Embajadores</h4>
+                <p style="margin:0 0 10px; font-size:11px; color:var(--ink-dim); line-height:1.35;">Código de referido único con bono de S/ 500 y mensaje persuasivo prearmado para enviar a grupos de WhatsApp.</p>
+              </div>
+              <button class="chip-btn" onclick="abrirModalEmbajadores()" style="width:100%; justify-content:center; font-size:11px; font-weight:700; background:#EDE9FE; color:#6D28D9; border-color:#DDD6FE; padding:8px;">🤝 Ver Red de Embajadores</button>
+            </div>
+
+            <!-- 9. Cotizador Rápido con Cuotas Extraordinarias -->
+            <div style="background:#fff; border:1px solid #E2E8F0; border-radius:12px; padding:14px; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
+              <div>
+                <span style="font-size:22px;">🧮</span>
+                <h4 style="margin:4px 0 2px; font-size:13px; font-weight:800; color:var(--navy);">Cotizador con Cuotas Dobles</h4>
+                <p style="margin:0 0 10px; font-size:11px; color:var(--ink-dim); line-height:1.35;">Estrategia Dúo Inversionista (-S/ 1,000 inicial), retorno Airbnb y plan de cuotas dobles en Julio/Diciembre.</p>
+              </div>
+              <button class="chip-btn" onclick="abrirCotizadorLote('B', '12', 150, 22000)" style="width:100%; justify-content:center; font-size:11px; font-weight:700; border-color:var(--gold); color:var(--gold); background:#fff; padding:8px;">🧮 Abrir Cotizador</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </main>
 
   <!-- MENÚ FLOTANTE CENTRAL SEMI-TRANSPARENTE Y DOCK DESLIZABLE HORIZONTAL -->
@@ -4071,6 +4069,16 @@ const ORGANIGRAMA_CARGOS = [
 
 const PERMISOS_CATALOGO = [
   // 💼 DEPARTAMENTO COMERCIAL (VENTAS & CIERRES)
+  { key: 'ver_operaciones_campo',          label: 'Panel Operativo de Campo (Pantalla Exclusiva)',   dept: 'Comercial', default: true },
+  { key: 'ver_domingo_cierres',            label: 'Domingo de Cierres (Showroom TV en Terreno)',    dept: 'Comercial', default: true },
+  { key: 'generar_minuta_digital',          label: 'Formalización de Minuta Legal y Firma Táctil',    dept: 'Comercial', default: true },
+  { key: 'ver_red_embajadores',            label: 'Red de Embajadores y Referidos (Tracking Bonos)', dept: 'Comercial', default: true },
+  { key: 'usar_dictado_voz',               label: 'Dictado por Voz en Campo (Web Speech API)',      dept: 'Comercial', default: true },
+  { key: 'usar_pre_reserva_qr',            label: 'Pre-Reserva Digital QR in situ (S/ 500 Offline)', dept: 'Comercial', default: true },
+  { key: 'ver_herramientas_tacna',         label: 'Garantías Registrales Tacna (SUNARP & Pórtico)', dept: 'Comercial', default: true },
+  { key: 'ver_cadencias_seguimiento',       label: 'Cadencias de 1-Toque (Action Plans Ferias/Chile)', dept: 'Comercial', default: true },
+  { key: 'bloqueo_concurrente_lotes',       label: 'Bloqueo Concurrente de Lotes (Anti-Doble Venta)', dept: 'Comercial', default: true },
+  { key: 'cotizar_cuotas_extraordinarias', label: 'Cotización con Cuotas Extraordinarias (Jul/Dic)', dept: 'Comercial', default: true },
   { key: 'ver_control',              label: 'Tablero de Control y Métricas',          dept: 'Comercial', default: true },
   { key: 'ver_kpi_monto',            label: 'Ver Montos en Soles (KPI Ventas)',       dept: 'Comercial', default: false },
   { key: 'ver_kpi_desglose',         label: 'Ver Desglose de KPIs por Asesor',        dept: 'Comercial', default: false },
@@ -4295,6 +4303,7 @@ function marcarTodosPermisos(prefix, estado){
 function aplicarPresetPermisos(prefix, tipo){
   const sets = {
     asesor: [
+      'ver_operaciones_campo', 'ver_domingo_cierres', 'generar_minuta_digital', 'ver_red_embajadores', 'usar_dictado_voz', 'usar_pre_reserva_qr', 'ver_herramientas_tacna', 'ver_cadencias_seguimiento', 'bloqueo_concurrente_lotes', 'cotizar_cuotas_extraordinarias',
       'ver_control', 'ver_ranking_equipo', 'ver_proyeccion_ventas', 'ver_clientes', 'crear_editar_clientes',
       'ver_pipeline_kanban', 'ver_actividades', 'crear_actividades', 'ver_agenda', 'crear_eventos_agenda',
       'ver_control_visitas', 'agendar_visitas_van', 'ver_separaciones', 'crear_separaciones', 'ver_planos',
@@ -4711,6 +4720,10 @@ function actualizarDatosDrawer(){
 
   // Módulos del menú lateral gobernados 100% por el checklist del usuario (SuperAdmin tiene bypass maestro)
   
+  showDr('drNavOperacionesCampo', tienePermiso('ver_operaciones_campo'));
+  showDr('drNavDomingoCierres', tienePermiso('ver_domingo_cierres'));
+  showDr('drNavMinutaLegal', tienePermiso('generar_minuta_digital'));
+  showDr('drNavEmbajadores', tienePermiso('ver_red_embajadores'));
   showDr('drNavControl', tienePermiso('ver_control'));
   showDr('drNavClientes', tienePermiso('ver_clientes'));
   showDr('drNavTareas', tienePermiso('ver_actividades'));
@@ -4805,6 +4818,7 @@ function irAVista(vista){
     const mapaPermisoVista = {
       control: 'ver_control',
       clientes: 'ver_clientes',
+      operaciones_campo: 'ver_operaciones_campo',
       visitas: 'ver_control_visitas',
       actividades: 'ver_actividades',
       agenda: 'ver_agenda',
@@ -4830,7 +4844,8 @@ function irAVista(vista){
   currentView = vista;
   document.querySelectorAll('main > div[id^="view"]').forEach(v => v.classList.add('hidden'));
   const map = { 
-    inicio:'viewInicio', 
+    inicio:'viewInicio',
+    operaciones_campo:'viewOperacionesCampo',
     control:'viewControl',
     actividades:'viewActividades', 
     clientes:'viewClientes', 
