@@ -2,14 +2,14 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Casa Dorada · Planner Corporativo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+<title>MAJO · CRM/ERP Inmobiliario</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1A2332">
 <link rel="apple-touch-icon" href="icono-apple-touch.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Casa Dorada">
+<meta name="apple-mobile-web-app-title" content="MAJO CRM/ERP">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
@@ -36,7 +36,50 @@
     color: var(--ink);
     -webkit-tap-highlight-color: transparent;
   }
-  #app{ max-width: 480px; margin: 0 auto; min-height: 100vh; display:flex; flex-direction:column; background: var(--cream); position:relative; z-index:1; }
+  #app{
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--cream);
+    position: relative;
+    z-index: 1;
+    transition: max-width 0.2s ease;
+  }
+
+  /* ADAPTACIÓN INMEDIATA A ROTACIÓN HORIZONTAL DEL CELULAR (LANDSCAPE) */
+  @media (orientation: landscape), (min-width: 540px){
+    #app{
+      max-width: 100% !important;
+      width: 100% !important;
+      margin: 0 !important;
+    }
+    .topbar{
+      padding: 12px 3vw 10px !important;
+      max-width: 100% !important;
+    }
+    main{
+      padding: 6px 3vw 50px !important;
+      max-width: 100% !important;
+    }
+    .modal-backdrop{
+      align-items: center !important;
+      justify-content: center !important;
+    }
+    .modal-sheet{
+      max-height: 94vh !important;
+      overflow-y: auto !important;
+    }
+  }
+
+  /* SOPORTE DE ZOOM TÁCTIL PINCH-TO-ZOOM EN DOCUMENTOS E IMÁGENES */
+  #visdoc_contenedor, #visdoc_contenedor canvas, #visdoc_contenedor img, #pfBrochureViewer canvas, .visor-zoomable {
+    touch-action: pinch-zoom pan-x pan-y !important;
+    user-select: auto !important;
+    -webkit-user-select: auto !important;
+  }
 
   #app::before{
     content:'';
@@ -1245,8 +1288,9 @@ main.app-content {
   <div class="login-screen" id="loginScreen">
     <img class="login-logo" src="logo-casa-dorada.png" alt="Casa Dorada">
     <div class="login-card">
-      <h1>Casa Dorada</h1>
-      <p>Planner comercial y operativo. Entra con tu cuenta de Google para acceder a tus actividades, clientes y equipo.</p>
+      <h1 style="font-size:42px; font-weight:900; letter-spacing:1.5px; margin:0 0 2px; color:#fff; text-shadow:0 3px 12px rgba(0,0,0,0.4); line-height:1;">MAJO</h1>
+      <div style="font-size:15px; font-weight:800; color:var(--gold-soft); letter-spacing:3.5px; margin-bottom:14px; text-transform:uppercase;">CRM / ERP</div>
+      <p style="color:#A9B4C4; font-size:13.5px; margin:0 0 26px; line-height:1.45; max-width:320px;">Plataforma comercial y operativa. Entra con tu cuenta de Google para acceder a tus actividades, clientes y equipo.</p>
       <button class="btn-google" id="btnGoogleLogin">
         <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84c-.21 1.13-.84 2.09-1.8 2.73v2.27h2.91c1.7-1.57 2.69-3.88 2.69-6.64z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.17l-2.91-2.27c-.81.54-1.84.86-3.05.86-2.34 0-4.33-1.58-5.04-3.71H.96v2.34C2.44 15.98 5.48 18 9 18z"/><path fill="#FBBC05" d="M3.96 10.71A5.4 5.4 0 013.68 9c0-.6.1-1.18.28-1.71V4.96H.96A9 9 0 000 9c0 1.45.35 2.83.96 4.04l3-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.96l3 2.33C4.67 5.16 6.66 3.58 9 3.58z"/></svg>
         Continuar con Google
@@ -1294,7 +1338,11 @@ main.app-content {
             <img src="logo-casa-dorada.png" alt="Casa Dorada" class="logo-3d-flotante" style="animation-delay:0s;">
             <img src="logo-costa-dorada.png" alt="Costa Dorada" class="logo-3d-flotante" style="animation-delay:0.5s;">
           </div>
-          <h2 class="welcome-title" id="wb_saludo" style="margin-top:14px;">¡Buenos días!</h2>
+          <div style="margin-top:10px; margin-bottom:2px;">
+            <span style="font-size:32px; font-weight:900; color:#fff; letter-spacing:1px; line-height:1; display:block; text-shadow:0 2px 10px rgba(0,0,0,0.35);">MAJO</span>
+            <span style="font-size:12.5px; font-weight:800; color:var(--gold-soft); letter-spacing:2.5px; text-transform:uppercase; display:block; margin-top:2px;">CRM / ERP</span>
+          </div>
+          <h2 class="welcome-title" id="wb_saludo" style="margin-top:8px;">¡Buenos días!</h2>
           <p class="welcome-sub" id="wb_subtitulo" style="margin-bottom:0;">Bienvenido a tu jornada comercial y de gestión. Enfoque total en metas y cierres.</p>
         </div>
       </div>
@@ -2982,14 +3030,31 @@ main.app-content {
     </div>
   </div>
 
-  <!-- MODAL: Visor de Documentos -->
+  <!-- MODAL: Visor de Documentos con Zoom Interactivo y Descarga Vía WhatsApp -->
   <div class="modal-backdrop" id="modalVisorDocumento">
-    <div class="modal-sheet" style="max-width:100%; height:92vh; max-height:92vh; display:flex; flex-direction:column; padding:16px 12px;">
-      <h3 id="visdoc_titulo" style="margin-bottom:8px;">Documento</h3>
-      <div id="visdoc_contenedor" style="flex:1; overflow:auto; background:#F2EFE6; border-radius:10px; touch-action:pinch-zoom pan-x pan-y; display:flex; align-items:center; justify-content:center;"></div>
-      <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
-        <a id="visdoc_btn_descargar" href="#" download class="btn-secondary" style="flex:1; text-align:center; text-decoration:none;">⬇️ Descargar</a>
-        <a id="visdoc_btn_whatsapp" href="#" target="_blank" rel="noopener" class="btn-primary" style="flex:1; text-align:center; text-decoration:none; background:#25D366; border-color:#25D366;">📲 Enviar por WhatsApp</a>
+    <div class="modal-sheet" style="max-width:96%; width:96%; height:94vh; max-height:94vh; display:flex; flex-direction:column; padding:14px 12px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <h3 id="visdoc_titulo" style="margin:0; font-size:15px; color:var(--navy); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Documento</h3>
+        <button type="button" class="modal-x-close" data-close="modalVisorDocumento" style="position:static;">✕</button>
+      </div>
+
+      <!-- BARRA DE CONTROL DE ZOOM INTERACTIVO -->
+      <div style="display:flex; justify-content:center; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap; background:#F8FAFC; border:1px solid #E2E8F0; padding:6px 10px; border-radius:10px;">
+        <span style="font-size:11px; font-weight:800; color:var(--navy);">🔍 Zoom:</span>
+        <button type="button" class="chip-btn" onclick="ajustarZoomVisor(0.25)" style="padding:3px 10px; font-weight:800; background:#fff; border-color:#CBD5E1;">➕ Acercar</button>
+        <button type="button" class="chip-btn" onclick="ajustarZoomVisor(-0.25)" style="padding:3px 10px; font-weight:800; background:#fff; border-color:#CBD5E1;">➖ Alejar</button>
+        <button type="button" class="chip-btn" onclick="resetZoomVisor()" style="padding:3px 10px; font-weight:700; background:#fff; border-color:#CBD5E1;">↺ 100%</button>
+        <span id="visor_zoom_nivel" style="font-size:11px; font-weight:800; color:var(--gold); background:#FFFBEB; padding:2px 6px; border-radius:6px;">130%</span>
+      </div>
+
+      <div id="visdoc_contenedor" style="flex:1; overflow:auto; background:#F2EFE6; border-radius:10px; touch-action:pinch-zoom pan-x pan-y; display:flex; align-items:center; justify-content:center; position:relative;"></div>
+
+      <!-- BOTONES DE DESCARGA DIRECTA VÍA WHATSAPP -->
+      <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+        <button type="button" class="btn-primary" onclick="descargarYEnviarWhatsAppVisor()" style="flex:2; text-align:center; background:#25D366; border-color:#25D366; font-weight:800; font-size:13px; display:flex; align-items:center; justify-content:center; gap:6px; box-shadow:0 3px 10px rgba(37,211,102,0.3);">
+          <span>📲</span> Descargar y Enviar por WhatsApp
+        </button>
+        <a id="visdoc_btn_descargar" href="#" download class="btn-secondary" style="flex:1; text-align:center; text-decoration:none; font-size:12px; display:flex; align-items:center; justify-content:center;">⬇️ Solo Descargar</a>
       </div>
     </div>
   </div>
@@ -5745,36 +5810,33 @@ document.getElementById('btnConfirmarDescargaReporte').addEventListener('click',
         const metaStr = doc.splitTextToSize(detalles.join('   |   '), anchoUtil - 24);
         doc.text(metaStr, marginX + 14, y + cardHeight - 8);
 
+        y += cardHeight + 6;
+
+        // ==============================================================
+        // IMÁGENES / EVIDENCIAS JUSTO DEBAJO DE ESTA ACTIVIDAD ESPECÍFICA
+        // ==============================================================
         if (act.evidencias && act.evidencias.length > 0) {
-          fotosParaAdjuntar.push({ titulo: act.titulo, urls: act.evidencias });
-        }
+          const fotoW = 120;
+          const fotoH = 80;
+          let fotoX = marginX + 14;
 
-        y += cardHeight + 8;
-      }
+          // Etiqueta formal vinculando la foto directamente a esta actividad
+          doc.setFontSize(8);
+          doc.setFont(undefined, 'bold');
+          doc.setTextColor(200, 155, 60); // cGold
+          doc.text(`📷 Evidencia fotográfica de la actividad (${act.titulo.slice(0, 35)}…):`, marginX + 14, y + 8);
+          y += 12;
 
-      if (fotosParaAdjuntar.length > 0) {
-        if (y > pageHeight - 180) { doc.addPage(); dibujarFondoYMembrete(); y = 120; }
-        doc.setTextColor(...cNavy);
-        doc.setFontSize(10);
-        doc.setFont(undefined, 'bold');
-        doc.text(`${seccionNum++}. SUSTENTO FOTOGRÁFICO DE CAMPO`, marginX, y);
-        y += 14;
-
-        for (const item of fotosParaAdjuntar) {
-          const fotoW = 100;
-          const fotoH = 75;
-          let fotoX = marginX;
-
-          for (const url of item.urls) {
+          for (const url of act.evidencias) {
             if (fotoX + fotoW > pageWidth - marginX) {
-              fotoX = marginX;
-              y += fotoH + 18;
+              fotoX = marginX + 14;
+              y += fotoH + 10;
             }
-            if (y + fotoH > pageHeight - 120) {
+            if (y + fotoH > pageHeight - 110) {
               doc.addPage();
               dibujarFondoYMembrete();
               y = 120;
-              fotoX = marginX;
+              fotoX = marginX + 14;
             }
 
             try {
@@ -5786,15 +5848,18 @@ document.getElementById('btnConfirmarDescargaReporte').addEventListener('click',
                 r.readAsDataURL(blobImg);
               });
               doc.setDrawColor(...cBorder);
-              doc.rect(fotoX - 1, y - 1, fotoW + 2, fotoH + 2);
+              doc.setLineWidth(0.8);
+              doc.roundedRect(fotoX - 1, y - 1, fotoW + 2, fotoH + 2, 3, 3, 'S');
               doc.addImage(b64Img, fotoX, y, fotoW, fotoH);
               fotoX += fotoW + 12;
             } catch (err) {
-              console.error('Error al cargar evidencia en PDF', err);
+              console.error('Error al cargar evidencia debajo de actividad', err);
             }
           }
-          y += fotoH + 16;
+          y += fotoH + 12;
         }
+
+        y += 4; // Espacio antes de la siguiente actividad
       }
     }
 
@@ -5923,7 +5988,18 @@ document.getElementById('btnConfirmarDescargaReporte').addEventListener('click',
     const blobUrl = URL.createObjectURL(blob);
     window.open(blobUrl, '_blank');
     doc.save(nombreArchivo);
-    toast('Informe generado ✓');
+    toast('Informe generado y abriendo WhatsApp… ✓');
+
+    // Enrutamiento directo de descarga vía WhatsApp
+    const wspMsgRep = `📄 *INFORME DIARIO DE ACTIVIDADES · CASA DORADA*\n` +
+      `• *Colaborador:* ${currentProfile?.nombre || 'Asesor Comercial'}\n` +
+      `• *Fecha de Gestión:* ${fechaReporte}\n` +
+      `• ⏱️ *JORNADA EFECTIVA REGISTRADA:* ${granTotalHorasEfectivas} HORAS\n` +
+      `  - Terreno y Prospección en Campo: ${horasTerrenoPDF.toFixed(1)} hrs\n` +
+      `  - Oficina, Llamadas y Trámites: ${horasOficinaPDF.toFixed(1)} hrs\n` +
+      `• *Cumplimiento:* ${granTotalHorasEfectivas >= 8.0 ? 'Meta diaria cumplida al 100%' : 'Jornada parcial'}\n\n` +
+      `_Informe oficial consolidado emitido desde Planner Corporativo Casa Dorada._`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(wspMsgRep)}`, '_blank');
   } catch (e) {
     toast('Error al generar el informe');
     console.error(e);
@@ -6173,6 +6249,33 @@ document.getElementById('btnGenerarInformeFormal').addEventListener('click', asy
         doc.text(tituloLines, marginX + 80, y);
         doc.text(estadoLabel(act.estado), pageWidth - marginX - 70, y);
         y += Math.max(13, tituloLines.length * 11);
+
+        // Evidencia fotográfica justo debajo de la actividad en informe formal
+        if (act.evidencias && act.evidencias.length > 0) {
+          const fotoW = 95;
+          const fotoH = 65;
+          if (y + fotoH > pageHeight - 120) {
+            doc.addPage();
+            dibujarMembrete();
+            y = 150;
+          }
+          try {
+            const respImg = await fetch(act.evidencias[0]);
+            const blobImg = await respImg.blob();
+            const b64Img = await new Promise(res => {
+              const r = new FileReader();
+              r.onloadend = () => res(r.result);
+              r.readAsDataURL(blobImg);
+            });
+            doc.setDrawColor(200, 155, 60);
+            doc.rect(marginX + 80 - 1, y - 1, fotoW + 2, fotoH + 2);
+            doc.addImage(b64Img, marginX + 80, y, fotoW, fotoH);
+            y += fotoH + 8;
+          } catch(err) {
+            console.error('Error imagen informe formal', err);
+          }
+        }
+
         doc.setDrawColor(230, 230, 230);
         doc.line(marginX, y - 4, pageWidth - marginX, y - 4);
       }
@@ -7874,7 +7977,18 @@ async function descargarCotizacionPDF(){
   doc.text('Atendido por: ' + (currentProfile?.nombre || 'Asesor Comercial') + ' · ' + (currentProfile?.cargo || 'Fuerza de Ventas'), 14, 219);
 
   doc.save(`Cotizacion_CostaDorada_${cliente.replace(/\s+/g, '_')}_Mz${mz}Lt${lt}.pdf`);
-  toast('PDF descargado con éxito ✓');
+  toast('PDF descargado y abriendo WhatsApp… ✓');
+
+  // Enrutamiento directo de descarga vía WhatsApp
+  const wspMsgCot = `📑 *COTIZACIÓN OFICIAL · COSTA DORADA (LA YARADA LOS PALOS)*\n` +
+    `Constructora e Inmobiliaria Casa Dorada S.A.C.\n\n` +
+    `• *Cliente:* ${cliente}\n` +
+    `• *Ubicación:* Manzana ${mz} - Lote ${lt} (${area} m²)\n` +
+    `• *Valor Total:* S/ ${Number(total).toLocaleString('es-PE')}\n` +
+    `• *Condición:* ${condicion === 'contado' ? 'Pago al Contado con Descuento' : `Financiamiento Directo (${meses} cuotas)`}\n` +
+    `• *Inversión Mensual:* ${cuota}\n\n` +
+    `_Archivo PDF de cotización generado y descargado para envío formal._`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(wspMsgCot)}`, '_blank');
 } catch (e) {
     toast('Error al generar PDF');
     console.error(e);
@@ -12725,6 +12839,86 @@ function cerrarAlertaSpeedToLead() {
 }
 
 /* ============================================================== */
+/* ZOOM INTERACTIVO Y DESCARGAS VÍA WHATSAPP */
+/* ============================================================== */
+let nivelZoomVisor = 1.3;
+
+function ajustarZoomVisor(delta) {
+  nivelZoomVisor = Math.min(3.5, Math.max(0.6, +(nivelZoomVisor + delta).toFixed(2)));
+  const lbl = document.getElementById('visor_zoom_nivel');
+  if (lbl) lbl.textContent = Math.round(nivelZoomVisor * 100) + '%';
+  
+  const canvas = document.getElementById('visdoc_pdf_canvas');
+  if (canvas) {
+    canvas.style.transform = `scale(${nivelZoomVisor / 1.3})`;
+    canvas.style.transformOrigin = 'top center';
+    canvas.style.transition = 'transform 0.15s ease';
+  }
+  const img = document.querySelector('#visdoc_contenedor img');
+  if (img) {
+    img.style.transform = `scale(${nivelZoomVisor / 1.0})`;
+    img.style.transformOrigin = 'top center';
+    img.style.transition = 'transform 0.15s ease';
+  }
+}
+
+function resetZoomVisor() {
+  nivelZoomVisor = 1.3;
+  const lbl = document.getElementById('visor_zoom_nivel');
+  if (lbl) lbl.textContent = '100%';
+  const canvas = document.getElementById('visdoc_pdf_canvas');
+  if (canvas) {
+    canvas.style.transform = 'scale(1)';
+    canvas.style.transition = 'transform 0.15s ease';
+  }
+  const img = document.querySelector('#visdoc_contenedor img');
+  if (img) {
+    img.style.transform = 'scale(1)';
+    img.style.transition = 'transform 0.15s ease';
+  }
+}
+
+function descargarYEnviarWhatsAppVisor() {
+  const url = document.getElementById('visdoc_btn_descargar')?.href;
+  const titulo = document.getElementById('visdoc_titulo')?.textContent || 'Documento Oficial Costa Dorada';
+  if (!url || url === '#' || url === window.location.href) {
+    toast('No hay archivo disponible para descargar');
+    return;
+  }
+
+  // Descarga local
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = (titulo.replace(/\s+/g, '_') || 'documento') + (url.endsWith('.pdf') ? '.pdf' : '');
+  a.target = '_blank';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+
+  // Enrutamiento directo a WhatsApp con el enlace de descarga
+  const wspMsg = `📄 *DOCUMENTO OFICIAL · COSTA DORADA (LA YARADA LOS PALOS)*\n` +
+    `Constructora e Inmobiliaria Casa Dorada S.A.C.\n\n` +
+    `Te comparto el documento solicitado:\n` +
+    `• *Título:* ${titulo}\n` +
+    `• *Descarga / Visualización directa:* ${url}\n\n` +
+    `_Documentación formal y respaldo legal de Costa Dorada._`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(wspMsg)}`, '_blank');
+  toast('Descargando archivo y abriendo WhatsApp… ✓');
+}
+
+function compartirElementoPortafolioWhatsApp(url, titulo) {
+  if (!url) { toast('No hay enlace disponible'); return; }
+  const msg = `📁 *PORTAFOLIO OFICIAL · COSTA DORADA (LA YARADA LOS PALOS)*\n` +
+    `Constructora e Inmobiliaria Casa Dorada S.A.C.\n\n` +
+    `Te comparto el material oficial:\n` +
+    `• *${titulo}*\n` +
+    `• *Ver y Descargar:* ${url}\n\n` +
+    `_Consulta lotes disponibles y financiamiento directo en soles a sola firma._`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+
+/* ============================================================== */
 /* GESTIÓN DE VISITAS Y CALIFICACIÓN DE PROSPECTOS */
 /* ============================================================== */
 function alSeleccionarClienteModalVisita() {
@@ -13339,7 +13533,18 @@ function descargarHojaResumen1PaginaPDF() {
     doc.text(`DNI: ${dni}`, 120, 147);
 
     doc.save(`Hoja_Resumen_CasaDorada_${cli.replace(/\s+/g,'_')}.pdf`);
-    toast('Hoja Resumen (1 pág) descargada ✓');
+    toast('Hoja Resumen descargada y abriendo WhatsApp… ✓');
+
+    // Enrutamiento directo de descarga vía WhatsApp
+    const wspMsgHR = `📑 *HOJA RESUMEN DE CONDICIONES · COSTA DORADA*\n` +
+      `Constructora e Inmobiliaria Casa Dorada S.A.C.\n\n` +
+      `• *Cliente:* ${cli} · DNI: ${dni}\n` +
+      `• *Lote:* Manzana ${mz} - Lote ${lt}\n` +
+      `• *Valor del Lote:* S/ ${Number(total).toLocaleString('es-PE')} · *Inicial:* S/ ${Number(inicial).toLocaleString('es-PE')}\n` +
+      `• *Inversión Mensual:* ${cuota}\n` +
+      `• *Garantías:* Partida Matriz SUNARP Tacna, financiamiento directo en soles sin evaluación bancaria.\n\n` +
+      `_Documento formal descargado para envío oficial al cliente._`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(wspMsgHR)}`, '_blank');
   } catch(e) {
     toast('Error al generar la Hoja Resumen');
     console.error(e);
@@ -13883,7 +14088,18 @@ b) Saldo a Financiar: S/ ${saldo.toLocaleString('es-PE', {minimumFractionDigits:
   doc.text('Documento formal emitido bajo la Ley N° 27269 de Firmas y Certificados Digitales en el Perú.', 22, 152);
 
   doc.save(`Minuta_Preparatoria_CostaDorada_Mz${mz}_Lote${lote}.pdf`);
-  toast('Minuta formal descargada en PDF');
+  toast('Minuta firmada descargada y abriendo WhatsApp… ✓');
+
+  // Enrutamiento directo de descarga vía WhatsApp
+  const wspMsgMin = `📑 *CONTRATO PREPARATORIO FIRMADO · COSTA DORADA*\n` +
+    `Constructora e Inmobiliaria Casa Dorada S.A.C.\n\n` +
+    `• *Comprador:* ${nombre.toUpperCase()} · DNI: ${dni}\n` +
+    `• *Lote Adquirido:* Manzana ${mz} - Lote ${lote} (${area} m²)\n` +
+    `• *Precio:* S/ ${precio.toLocaleString('es-PE')} · *Inicial:* S/ ${inicial.toLocaleString('es-PE')}\n` +
+    `• *Financiamiento:* ${meses} cuotas fijas en soles sin intereses.\n` +
+    `• *Firma Digital:* Formalizado con firma digital táctil bajo la Ley N° 27269 de Firmas Digitales.\n\n` +
+    `_Documento notarial emitido desde el Planner Corporativo Casa Dorada._`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(wspMsgMin)}`, '_blank');
 }
 
 /* ============================================================== */
