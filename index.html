@@ -2,14 +2,14 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Casa Dorada · Planner Corporativo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+<title>MAJO · CRM/ERP Inmobiliario</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1A2332">
 <link rel="apple-touch-icon" href="icono-apple-touch.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Casa Dorada">
+<meta name="apple-mobile-web-app-title" content="MAJO CRM/ERP">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
@@ -36,7 +36,50 @@
     color: var(--ink);
     -webkit-tap-highlight-color: transparent;
   }
-  #app{ max-width: 480px; margin: 0 auto; min-height: 100vh; display:flex; flex-direction:column; background: var(--cream); position:relative; z-index:1; }
+  #app{
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--cream);
+    position: relative;
+    z-index: 1;
+    transition: max-width 0.2s ease;
+  }
+
+  /* ADAPTACIÓN INMEDIATA A ROTACIÓN HORIZONTAL DEL CELULAR (LANDSCAPE) */
+  @media (orientation: landscape), (min-width: 540px){
+    #app{
+      max-width: 100% !important;
+      width: 100% !important;
+      margin: 0 !important;
+    }
+    .topbar{
+      padding: 12px 3vw 10px !important;
+      max-width: 100% !important;
+    }
+    main{
+      padding: 6px 3vw 50px !important;
+      max-width: 100% !important;
+    }
+    .modal-backdrop{
+      align-items: center !important;
+      justify-content: center !important;
+    }
+    .modal-sheet{
+      max-height: 94vh !important;
+      overflow-y: auto !important;
+    }
+  }
+
+  /* SOPORTE DE ZOOM TÁCTIL PINCH-TO-ZOOM EN DOCUMENTOS E IMÁGENES */
+  #visdoc_contenedor, #visdoc_contenedor canvas, #visdoc_contenedor img, #pfBrochureViewer canvas, .visor-zoomable {
+    touch-action: pinch-zoom pan-x pan-y !important;
+    user-select: auto !important;
+    -webkit-user-select: auto !important;
+  }
 
   #app::before{
     content:'';
@@ -77,7 +120,78 @@
       overflow: visible !important;
     }
     .kpi-card{ min-width: 0 !important; }
-    .drawer-panel{
+    .drawer-container{
+    display: flex; height: 100%; position: relative; overflow: hidden;
+  }
+  .drawer-panel{
+    width: 250px; max-width: 78vw; height: 100%; background: #fff;
+    display: flex; flex-direction: column; transform: translateX(-100%);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 4px 0 24px rgba(0,0,0,0.25);
+    z-index: 100001;
+  }
+  .drawer-backdrop.open .drawer-panel{ transform: translateX(0); }
+
+  .drawer-macro-item{
+    display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 14px;
+    background: transparent; border: none; border-radius: 12px; cursor: pointer; text-align: left;
+    transition: all 0.2s ease; margin-bottom: 4px; position: relative;
+  }
+  .drawer-macro-item:hover, .drawer-macro-item.active{
+    background: #F8FAFC; border-left: 4px solid var(--gold);
+  }
+  .dr-macro-texts{ display: flex; flex-direction: column; flex: 1; min-width: 0; }
+  .dr-macro-texts .dr-label{ font-size: 13px; font-weight: 800; color: var(--navy); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dr-macro-texts .dr-subdesc{ font-size: 10.5px; color: var(--ink-dim); margin-top: 1px; }
+  .dr-arrow{ font-size: 18px; font-weight: 800; color: #94A3B8; margin-left: auto; transition: transform 0.2s; }
+  .drawer-macro-item.active .dr-arrow{ transform: translateX(4px); color: var(--gold); }
+
+  /* SUBPANEL LATERAL AL COSTADO (FLYOUT SUB-DRAWER) */
+  .drawer-subpanel{
+    width: 270px; max-width: 82vw; height: 100%; background: #F8FAFC; border-left: 1px solid #E2E8F0;
+    display: none; flex-direction: column; box-shadow: 6px 0 25px rgba(0,0,0,0.18);
+    z-index: 100002; animation: slideInSubMenu 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .drawer-subpanel.open{ display: flex !important; }
+
+  @keyframes slideInSubMenu{
+    from{ transform: translateX(-15px); opacity: 0; }
+    to{ transform: translateX(0); opacity: 1; }
+  }
+
+  .drawer-subpanel-header{
+    padding: 14px 14px 12px; background: #fff; border-bottom: 1px solid #E2E8F0;
+    display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  }
+  .subpanel-back-btn{
+    background: #F1F5F9; border: 1px solid #E2E8F0; border-radius: 8px; font-size: 11px;
+    font-weight: 800; color: var(--navy); padding: 5px 9px; cursor: pointer; display: flex; align-items: center; gap: 4px;
+  }
+  .subpanel-close-btn{
+    background: #F1F5F9; border: none; border-radius: 8px; width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; color: #475569; font-weight: 800; font-size: 13px;
+  }
+  .drawer-subpanel-list{
+    flex: 1; overflow-y: auto; padding: 10px 8px; display: flex; flex-direction: column; gap: 6px;
+  }
+  .subpanel-item{
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #fff;
+    border: 1px solid #E2E8F0; border-radius: 10px; cursor: pointer; text-align: left; transition: all 0.15s ease;
+  }
+  .subpanel-item:hover{
+    background: #FFFBEB; border-color: var(--gold-soft); transform: translateX(2px); box-shadow: 0 2px 6px rgba(200,155,60,0.12);
+  }
+  .subpanel-item .sp-title{ font-size: 12px; font-weight: 800; color: var(--navy); display: block; }
+  .subpanel-item .sp-desc{ font-size: 10px; color: var(--ink-dim); display: block; margin-top: 2px; }
+
+  @media (max-width: 540px){
+    .drawer-panel{ width: 230px; }
+    .drawer-subpanel{
+      position: absolute; left: 0; top: 0; width: 270px; height: 100%;
+      box-shadow: 4px 0 25px rgba(0,0,0,0.3);
+    }
+  }
+
+  .drawer-panel{
       max-width: 300px !important;
     }
     .modal-backdrop{
@@ -1065,210 +1179,107 @@ main.app-content {
 
   <!-- MENÚ LATERAL DESLIZANTE (DRAWER) -->
   <div class="drawer-backdrop" id="drawerBackdrop">
-    <div class="drawer-panel" id="drawerPanel">
-      <div class="drawer-header">
-        <label for="drFotoPerfilInput" class="drawer-user-circle" id="drUserInitial" title="Cambiar foto de perfil" style="cursor:pointer; background-size:cover; background-position:center;">J</label>
-        <input type="file" id="drFotoPerfilInput" accept="image/*" style="display:none;">
-        <div class="drawer-user-info">
-          <div class="drawer-user-name" id="drUserName">Jorge Alexander Luque</div>
-          <div class="drawer-user-cargo" id="drUserCargo" style="font-weight:700; color:#C89B3C; font-size:12px; margin-top:2px;">Director Comercial</div>
-          <div class="drawer-user-role" id="drUserRole">SuperAdmin</div>
-          <div class="drawer-user-email" id="drUserEmail">joreal.ft2020@gmail.com</div>
-        </div>
-        <img src="logo-crm-majo-icono.png" alt="CRM MAJO" style="width:38px; height:38px; object-fit:contain; border-radius:8px; background:#fff; padding:2px;">
-      </div>
-      <div class="drawer-menu-list">
-        <button class="drawer-item active" data-nav="inicio">
-          <span class="dr-icon">🏠</span>
-          <span class="dr-label">Inicio / Portada</span>
-        </button>
-
-
-
-        <!-- 1. DEPARTAMENTO COMERCIAL -->
-        <div class="dr-dept-group" data-dept="comercial">
-          <button class="dr-dept-toggle" onclick="toggleDeptoMenu(this)">
-            <span>💼 1. COMERCIAL (VENTAS & CIERRES)</span><span class="dr-dept-arrow">▾</span>
-          </button>
-          <div class="dr-dept-items">
-            <!-- ACCESO DIRECTO AL PANEL OPERATIVO DE CAMPO -->
-            <button class="drawer-item" data-nav="operaciones_campo" id="drNavOperacionesCampo" data-modkey="operaciones_campo" style="color:var(--gold); font-weight:800;">
-              <span class="dr-icon">🚀</span>
-              <span class="dr-label">Panel Operativo de Campo</span>
-              <span class="badge" style="background:#FFF3E0; color:#E65100; font-size:10px; margin-left:auto;">9 Módulos</span>
-            </button>
-            <button class="drawer-item" onclick="abrirModalDomingoDeCierres(); cerrarDrawer();" id="drNavDomingoCierres" style="color:#D97706; font-weight:700;">
-              <span class="dr-icon">🎉</span>
-              <span class="dr-label">Domingo de Cierres (Showroom TV)</span>
-            </button>
-            <button class="drawer-item" onclick="abrirModalMinutaCompraventa(); cerrarDrawer();" id="drNavMinutaLegal" style="color:#0F766E; font-weight:700;">
-              <span class="dr-icon">📑</span>
-              <span class="dr-label">Minuta Legal & Firma Táctil</span>
-            </button>
-            <button class="drawer-item" onclick="abrirModalEmbajadores(); cerrarDrawer();" id="drNavEmbajadores" style="color:#7C3AED; font-weight:700;">
-              <span class="dr-icon">🤝</span>
-              <span class="dr-label">Red de Embajadores (Referidos)</span>
-            </button>
-            <button class="drawer-item" data-nav="control" id="drNavControl" data-modkey="control">
-              <span class="dr-icon">📊</span>
-              <span class="dr-label">Tablero de Control & KPIs</span>
-            </button>
-            <button class="drawer-item" data-nav="clientes" id="drNavClientes" data-modkey="clientes">
-              <span class="dr-icon">👥</span>
-              <span class="dr-label">Cartera de Clientes & Kanban</span>
-              <span class="badge hidden" id="drBadgeRiesgo" style="background:#FFEAEA; color:#D32F2F; font-size:10px; margin-left:auto;">0</span>
-            </button>
-            <button class="drawer-item" data-nav="actividades" id="drNavTareas" data-modkey="actividades">
-              <span class="dr-icon">✓</span>
-              <span class="dr-label">Actividades y Tareas Hoy</span>
-              <span class="badge hidden" id="drBadgeTareas" style="background:#EBF3FC; color:#1E4B82; font-size:10px; margin-left:auto;">0</span>
-            </button>
-            <button class="drawer-item" data-nav="agenda" id="drNavAgenda" data-modkey="agenda">
-              <span class="dr-icon">📅</span>
-              <span class="dr-label">Agenda & Google Calendar</span>
-            </button>
-            <button class="drawer-item" data-nav="visitas" id="drNavVisitas" data-modkey="control_visitas">
-              <span class="dr-icon">🚐</span>
-              <span class="dr-label">Presentaciones & Movilidad (14 Asientos)</span>
-            </button>
-            <button class="drawer-item" data-nav="separaciones" id="drNavSeparaciones" data-modkey="separaciones">
-              <span class="dr-icon">🏷️</span>
-              <span class="dr-label">Separaciones de Lotes</span>
-              <span class="badge hidden" id="drBadgeSeparaciones" style="background:#FFF3E0; color:#E65100; font-size:10px; margin-left:auto;">0</span>
-            </button>
+    <div class="drawer-container" id="drawerContainer">
+      <!-- 1. PANEL PRINCIPAL COMPACTO (5 MACRO-GRUPOS) -->
+      <div class="drawer-panel" id="drawerPanel">
+        <div class="drawer-header">
+          <label for="drFotoPerfilInput" class="drawer-user-circle" id="drUserInitial" title="Cambiar foto de perfil" style="cursor:pointer; background-size:cover; background-position:center;">J</label>
+          <input type="file" id="drFotoPerfilInput" accept="image/*" style="display:none;">
+          <div class="drawer-user-info">
+            <div class="drawer-user-name" id="drUserName">Jorge Alexander Luque</div>
+            <div class="drawer-user-cargo" id="drUserCargo" style="font-weight:700; color:#C89B3C; font-size:12px; margin-top:2px;">Director Comercial</div>
+            <div class="drawer-user-role" id="drUserRole">SuperAdmin</div>
+            <div class="drawer-user-email" id="drUserEmail">joreal.ft2020@gmail.com</div>
           </div>
+          <img src="logo-crm-majo-icono.png" alt="CRM MAJO" style="width:38px; height:38px; object-fit:contain; border-radius:8px; background:#fff; padding:2px;">
         </div>
-
-        <!-- 2. DEPARTAMENTO MARKETING & PROSPECCIÓN -->
-        <div class="dr-dept-group" data-dept="marketing">
-          <button class="dr-dept-toggle" onclick="toggleDeptoMenu(this)">
-            <span>📣 2. MARKETING & PROSPECCIÓN</span><span class="dr-dept-arrow">▾</span>
+        
+        <div class="drawer-menu-list" style="padding:10px 8px; flex:1; overflow-y:auto;">
+          <!-- ACCESO DIRECTO A INICIO / PORTADA -->
+          <button class="drawer-item active" data-nav="inicio" onclick="irAVista('inicio'); cerrarDrawer();" style="margin-bottom:6px;">
+            <span class="dr-icon">🏠</span>
+            <span class="dr-label">Inicio / Portada</span>
           </button>
-          <div class="dr-dept-items">
-            <button class="drawer-item" data-nav="planos" id="drNavPlanos" data-modkey="planos">
-              <span class="dr-icon">🗺️</span>
-              <span class="dr-label">Planos Interactivos Costa Dorada</span>
-            </button>
-            <button class="drawer-item" id="drNavCotizador" data-modkey="cotizador" onclick="abrirModalCotizador(); cerrarDrawer();">
-              <span class="dr-icon">🧮</span>
-              <span class="dr-label">Cotizador Rápido de Lotes</span>
-            </button>
-            <button class="drawer-item" id="drNavConversor" data-modkey="conversor_divisas" onclick="abrirModalConversorDivisas(); cerrarDrawer();">
-              <span class="dr-icon">💱</span>
-              <span class="dr-label">Conversor Multidivisa (PEN · USD · CLP)</span>
-            </button>
-            <button class="drawer-item" id="drNavPlusvalia" data-modkey="plusvalia" onclick="abrirModalPlusvalia(); cerrarDrawer();">
-              <span class="dr-icon">📈</span>
-              <span class="dr-label">Simulador Plusvalía & ROI (10 Años)</span>
-            </button>
-            <button class="drawer-item" id="drNavInventario" data-modkey="inventario_lotes" onclick="abrirModalInventarioLotes(); cerrarDrawer();">
-              <span class="dr-icon">📦</span>
-              <span class="dr-label">Control de Inventario y Lotes (ERP)</span>
-            </button>
-            <button class="drawer-item" id="drNavComisiones" data-modkey="comisiones_erp" onclick="abrirModalComisionesERP(); cerrarDrawer();">
-              <span class="dr-icon">💰</span>
-              <span class="dr-label">Billetera de Comisiones (ERP)</span>
-            </button>
-            <button class="drawer-item" id="drNavCaja" data-modkey="caja_tesoreria" onclick="abrirModalCajaTesoreria(); cerrarDrawer();">
-              <span class="dr-icon">💵</span>
-              <span class="dr-label">Caja y Vouchers Oficiales (ERP)</span>
-            </button>
-            <button class="drawer-item" id="drNavPortalPropietario" data-modkey="portal_propietario" onclick="abrirPortalPropietario(); cerrarDrawer();">
-              <span class="dr-icon">🏛️</span>
-              <span class="dr-label">Portal del Propietario (Club Costa Dorada)</span>
-            </button>
-            <button class="drawer-item" id="drNavGemeloDigital" data-modkey="gemelo_digital" onclick="abrirModalGemeloDigital(); cerrarDrawer();">
-              <span class="dr-icon">🗺️</span>
-              <span class="dr-label">Visualizador de Lote & Proyección 3D</span>
-            </button>
-            <button class="drawer-item" data-nav="portafolio" id="drNavPortafolio" data-modkey="portafolio">
-              <span class="dr-icon">📁</span>
-              <span class="dr-label">Portafolio Multimedia (La Yarada)</span>
-            </button>
-            <button class="drawer-item" data-nav="manualventas" id="drNavManualVentas" data-modkey="manualventas">
-              <span class="dr-icon">🎯</span>
-              <span class="dr-label">Manual de Ventas & Speeches</span>
-            </button>
-            <button class="drawer-item" data-nav="majo_assistant" id="drNavMajoAssistant" data-modkey="majo_assistant">
-              <span class="dr-icon">🤖</span>
-              <span class="dr-label">MAJO · Inteligencia Corporativa</span>
-            </button>
-          </div>
-        </div>
 
-        <!-- 3. DEPARTAMENTO LEGAL & CONTRATACIÓN -->
-        <div class="dr-dept-group" data-dept="legal">
-          <button class="dr-dept-toggle" onclick="toggleDeptoMenu(this)">
-            <span>⚖️ 3. LEGAL & CONTRATACIÓN</span><span class="dr-dept-arrow">▾</span>
-          </button>
-          <div class="dr-dept-items">
-            <button class="drawer-item" id="drNavChecklistLegal" data-modkey="checklist_legal" onclick="abrirChecklistLegal(null); cerrarDrawer();">
-              <span class="dr-icon">📋</span>
-              <span class="dr-label">Checklist Legal de Expedientes</span>
-            </button>
-            <button class="drawer-item" id="drNavGenerarDoc" data-modkey="generador_doc" onclick="abrirGenerarDocumento(null, '', ''); cerrarDrawer();">
-              <span class="dr-icon">✍️</span>
-              <span class="dr-label">Generador de Minutas y Contratos (IA)</span>
-            </button>
-          </div>
-        </div>
+          <div style="height:1px; background:#E2E8F0; margin:6px 4px 10px;"></div>
 
-        <!-- 4. DEPARTAMENTO ADMINISTRACIÓN & COBRANZAS -->
-        <div class="dr-dept-group" data-dept="administracion">
-          <button class="dr-dept-toggle" onclick="toggleDeptoMenu(this)">
-            <span>🗂️ 4. ADMINISTRACIÓN & COBRANZAS</span><span class="dr-dept-arrow">▾</span>
+          <!-- MACRO-GRUPO 1: OPERACIONES DE CAMPO -->
+          <button type="button" class="drawer-macro-item" onclick="abrirSubMenuLateral('campo', this)" id="drMacroCampo">
+            <span class="dr-icon" style="font-size:20px;">🚀</span>
+            <div class="dr-macro-texts">
+              <span class="dr-label">Operaciones de Campo</span>
+              <span class="dr-subdesc">Terreno, Cierre & Minutas (9)</span>
+            </div>
+            <span class="dr-arrow">›</span>
           </button>
-          <div class="dr-dept-items">
-            <button class="drawer-item" id="drNavCobranzas" data-modkey="cobranzas" onclick="irACobranzas(); cerrarDrawer();">
-              <span class="dr-icon">💳</span>
-              <span class="dr-label">Control de Cobranzas y Cuotas</span>
-            </button>
-            <button class="drawer-item" data-nav="rendimiento" id="drNavRendimiento" data-modkey="rendimiento">
-              <span class="dr-icon">📈</span>
-              <span class="dr-label">Rendimiento por Área</span>
-            </button>
-            <button class="drawer-item" data-nav="solicitudes" id="drNavSolicitudes" data-modkey="solicitudes">
-              <span class="dr-icon">📝</span>
-              <span class="dr-label">Solicitudes y Requerimientos</span>
-            </button>
-            <button class="drawer-item hidden" data-nav="reporte_equipo" id="drNavReporteEquipo" data-modkey="reporte_equipo">
-              <span class="dr-icon">🧑‍🤝‍🧑</span>
-              <span class="dr-label">Reporte Diario del Equipo</span>
-            </button>
-          </div>
-        </div>
 
-        <!-- 5. DEPARTAMENTO GERENCIA & AJUSTES -->
-        <div class="dr-dept-group hidden" data-dept="ajustes" id="drDeptAjustes">
-          <button class="dr-dept-toggle" onclick="toggleDeptoMenu(this)">
-            <span>⚙️ 5. GERENCIA & AJUSTES</span><span class="dr-dept-arrow">▾</span>
+          <!-- MACRO-GRUPO 2: VENTAS & CIERRES -->
+          <button type="button" class="drawer-macro-item" onclick="abrirSubMenuLateral('comercial', this)" id="drMacroComercial">
+            <span class="dr-icon" style="font-size:20px;">💼</span>
+            <div class="dr-macro-texts">
+              <span class="dr-label">Ventas & Cierres</span>
+              <span class="dr-subdesc">Clientes, Cotizador & Planos (8)</span>
+            </div>
+            <span class="dr-arrow">›</span>
           </button>
-          <div class="dr-dept-items">
-            <button class="drawer-item hidden" data-nav="admin" id="drNavAdmin" data-modkey="gestion_equipo">
-              <span class="dr-icon">🧑‍💼</span>
-              <span class="dr-label">Gestión de Equipo & Permisos</span>
+
+          <!-- MACRO-GRUPO 3: FINANZAS & ERP -->
+          <button type="button" class="drawer-macro-item" onclick="abrirSubMenuLateral('finanzas', this)" id="drMacroFinanzas">
+            <span class="dr-icon" style="font-size:20px;">💰</span>
+            <div class="dr-macro-texts">
+              <span class="dr-label">Finanzas & ERP</span>
+              <span class="dr-subdesc">Comisiones, Caja & Cuotas (6)</span>
+            </div>
+            <span class="dr-arrow">›</span>
+          </button>
+
+          <!-- MACRO-GRUPO 4: GESTIÓN & EQUIPO -->
+          <button type="button" class="drawer-macro-item" onclick="abrirSubMenuLateral('operativa', this)" id="drMacroOperativa">
+            <span class="dr-icon" style="font-size:20px;">📋</span>
+            <div class="dr-macro-texts">
+              <span class="dr-label">Gestión & Equipo</span>
+              <span class="dr-subdesc">Agenda, Tareas & Reportes (6)</span>
+            </div>
+            <span class="dr-arrow">›</span>
+          </button>
+
+          <!-- MACRO-GRUPO 5: GERENCIA, LEGAL & SISTEMA -->
+          <button type="button" class="drawer-macro-item" onclick="abrirSubMenuLateral('sistema', this)" id="drMacroSistema">
+            <span class="dr-icon" style="font-size:20px;">⚙️</span>
+            <div class="dr-macro-texts">
+              <span class="dr-label">Gerencia & Legal</span>
+              <span class="dr-subdesc">MAJO IA, Permisos & Ajustes (6)</span>
+            </div>
+            <span class="dr-arrow">›</span>
+          </button>
+
+          <div style="margin-top:auto; padding-top:10px; border-top:1px solid #E2E8F0;">
+            <button class="drawer-item logout" id="drBtnLogout" onclick="cerrarSesionApp()" style="width:100%; color:#B4453C; font-weight:700;">
+              <span class="dr-icon">🚪</span>
+              <span class="dr-label">Cerrar Sesión</span>
             </button>
-            <button class="drawer-item hidden" data-nav="sistema" id="drNavSistema" data-modkey="configuracion_sistema">
-              <span class="dr-icon">🛠️</span>
-              <span class="dr-label">Configuración del Sistema</span>
-            </button>
-            <button class="drawer-item" id="drNavRespaldos" data-modkey="respaldos" onclick="descargarRespaldo(); cerrarDrawer();">
-              <span class="dr-icon">💾</span>
-              <span class="dr-label">Descargar Respaldo JSON</span>
-            </button>
-            <button class="drawer-item" id="drBtnConfigRapida">
-              <span class="dr-icon">🔄</span>
-              <span class="dr-label">Configuración Rápida / Sincronización</span>
-            </button>
+            <p style="text-align:center; font-size:9.5px; color:#94A3B8; margin:8px 0 0;">© CRM MAJO · Jorge Luque</p>
           </div>
         </div>
       </div>
-      <div class="drawer-footer">
-        <button class="drawer-item logout" id="drBtnLogout">
-          <span class="dr-icon">🚪</span>
-          <span class="dr-label">Cerrar Sesión</span>
-        </button>
-        <p style="text-align:center; font-size:9.5px; color:#B8B2A0; margin:10px 0 0;">© <span id="drCopyrightYear"></span> CRM MAJO · Jorge Luque — Todos los derechos reservados</p>
+
+      <!-- 2. SUBPANEL LATERAL AL COSTADO (SUB-DRAWER DINÁMICO) -->
+      <div class="drawer-subpanel" id="drawerSubPanel">
+        <div class="drawer-subpanel-header">
+          <div style="display:flex; align-items:center; gap:8px; min-width:0;">
+            <button type="button" class="subpanel-back-btn" onclick="cerrarSubMenuLateral()">← Volver</button>
+            <span id="subPanelIcono" style="font-size:20px;">🚀</span>
+            <div style="min-width:0;">
+              <h4 id="subPanelTitulo" style="margin:0; font-size:13px; font-weight:800; color:var(--navy); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Submódulos</h4>
+              <p id="subPanelSubtitulo" style="margin:0; font-size:10px; color:var(--ink-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Selecciona una opción</p>
+            </div>
+          </div>
+          <button type="button" class="subpanel-close-btn" onclick="cerrarDrawer()" title="Cerrar menú">✕</button>
+        </div>
+
+        <div class="drawer-subpanel-list" id="subPanelListaItems">
+          <!-- Opciones inyectadas dinámicamente -->
+        </div>
       </div>
     </div>
   </div>
@@ -1277,8 +1288,9 @@ main.app-content {
   <div class="login-screen" id="loginScreen">
     <img class="login-logo" src="logo-casa-dorada.png" alt="Casa Dorada">
     <div class="login-card">
-      <h1>Casa Dorada</h1>
-      <p>Planner comercial y operativo. Entra con tu cuenta de Google para acceder a tus actividades, clientes y equipo.</p>
+      <h1 style="font-size:42px; font-weight:900; letter-spacing:1.5px; margin:0 0 2px; color:#fff; text-shadow:0 3px 12px rgba(0,0,0,0.4); line-height:1;">MAJO</h1>
+      <div style="font-size:15px; font-weight:800; color:var(--gold-soft); letter-spacing:3.5px; margin-bottom:14px; text-transform:uppercase;">CRM / ERP</div>
+      <p style="color:#A9B4C4; font-size:13.5px; margin:0 0 26px; line-height:1.45; max-width:320px;">Plataforma comercial y operativa. Entra con tu cuenta de Google para acceder a tus actividades, clientes y equipo.</p>
       <button class="btn-google" id="btnGoogleLogin">
         <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84c-.21 1.13-.84 2.09-1.8 2.73v2.27h2.91c1.7-1.57 2.69-3.88 2.69-6.64z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.17l-2.91-2.27c-.81.54-1.84.86-3.05.86-2.34 0-4.33-1.58-5.04-3.71H.96v2.34C2.44 15.98 5.48 18 9 18z"/><path fill="#FBBC05" d="M3.96 10.71A5.4 5.4 0 013.68 9c0-.6.1-1.18.28-1.71V4.96H.96A9 9 0 000 9c0 1.45.35 2.83.96 4.04l3-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.96l3 2.33C4.67 5.16 6.66 3.58 9 3.58z"/></svg>
         Continuar con Google
@@ -1292,8 +1304,9 @@ main.app-content {
   <!-- APP -->
   <div id="mainScreen" class="hidden" style="display:flex; flex-direction:column; flex:1;">
     <div class="topbar">
-      <div style="display:flex; align-items:center; gap:10px;">
+      <div style="display:flex; align-items:center; gap:8px;">
         <button class="menu-btn" id="btnMenuDrawer" title="Menú de navegación">≡</button>
+        <button class="menu-btn" onclick="irAVista('inicio')" title="Volver a Inicio / Portada" style="font-size:18px; display:flex; align-items:center; justify-content:center; background:#fff; border:1px solid #E2E8F0; border-radius:10px; width:38px; height:38px; cursor:pointer;">🏠</button>
         <div>
           <div class="greet" id="greetName">Hola, Jorge</div>
           <div class="role" id="greetRole">SuperAdmin (Desarrollador)</div>
@@ -1325,7 +1338,11 @@ main.app-content {
             <img src="logo-casa-dorada.png" alt="Casa Dorada" class="logo-3d-flotante" style="animation-delay:0s;">
             <img src="logo-costa-dorada.png" alt="Costa Dorada" class="logo-3d-flotante" style="animation-delay:0.5s;">
           </div>
-          <h2 class="welcome-title" id="wb_saludo" style="margin-top:14px;">¡Buenos días!</h2>
+          <div style="margin-top:10px; margin-bottom:2px;">
+            <span style="font-size:32px; font-weight:900; color:#fff; letter-spacing:1px; line-height:1; display:block; text-shadow:0 2px 10px rgba(0,0,0,0.35);">MAJO</span>
+            <span style="font-size:12.5px; font-weight:800; color:var(--gold-soft); letter-spacing:2.5px; text-transform:uppercase; display:block; margin-top:2px;">CRM / ERP</span>
+          </div>
+          <h2 class="welcome-title" id="wb_saludo" style="margin-top:8px;">¡Buenos días!</h2>
           <p class="welcome-sub" id="wb_subtitulo" style="margin-bottom:0;">Bienvenido a tu jornada comercial y de gestión. Enfoque total en metas y cierres.</p>
         </div>
       </div>
@@ -1369,6 +1386,22 @@ main.app-content {
             <button class="chip-btn gold" onclick="abrirModalActividad()" style="font-size:11.5px; padding:8px 14px; font-weight:700;">+ Registrar Actividad</button>
             <button class="chip-btn" onclick="abrirModalAgenda()" style="font-size:11.5px; padding:8px 14px; border-color:var(--gold); color:var(--navy); background:#fff; font-weight:700;">📅 Agendar Actividad</button>
             <button class="chip-btn" onclick="irARegistrarSolicitudDesdeInicio()" style="font-size:11.5px; padding:8px 14px; border-color:#CBD5E1; color:var(--navy); background:#fff; font-weight:700;">📝 Agendar Solicitud</button>
+          </div>
+
+          <!-- BARRA DE PROGRESO DE JORNADA LABORAL EFECTIVA (TIEMPO REAL) -->
+          <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:12px; padding:10px 14px; margin-top:14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <span style="font-size:11.5px; font-weight:800; color:var(--navy);">⏱️ Progreso de Jornada Efectiva de Hoy</span>
+              <span id="progreso_jornada_txt" style="font-size:11.5px; font-weight:800; color:#1D4ED8;">0.0 / 8.0 hrs (0%)</span>
+            </div>
+            <div style="width:100%; height:8px; background:#E2E8F0; border-radius:6px; overflow:hidden;">
+              <div id="progreso_jornada_barra" style="width:0%; height:100%; background:linear-gradient(90deg, #3B82F6 0%, #10B981 100%); transition:width 0.4s ease;"></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-top:5px; font-size:10px; color:var(--ink-dim);">
+              <span id="desglose_terreno_txt">🚐 Terreno: 0.0h</span>
+              <span id="desglose_oficina_txt">🏢 Oficina: 0.0h</span>
+              <span id="desglose_meta_txt">Meta: 8.0h completas</span>
+            </div>
           </div>
         </div>
 
@@ -2157,8 +2190,14 @@ main.app-content {
         </div>
       </div>
       <div class="field"><label>Fecha</label><input type="date" id="actFecha"></div>
-      <div class="field"><label>Hora de inicio</label><input type="time" id="actHoraInicio"></div>
-      <div class="field"><label>Hora de fin</label><input type="time" id="actHoraFin"></div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <button type="button" class="chip-btn gold" onclick="abrirModalDictadoVoz()" style="font-size:11px; font-weight:700; padding:6px 12px;">🎙️ Dictar por Voz (Detecta horas automáticamente)</button>
+        <span id="actHorasEfectivasBadge" class="badge" style="background:#EBF3FC; color:#1E4B82; font-weight:700;">0.0 hrs efectivas</span>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+        <div class="field"><label>Hora de inicio *</label><input type="time" id="actHoraInicio" onchange="actualizarHorasEfectivasModalActividad()"></div>
+        <div class="field"><label>Hora de fin *</label><input type="time" id="actHoraFin" onchange="actualizarHorasEfectivasModalActividad()"></div>
+      </div>
       <div class="field"><label>Personas involucradas</label><input type="text" id="actPersonas" placeholder="Nombres separados por coma"></div>
       <div class="field"><label>Foto o evidencia (opcional)</label><input type="file" id="actArchivo" accept="image/*,application/pdf"></div>
       <div class="modal-actions">
@@ -2242,8 +2281,49 @@ main.app-content {
       </div>
 
       <div class="field">
-        <label>Cliente *</label>
-        <select id="nv_cliente_sel"></select>
+        <label>Cliente Registrado</label>
+        <select id="nv_cliente_sel" onchange="alSeleccionarClienteModalVisita()"></select>
+      </div>
+
+      <!-- FILTROS DE CALIFICACIÓN OBLIGATORIA (REQUISITO PARA VAN Y PRESENTACIÓN) -->
+      <div style="background:#FFFDF5; border:1.5px solid #FCD34D; border-radius:12px; padding:12px; margin-bottom:12px;">
+        <span style="font-size:11px; font-weight:800; color:#92400E; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:8px;">
+          🔒 Filtros de Calificación Obligatorios (Anti-Paseos)
+        </span>
+
+        <div class="field" style="margin-bottom:8px;">
+          <label style="font-weight:700; font-size:11.5px; color:#142A4D;">Nombre del Cliente *</label>
+          <input type="text" id="nv_cliente_nombre_input" placeholder="Nombre completo del prospecto">
+        </div>
+
+        <div class="field" style="margin-bottom:8px;">
+          <label style="font-weight:700; font-size:11.5px; color:#142A4D;">Procedencia del Prospecto *</label>
+          <select id="nv_procedencia" style="font-weight:600; font-size:12px;">
+            <option value="">— Selecciona Procedencia Obligatoria —</option>
+            <option value="Leads RRSS">📱 Leads RRSS (Meta Ads / TikTok / Facebook)</option>
+            <option value="Activación en Feria">🎪 Activación en Feria (Bolognesi, Cenepa, Grau, Leguía)</option>
+            <option value="Convenio Institucional">🏛️ Convenio Institucional / Gremio / Sindicato</option>
+            <option value="Referido">🤝 Referido (Embajador de Marca / Familiar / Amigo)</option>
+            <option value="Orgánico">🚶 Orgánico (Paso por oficina central / Recomendación)</option>
+          </select>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <div class="field" style="margin-bottom:0;">
+            <label style="font-weight:700; font-size:11.5px; color:#142A4D;">Presupuesto Estimado *</label>
+            <input type="text" id="nv_presupuesto" placeholder="Ej: Contado S/ 25k o Inicial S/ 3k" style="font-size:12px;">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label style="font-weight:700; font-size:11.5px; color:#142A4D;">¿Con quién decide? *</label>
+            <select id="nv_quien_decide" style="font-weight:600; font-size:12px;">
+              <option value="">— Seleccionar —</option>
+              <option value="Decide solo/a (Titular)">Decide solo/a (Titular)</option>
+              <option value="En pareja / Con cónyuge (Asisten ambos)">En pareja / Con cónyuge (Asisten ambos)</option>
+              <option value="En familia / Con Hijos o Padres">En familia / Con Hijos o Padres</option>
+              <option value="Sociedad Comercial / Socios">Sociedad Comercial / Socios</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       <div class="field">
@@ -2950,14 +3030,31 @@ main.app-content {
     </div>
   </div>
 
-  <!-- MODAL: Visor de Documentos -->
+  <!-- MODAL: Visor de Documentos con Zoom Interactivo y Descarga Vía WhatsApp -->
   <div class="modal-backdrop" id="modalVisorDocumento">
-    <div class="modal-sheet" style="max-width:100%; height:92vh; max-height:92vh; display:flex; flex-direction:column; padding:16px 12px;">
-      <h3 id="visdoc_titulo" style="margin-bottom:8px;">Documento</h3>
-      <div id="visdoc_contenedor" style="flex:1; overflow:auto; background:#F2EFE6; border-radius:10px; touch-action:pinch-zoom pan-x pan-y; display:flex; align-items:center; justify-content:center;"></div>
-      <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
-        <a id="visdoc_btn_descargar" href="#" download class="btn-secondary" style="flex:1; text-align:center; text-decoration:none;">⬇️ Descargar</a>
-        <a id="visdoc_btn_whatsapp" href="#" target="_blank" rel="noopener" class="btn-primary" style="flex:1; text-align:center; text-decoration:none; background:#25D366; border-color:#25D366;">📲 Enviar por WhatsApp</a>
+    <div class="modal-sheet" style="max-width:96%; width:96%; height:94vh; max-height:94vh; display:flex; flex-direction:column; padding:14px 12px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <h3 id="visdoc_titulo" style="margin:0; font-size:15px; color:var(--navy); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Documento</h3>
+        <button type="button" class="modal-x-close" data-close="modalVisorDocumento" style="position:static;">✕</button>
+      </div>
+
+      <!-- BARRA DE CONTROL DE ZOOM INTERACTIVO -->
+      <div style="display:flex; justify-content:center; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap; background:#F8FAFC; border:1px solid #E2E8F0; padding:6px 10px; border-radius:10px;">
+        <span style="font-size:11px; font-weight:800; color:var(--navy);">🔍 Zoom:</span>
+        <button type="button" class="chip-btn" onclick="ajustarZoomVisor(0.25)" style="padding:3px 10px; font-weight:800; background:#fff; border-color:#CBD5E1;">➕ Acercar</button>
+        <button type="button" class="chip-btn" onclick="ajustarZoomVisor(-0.25)" style="padding:3px 10px; font-weight:800; background:#fff; border-color:#CBD5E1;">➖ Alejar</button>
+        <button type="button" class="chip-btn" onclick="resetZoomVisor()" style="padding:3px 10px; font-weight:700; background:#fff; border-color:#CBD5E1;">↺ 100%</button>
+        <span id="visor_zoom_nivel" style="font-size:11px; font-weight:800; color:var(--gold); background:#FFFBEB; padding:2px 6px; border-radius:6px;">130%</span>
+      </div>
+
+      <div id="visdoc_contenedor" style="flex:1; overflow:auto; background:#F2EFE6; border-radius:10px; touch-action:pinch-zoom pan-x pan-y; display:flex; align-items:center; justify-content:center; position:relative;"></div>
+
+      <!-- BOTONES DE DESCARGA DIRECTA VÍA WHATSAPP -->
+      <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+        <button type="button" class="btn-primary" onclick="descargarYEnviarWhatsAppVisor()" style="flex:2; text-align:center; background:#25D366; border-color:#25D366; font-weight:800; font-size:13px; display:flex; align-items:center; justify-content:center; gap:6px; box-shadow:0 3px 10px rgba(37,211,102,0.3);">
+          <span>📲</span> Descargar y Enviar por WhatsApp
+        </button>
+        <a id="visdoc_btn_descargar" href="#" download class="btn-secondary" style="flex:1; text-align:center; text-decoration:none; font-size:12px; display:flex; align-items:center; justify-content:center;">⬇️ Solo Descargar</a>
       </div>
     </div>
   </div>
@@ -3446,9 +3543,22 @@ main.app-content {
         <p id="dictado_estado" style="font-size:12px; font-weight:700; color:var(--navy); margin-top:10px;">Toca para hablar</p>
       </div>
 
+      <!-- TARJETA DE HORARIO DETECTADO AUTOMÁTICAMENTE -->
+      <div id="dictado_horario_card" class="hidden" style="background:#F0FDF4; border:1.5px solid #BBF7D0; border-radius:10px; padding:10px 12px; margin-bottom:12px; text-align:left;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:11.5px; font-weight:800; color:#166534;">⏱️ Horario y Tiempo Detectado:</span>
+          <span id="dictado_horas_badge" style="font-size:11px; font-weight:800; background:#DCFCE7; color:#15803D; padding:3px 8px; border-radius:6px;">0.0 hrs</span>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:6px; font-size:12px; color:#142A4D; font-weight:700;">
+          <span>Desde: <b id="dictado_hora_ini_txt">--:--</b></span>
+          <span>·</span>
+          <span>Hasta: <b id="dictado_hora_fin_txt">--:--</b></span>
+        </div>
+      </div>
+
       <div class="field" style="text-align:left;">
         <label>Transcripción detectada en vivo:</label>
-        <textarea id="dictado_transcripcion" style="min-height:85px;" placeholder="Ej: Recorrí el lote 12 Mz B con el Sr. Juan. Le gustó la vista al parque, financiamiento a 36 meses con S/ 8,000 inicial. Su cónyuge aprueba si cerramos antes del viernes..."></textarea>
+        <textarea id="dictado_transcripcion" oninput="alCambiarTextoDictado(this.value)" style="min-height:85px;" placeholder="Ej: Hoy de 9:00 am a 11:30 am estuve llamando a 20 prospectos de la feria Bolognesi y agendé 2 visitas para la Van..."></textarea>
       </div>
 
       <div class="modal-actions">
@@ -3479,6 +3589,64 @@ main.app-content {
   </div>
 
   <!-- ============================================================== -->
+  <!-- MODAL: OPCIONES DE TRANSMISIÓN A GOOGLE TV / ANDROID TV -->
+  <!-- ============================================================== -->
+  <div class="modal-backdrop" id="modalOpcionesTransmitirTV" style="z-index:9999999;">
+    <div class="modal-sheet" style="max-width:500px; width:94%; background:#101724; color:#fff; border:2px solid #3B82F6; text-align:center;">
+      <button class="modal-x-close" data-close="modalOpcionesTransmitirTV" style="color:#fff; background:rgba(255,255,255,0.15);">✕</button>
+      
+      <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:8px;">
+        <span style="font-size:28px;">📺</span>
+        <h3 style="margin:0; color:#93C5FD; font-size:16.5px; font-weight:800;">Transmitir Showroom a TV</h3>
+      </div>
+      <p style="font-size:12px; color:#94A3B8; margin-top:0; margin-bottom:16px;">
+        Proyecta la pantalla de cierres en vivo en un Google TV, Android TV o Smart TV en la carpa de La Yarada.
+      </p>
+
+      <div style="display:flex; flex-direction:column; gap:10px; text-align:left;">
+        <!-- Opción 1: Transmisión Inalámbrica Directa -->
+        <div onclick="conectarGoogleCastNativo()" style="background:rgba(59,130,246,0.12); border:1.5px solid #3B82F6; padding:12px 14px; border-radius:12px; color:#fff; cursor:pointer; display:flex; align-items:center; gap:10px;">
+          <span style="font-size:24px; flex-shrink:0;">📡</span>
+          <div style="flex:1;">
+            <span style="font-size:13px; font-weight:800; color:#93C5FD; display:block;">1. Transmisión Inalámbrica (Google Cast / TV)</span>
+            <span style="font-size:11px; color:#CBD5E1; display:block; margin-top:2px;">Busca y conecta automáticamente con tu Google TV o Android TV en la red Wi-Fi.</span>
+          </div>
+          <span style="font-size:16px; color:#60A5FA; font-weight:800;">›</span>
+        </div>
+
+        <!-- Opción 2: Abrir enlace directo en el navegador de la TV -->
+        <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12); padding:12px 14px; border-radius:12px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+            <span style="font-size:20px;">🌐</span>
+            <span style="font-size:12.5px; font-weight:800; color:#FCD34D;">2. Abrir en Navegador de la TV (Modo Standalone)</span>
+          </div>
+          <p style="font-size:11px; color:#CBD5E1; margin:0 0 8px; line-height:1.35;">
+            Abre el navegador de tu TV (Chrome, TV Bro, Puffin) e ingresa esta URL para que funcione como monitor independiente 4K sincronizado en tiempo real:
+          </p>
+          <div style="display:flex; gap:6px; align-items:center;">
+            <input type="text" id="tv_url_display" readonly style="background:#1E293B; border:1px solid #475569; color:#93C5FD; font-family:monospace; font-size:11px; padding:6px 10px; border-radius:6px; flex:1;" value="">
+            <button type="button" class="chip-btn" onclick="copiarUrlShowroomTV()" style="background:#2563EB; color:#fff; border:none; font-weight:700; font-size:11px; padding:6px 10px;">📋 Copiar</button>
+          </div>
+        </div>
+
+        <!-- Opción 3: Pantalla Completa HDMI -->
+        <div onclick="togglePantallaCompletaTV(); closeModal('modalOpcionesTransmitirTV');" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12); padding:12px 14px; border-radius:12px; color:#fff; cursor:pointer; display:flex; align-items:center; gap:10px;">
+          <span style="font-size:24px; flex-shrink:0;">🖥️</span>
+          <div style="flex:1;">
+            <span style="font-size:13px; font-weight:800; color:#FCD34D; display:block;">3. Pantalla Completa HDMI (F11)</span>
+            <span style="font-size:11px; color:#CBD5E1; display:block; margin-top:2px;">Si conectas tu laptop o celular por cable HDMI a la TV, expande a pantalla completa sin barras.</span>
+          </div>
+          <span style="font-size:16px; color:#FCD34D; font-weight:800;">›</span>
+        </div>
+      </div>
+
+      <div style="margin-top:14px;">
+        <button type="button" class="btn-secondary" data-close="modalOpcionesTransmitirTV" style="width:100%; background:rgba(255,255,255,0.1); color:#fff; border-color:rgba(255,255,255,0.2);">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
   <!-- MODAL 1: MODO PANTALLA GIGANTE "DOMINGO DE CIERRES" (SHOWROOM TV) -->
   <!-- ============================================================== -->
   <div class="modal-backdrop" id="modalDomingoDeCierres">
@@ -3499,7 +3667,14 @@ main.app-content {
             <p style="margin:2px 0 0; font-size:11.5px; color:#94A3B8;">La Yarada Los Palos, Tacna · Jornada de Preventa Exclusiva</p>
           </div>
         </div>
-        <div style="text-align:right;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <!-- BOTÓN TRANSMITIR A GOOGLE TV / ANDROID TV -->
+          <button type="button" class="chip-btn" onclick="iniciarTransmisionTV()" style="background:linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%); color:#fff; border:none; font-weight:800; font-size:11.5px; padding:6px 12px; border-radius:8px; display:flex; align-items:center; gap:5px; box-shadow:0 3px 10px rgba(59,130,246,0.35); cursor:pointer;">
+            <span>📺</span> Transmitir a TV
+          </button>
+          <button type="button" class="chip-btn" onclick="togglePantallaCompletaTV()" title="Pantalla Completa" style="background:rgba(255,255,255,0.1); color:#FCD34D; border:1px solid rgba(252,211,77,0.3); font-size:13px; padding:6px 9px; border-radius:8px; cursor:pointer;">
+            ⛶
+          </button>
           <span id="relojEnVivoCierres" style="font-size:18px; font-weight:800; font-family:monospace; color:#FCD34D;">12:00:00 PM</span>
         </div>
       </div>
@@ -3801,7 +3976,7 @@ main.app-content {
           <span>📲</span>
         </button>
 
-        <button class="chip-btn" style="padding:10px; justify-content:space-between; border-color:#0369A1;" onclick="abrirModalConversorDivisas()">
+        <button class="chip-btn" style="padding:10px; justify-content:space-between; border-color:#0369A1;" onclick="closeModal('modalHerramientasTacna'); abrirModalConversorDivisas();">
           <span>💵 <b>Conversor Multidivisa:</b> Soles (PEN) · Dólar · Pesos CLP</span>
           <span>↗️</span>
         </button>
@@ -4474,7 +4649,14 @@ function horaLocalDeISO(iso){
   const m = String(d.getMinutes()).padStart(2, '0');
   return `${h}:${m}`;
 }
-function openModal(id){ document.getElementById(id).classList.add('open'); }
+let modalZIndexGlobal = 200000;
+function openModal(id){
+  const el = document.getElementById(id);
+  if (!el) return;
+  modalZIndexGlobal += 10;
+  el.style.zIndex = modalZIndexGlobal;
+  el.classList.add('open');
+}
 
 document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
   const sheet = backdrop.querySelector('.modal-sheet');
@@ -5455,6 +5637,76 @@ document.getElementById('btnConfirmarDescargaReporte').addEventListener('click',
     }
 
     dibujarEncabezadoPrincipal();
+
+    // ==============================================================
+    // CÁLCULO DE HORAS DE TRABAJO EFECTIVAS (ACTIVIDADES + AGENDAS + SOLICITUDES)
+    // ==============================================================
+    // CÁLCULO NETO DE HORAS (ANTI-SOLAPAMIENTO) Y CLASIFICACIÓN TERRENO VS OFICINA
+    let intervalos = [];
+    let horasTerrenoPDF = 0;
+    let horasOficinaPDF = 0;
+
+    (actsRegistradas || []).forEach(a => {
+      let dur = 0;
+      if (a.hora_inicio && a.hora_fin) {
+        dur = calcularHorasEfectivasEntre(a.hora_inicio, a.hora_fin);
+      } else if (a.horas_efectivas) {
+        dur = parseFloat(a.horas_efectivas) || 0;
+      } else {
+        dur = 0.5;
+      }
+      const loc = ((a.locacion || '') + ' ' + (a.titulo || '')).toLowerCase();
+      if (loc.includes('terreno') || loc.includes('yarada') || loc.includes('campo') || loc.includes('feria') || loc.includes('visita') || loc.includes('lote')) {
+        horasTerrenoPDF += dur;
+      } else {
+        horasOficinaPDF += dur;
+      }
+    });
+
+    (agendasRealizadas || []).forEach(ag => {
+      let dur = 1.0;
+      if (ag.fecha_inicio && ag.fecha_fin) {
+        dur = Math.max(0.5, (new Date(ag.fecha_fin) - new Date(ag.fecha_inicio)) / (1000 * 60 * 60));
+      }
+      const loc = ((ag.lugar || '') + ' ' + (ag.titulo || '')).toLowerCase();
+      if (loc.includes('terreno') || loc.includes('yarada') || loc.includes('visita')) {
+        horasTerrenoPDF += dur;
+      } else {
+        horasOficinaPDF += dur;
+      }
+    });
+
+    let horasSolicitudesPDF = (solicitudesDia || []).length * 0.5;
+    horasOficinaPDF += horasSolicitudesPDF;
+    const granTotalHorasEfectivas = +(horasTerrenoPDF + horasOficinaPDF).toFixed(1);
+
+    // DIBUJAR NOTA EN LETRA GRANDE EN EL REPORTE PDF CON CLASIFICACIÓN CLARA
+    doc.setFillColor(251, 246, 236);
+    doc.setDrawColor(200, 155, 60);
+    doc.setLineWidth(1.8);
+    doc.roundedRect(marginX, y, anchoUtil, 50, 6, 6, 'FD');
+
+    doc.setTextColor(20, 42, 77); // Navy
+    doc.setFontSize(15);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`⏱️ JORNADA EFECTIVA TOTAL: ${granTotalHorasEfectivas} HORAS DE TRABAJO`, marginX + 14, y + 18);
+
+    doc.setFontSize(9.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(15, 118, 110);
+    doc.text(`• Terreno y Prospección en Campo: ${horasTerrenoPDF.toFixed(1)} hrs`, marginX + 14, y + 30);
+    doc.setTextColor(30, 64, 175);
+    doc.text(`• Oficina, Llamadas y Trámites: ${horasOficinaPDF.toFixed(1)} hrs`, marginX + 220, y + 30);
+
+    doc.setFontSize(8.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(200, 155, 60);
+    const estadoMeta = granTotalHorasEfectivas >= 8.0 
+      ? '✓ Cumplimiento del 100% de la Jornada Laboral Efectiva (Meta diaria: 8.0 hrs cumplida)' 
+      : `⚠️ Jornada Parcial Registrada (${granTotalHorasEfectivas} de 8.0 hrs meta laboral diaria)`;
+    doc.text(`Índice de Productividad Laboral: ${estadoMeta}`, marginX + 14, y + 43);
+
+    y += 60;
     let seccionNum = 1;
 
     if (rendimientoDia) {
@@ -5558,36 +5810,33 @@ document.getElementById('btnConfirmarDescargaReporte').addEventListener('click',
         const metaStr = doc.splitTextToSize(detalles.join('   |   '), anchoUtil - 24);
         doc.text(metaStr, marginX + 14, y + cardHeight - 8);
 
+        y += cardHeight + 6;
+
+        // ==============================================================
+        // IMÁGENES / EVIDENCIAS JUSTO DEBAJO DE ESTA ACTIVIDAD ESPECÍFICA
+        // ==============================================================
         if (act.evidencias && act.evidencias.length > 0) {
-          fotosParaAdjuntar.push({ titulo: act.titulo, urls: act.evidencias });
-        }
+          const fotoW = 120;
+          const fotoH = 80;
+          let fotoX = marginX + 14;
 
-        y += cardHeight + 8;
-      }
+          // Etiqueta formal vinculando la foto directamente a esta actividad
+          doc.setFontSize(8);
+          doc.setFont(undefined, 'bold');
+          doc.setTextColor(200, 155, 60); // cGold
+          doc.text(`📷 Evidencia fotográfica de la actividad (${act.titulo.slice(0, 35)}…):`, marginX + 14, y + 8);
+          y += 12;
 
-      if (fotosParaAdjuntar.length > 0) {
-        if (y > pageHeight - 180) { doc.addPage(); dibujarFondoYMembrete(); y = 120; }
-        doc.setTextColor(...cNavy);
-        doc.setFontSize(10);
-        doc.setFont(undefined, 'bold');
-        doc.text(`${seccionNum++}. SUSTENTO FOTOGRÁFICO DE CAMPO`, marginX, y);
-        y += 14;
-
-        for (const item of fotosParaAdjuntar) {
-          const fotoW = 100;
-          const fotoH = 75;
-          let fotoX = marginX;
-
-          for (const url of item.urls) {
+          for (const url of act.evidencias) {
             if (fotoX + fotoW > pageWidth - marginX) {
-              fotoX = marginX;
-              y += fotoH + 18;
+              fotoX = marginX + 14;
+              y += fotoH + 10;
             }
-            if (y + fotoH > pageHeight - 120) {
+            if (y + fotoH > pageHeight - 110) {
               doc.addPage();
               dibujarFondoYMembrete();
               y = 120;
-              fotoX = marginX;
+              fotoX = marginX + 14;
             }
 
             try {
@@ -5599,15 +5848,18 @@ document.getElementById('btnConfirmarDescargaReporte').addEventListener('click',
                 r.readAsDataURL(blobImg);
               });
               doc.setDrawColor(...cBorder);
-              doc.rect(fotoX - 1, y - 1, fotoW + 2, fotoH + 2);
+              doc.setLineWidth(0.8);
+              doc.roundedRect(fotoX - 1, y - 1, fotoW + 2, fotoH + 2, 3, 3, 'S');
               doc.addImage(b64Img, fotoX, y, fotoW, fotoH);
               fotoX += fotoW + 12;
             } catch (err) {
-              console.error('Error al cargar evidencia en PDF', err);
+              console.error('Error al cargar evidencia debajo de actividad', err);
             }
           }
-          y += fotoH + 16;
+          y += fotoH + 12;
         }
+
+        y += 4; // Espacio antes de la siguiente actividad
       }
     }
 
@@ -5736,7 +5988,18 @@ document.getElementById('btnConfirmarDescargaReporte').addEventListener('click',
     const blobUrl = URL.createObjectURL(blob);
     window.open(blobUrl, '_blank');
     doc.save(nombreArchivo);
-    toast('Informe generado ✓');
+    toast('Informe generado y abriendo WhatsApp… ✓');
+
+    // Enrutamiento directo de descarga vía WhatsApp
+    const wspMsgRep = `📄 *INFORME DIARIO DE ACTIVIDADES · CASA DORADA*\n` +
+      `• *Colaborador:* ${currentProfile?.nombre || 'Asesor Comercial'}\n` +
+      `• *Fecha de Gestión:* ${fechaReporte}\n` +
+      `• ⏱️ *JORNADA EFECTIVA REGISTRADA:* ${granTotalHorasEfectivas} HORAS\n` +
+      `  - Terreno y Prospección en Campo: ${horasTerrenoPDF.toFixed(1)} hrs\n` +
+      `  - Oficina, Llamadas y Trámites: ${horasOficinaPDF.toFixed(1)} hrs\n` +
+      `• *Cumplimiento:* ${granTotalHorasEfectivas >= 8.0 ? 'Meta diaria cumplida al 100%' : 'Jornada parcial'}\n\n` +
+      `_Informe oficial consolidado emitido desde Planner Corporativo Casa Dorada._`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(wspMsgRep)}`, '_blank');
   } catch (e) {
     toast('Error al generar el informe');
     console.error(e);
@@ -5986,6 +6249,33 @@ document.getElementById('btnGenerarInformeFormal').addEventListener('click', asy
         doc.text(tituloLines, marginX + 80, y);
         doc.text(estadoLabel(act.estado), pageWidth - marginX - 70, y);
         y += Math.max(13, tituloLines.length * 11);
+
+        // Evidencia fotográfica justo debajo de la actividad en informe formal
+        if (act.evidencias && act.evidencias.length > 0) {
+          const fotoW = 95;
+          const fotoH = 65;
+          if (y + fotoH > pageHeight - 120) {
+            doc.addPage();
+            dibujarMembrete();
+            y = 150;
+          }
+          try {
+            const respImg = await fetch(act.evidencias[0]);
+            const blobImg = await respImg.blob();
+            const b64Img = await new Promise(res => {
+              const r = new FileReader();
+              r.onloadend = () => res(r.result);
+              r.readAsDataURL(blobImg);
+            });
+            doc.setDrawColor(200, 155, 60);
+            doc.rect(marginX + 80 - 1, y - 1, fotoW + 2, fotoH + 2);
+            doc.addImage(b64Img, marginX + 80, y, fotoW, fotoH);
+            y += fotoH + 8;
+          } catch(err) {
+            console.error('Error imagen informe formal', err);
+          }
+        }
+
         doc.setDrawColor(230, 230, 230);
         doc.line(marginX, y - 4, pageWidth - marginX, y - 4);
       }
@@ -7687,7 +7977,18 @@ async function descargarCotizacionPDF(){
   doc.text('Atendido por: ' + (currentProfile?.nombre || 'Asesor Comercial') + ' · ' + (currentProfile?.cargo || 'Fuerza de Ventas'), 14, 219);
 
   doc.save(`Cotizacion_CostaDorada_${cliente.replace(/\s+/g, '_')}_Mz${mz}Lt${lt}.pdf`);
-  toast('PDF descargado con éxito ✓');
+  toast('PDF descargado y abriendo WhatsApp… ✓');
+
+  // Enrutamiento directo de descarga vía WhatsApp
+  const wspMsgCot = `📑 *COTIZACIÓN OFICIAL · COSTA DORADA (LA YARADA LOS PALOS)*\n` +
+    `Constructora e Inmobiliaria Casa Dorada S.A.C.\n\n` +
+    `• *Cliente:* ${cliente}\n` +
+    `• *Ubicación:* Manzana ${mz} - Lote ${lt} (${area} m²)\n` +
+    `• *Valor Total:* S/ ${Number(total).toLocaleString('es-PE')}\n` +
+    `• *Condición:* ${condicion === 'contado' ? 'Pago al Contado con Descuento' : `Financiamiento Directo (${meses} cuotas)`}\n` +
+    `• *Inversión Mensual:* ${cuota}\n\n` +
+    `_Archivo PDF de cotización generado y descargado para envío formal._`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(wspMsgCot)}`, '_blank');
 } catch (e) {
     toast('Error al generar PDF');
     console.error(e);
@@ -11054,13 +11355,40 @@ async function guardarNuevaVisita(){
 
   // Obtener datos del cliente de la caché
   const cliObj = (clientesCache || []).find(c => c.id === clienteId);
-  const clienteNombre = cliObj ? cliObj.nombre : (clienteSel.options[clienteSel.selectedIndex]?.text || 'Cliente');
+  const clienteSelText = clienteSel.options[clienteSel.selectedIndex]?.text || '';
+  const clienteNombreInput = document.getElementById('nv_cliente_nombre_input')?.value.trim();
+  const clienteNombre = clienteNombreInput || (cliObj ? cliObj.nombre : (clienteSelText.includes('Selecciona') ? '' : clienteSelText));
   const clienteCelular = cliObj ? (cliObj.celular || cliObj.telefono || '—') : '—';
   const clienteDni = cliObj ? (cliObj.dni || '—') : '—';
   const asesorNombre = currentProfile?.nombre || 'Jorge Luque';
 
+  const procedencia = document.getElementById('nv_procedencia')?.value;
+  const presupuesto = document.getElementById('nv_presupuesto')?.value.trim();
+  const quienDecide = document.getElementById('nv_quien_decide')?.value;
+
+  // VALIDACIÓN ESTRICTA Y BLOQUEO REQUERIDO
+  if (!clienteNombre) {
+    toast('⚠️ Bloqueo: El Nombre del Cliente es obligatorio para agendar.');
+    return;
+  }
+  if (!numClientes || numClientes < 1) {
+    toast('⚠️ Bloqueo: Debes indicar los Asientos solicitados por el cliente.');
+    return;
+  }
+  if (!procedencia) {
+    toast('⚠️ Bloqueo: La Procedencia del prospecto es obligatoria.');
+    return;
+  }
+  if (!presupuesto) {
+    toast('⚠️ Bloqueo: El Presupuesto estimado es obligatorio.');
+    return;
+  }
+  if (!quienDecide) {
+    toast('⚠️ Bloqueo: El campo "¿Con quién decide?" es obligatorio.');
+    return;
+  }
   if (!fecha || !hora) {
-    toast('Por favor indica fecha y hora');
+    toast('⚠️ Bloqueo: Por favor indica fecha y hora');
     return;
   }
 
@@ -11077,6 +11405,9 @@ async function guardarNuevaVisita(){
     hora,
     num_clientes: numClientes,
     num_asientos: numAsientos,
+    procedencia,
+    presupuesto,
+    quien_decide: quienDecide,
     observaciones: observaciones || null,
     estado: 'programada',
     created_at: new Date().toISOString()
@@ -11149,6 +11480,9 @@ async function guardarNuevaVisita(){
     `🚐 *DETALLE DE MOVILIDAD (VAN 14 ASIENTOS):*\n` +
     `🪑 *Asientos solicitados por el cliente:* ${numClientes}\n` +
     `🪑 *Total asientos separados (cliente + asesor):* ${numAsientos}\n` +
+    `📍 *Procedencia:* ${procedencia}\n` +
+    `💰 *Presupuesto:* ${presupuesto}\n` +
+    `🤝 *Toma de Decisión:* ${quienDecide}\n` +
     `🟢 *Asientos que quedan DISPONIBLES en la Van:* ${libresRestantes} / 14\n\n` +
     `📝 *Observaciones / Punto de partida:* ${observaciones || 'Oficina central / Punto de encuentro habitual'}\n\n` +
     `_Registrado y verificado en Planner Corporativo Casa Dorada._`;
@@ -11626,6 +11960,7 @@ function abrirModalConversorDivisas(montoInicialSoles = 0){
     toast('No tienes permiso para utilizar el Conversor Multidivisa');
     return;
   }
+  closeModal('modalHerramientasTacna');
   const elMonto = document.getElementById('conv_soles');
   if (elMonto) {
     elMonto.value = montoInicialSoles > 0 ? montoInicialSoles : (elMonto.value || 10000);
@@ -12503,6 +12838,411 @@ function cerrarAlertaSpeedToLead() {
   document.getElementById('alertaSpeedToLead')?.classList.add('hidden');
 }
 
+/* ============================================================== */
+/* ZOOM INTERACTIVO Y DESCARGAS VÍA WHATSAPP */
+/* ============================================================== */
+let nivelZoomVisor = 1.3;
+
+function ajustarZoomVisor(delta) {
+  nivelZoomVisor = Math.min(3.5, Math.max(0.6, +(nivelZoomVisor + delta).toFixed(2)));
+  const lbl = document.getElementById('visor_zoom_nivel');
+  if (lbl) lbl.textContent = Math.round(nivelZoomVisor * 100) + '%';
+  
+  const canvas = document.getElementById('visdoc_pdf_canvas');
+  if (canvas) {
+    canvas.style.transform = `scale(${nivelZoomVisor / 1.3})`;
+    canvas.style.transformOrigin = 'top center';
+    canvas.style.transition = 'transform 0.15s ease';
+  }
+  const img = document.querySelector('#visdoc_contenedor img');
+  if (img) {
+    img.style.transform = `scale(${nivelZoomVisor / 1.0})`;
+    img.style.transformOrigin = 'top center';
+    img.style.transition = 'transform 0.15s ease';
+  }
+}
+
+function resetZoomVisor() {
+  nivelZoomVisor = 1.3;
+  const lbl = document.getElementById('visor_zoom_nivel');
+  if (lbl) lbl.textContent = '100%';
+  const canvas = document.getElementById('visdoc_pdf_canvas');
+  if (canvas) {
+    canvas.style.transform = 'scale(1)';
+    canvas.style.transition = 'transform 0.15s ease';
+  }
+  const img = document.querySelector('#visdoc_contenedor img');
+  if (img) {
+    img.style.transform = 'scale(1)';
+    img.style.transition = 'transform 0.15s ease';
+  }
+}
+
+function descargarYEnviarWhatsAppVisor() {
+  const url = document.getElementById('visdoc_btn_descargar')?.href;
+  const titulo = document.getElementById('visdoc_titulo')?.textContent || 'Documento Oficial Costa Dorada';
+  if (!url || url === '#' || url === window.location.href) {
+    toast('No hay archivo disponible para descargar');
+    return;
+  }
+
+  // Descarga local
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = (titulo.replace(/\s+/g, '_') || 'documento') + (url.endsWith('.pdf') ? '.pdf' : '');
+  a.target = '_blank';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+
+  // Enrutamiento directo a WhatsApp con el enlace de descarga
+  const wspMsg = `📄 *DOCUMENTO OFICIAL · COSTA DORADA (LA YARADA LOS PALOS)*\n` +
+    `Constructora e Inmobiliaria Casa Dorada S.A.C.\n\n` +
+    `Te comparto el documento solicitado:\n` +
+    `• *Título:* ${titulo}\n` +
+    `• *Descarga / Visualización directa:* ${url}\n\n` +
+    `_Documentación formal y respaldo legal de Costa Dorada._`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(wspMsg)}`, '_blank');
+  toast('Descargando archivo y abriendo WhatsApp… ✓');
+}
+
+function compartirElementoPortafolioWhatsApp(url, titulo) {
+  if (!url) { toast('No hay enlace disponible'); return; }
+  const msg = `📁 *PORTAFOLIO OFICIAL · COSTA DORADA (LA YARADA LOS PALOS)*\n` +
+    `Constructora e Inmobiliaria Casa Dorada S.A.C.\n\n` +
+    `Te comparto el material oficial:\n` +
+    `• *${titulo}*\n` +
+    `• *Ver y Descargar:* ${url}\n\n` +
+    `_Consulta lotes disponibles y financiamiento directo en soles a sola firma._`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+
+/* ============================================================== */
+/* GESTIÓN DE VISITAS Y CALIFICACIÓN DE PROSPECTOS */
+/* ============================================================== */
+function alSeleccionarClienteModalVisita() {
+  const clienteId = document.getElementById('nv_cliente_sel')?.value;
+  if (!clienteId) return;
+  const cli = (clientesCache || []).find(c => c.id === clienteId);
+  if (cli) {
+    const inputNombre = document.getElementById('nv_cliente_nombre_input');
+    if (inputNombre) inputNombre.value = cli.nombre || '';
+    if (cli.origen) {
+      const selProc = document.getElementById('nv_procedencia');
+      if (selProc) {
+        if (cli.origen.includes('Feria')) selProc.value = 'Activación en Feria';
+        else if (cli.origen.includes('Referido') || cli.origen.includes('Embajador')) selProc.value = 'Referido';
+        else if (cli.origen.includes('Facebook') || cli.origen.includes('TikTok') || cli.origen.includes('Instagram')) selProc.value = 'Leads RRSS';
+        else selProc.value = 'Orgánico';
+      }
+    }
+  }
+}
+
+function actualizarBarraJornadaEfectiva(acts = [], agendas = [], sols = []) {
+  let horasTerreno = 0;
+  let horasOficina = 0;
+
+  (acts || []).forEach(a => {
+    let dur = 0;
+    if (a.hora_inicio && a.hora_fin) {
+      dur = calcularHorasEfectivasEntre(a.hora_inicio, a.hora_fin);
+    } else if (a.horas_efectivas) {
+      dur = parseFloat(a.horas_efectivas) || 0;
+    } else {
+      dur = 0.5;
+    }
+    const loc = ((a.locacion || '') + ' ' + (a.titulo || '')).toLowerCase();
+    if (loc.includes('terreno') || loc.includes('yarada') || loc.includes('campo') || loc.includes('feria') || loc.includes('visita') || loc.includes('lote')) {
+      horasTerreno += dur;
+    } else {
+      horasOficina += dur;
+    }
+  });
+
+  (agendas || []).forEach(ag => {
+    let dur = 1.0;
+    if (ag.fecha_inicio && ag.fecha_fin) {
+      dur = Math.max(0.5, (new Date(ag.fecha_fin) - new Date(ag.fecha_inicio)) / (1000 * 60 * 60));
+    }
+    const loc = ((ag.lugar || '') + ' ' + (ag.titulo || '')).toLowerCase();
+    if (loc.includes('terreno') || loc.includes('yarada') || loc.includes('visita')) {
+      horasTerreno += dur;
+    } else {
+      horasOficina += dur;
+    }
+  });
+
+  horasOficina += (sols || []).length * 0.5;
+
+  const total = +(horasTerreno + horasOficina).toFixed(1);
+  const pct = Math.min(100, Math.round((total / 8.0) * 100));
+
+  const txtEl = document.getElementById('progreso_jornada_txt');
+  const barEl = document.getElementById('progreso_jornada_barra');
+  const terEl = document.getElementById('desglose_terreno_txt');
+  const ofiEl = document.getElementById('desglose_oficina_txt');
+
+  if (txtEl) txtEl.textContent = `${total} / 8.0 hrs (${pct}%)`;
+  if (barEl) barEl.style.width = `${pct}%`;
+  if (terEl) terEl.textContent = `🚐 Terreno: ${horasTerreno.toFixed(1)}h`;
+  if (ofiEl) ofiEl.textContent = `🏢 Oficina: ${horasOficina.toFixed(1)}h`;
+}
+
+
+/* ============================================================== */
+/* SUBMENÚ LATERAL INTELIGENTE EN CASCADA (FLYOUT SUB-DRAWER) */
+/* ============================================================== */
+let subMenuCategoriaActiva = null;
+
+const SUBMENUS_DATA = {
+  campo: {
+    titulo: 'Operaciones de Campo',
+    icono: '🚀',
+    subtitulo: 'Herramientas in situ para La Yarada',
+    items: [
+      { icono: '🚀', titulo: 'Panel de Campo Completo', desc: 'Pantalla única con los 9 módulos', accion: () => { irAVista('operaciones_campo'); cerrarDrawer(); } },
+      { icono: '⚡', titulo: 'Speed to Lead (<90s)', desc: 'Alerta reactiva y cronómetro 300s', accion: () => { simularAlertaSpeedToLead(); cerrarDrawer(); } },
+      { icono: '🎙️', titulo: 'Dictado por Voz', desc: 'Bitácora de acuerdos en terreno', accion: () => { abrirModalDictadoVoz(); cerrarDrawer(); } },
+      { icono: '📱', titulo: 'Pre-Reserva QR (S/ 500)', desc: 'Generador offline BCP/Yape/Chile', accion: () => { abrirModalPreReservaEnTerreno('B','12',500); cerrarDrawer(); } },
+      { icono: '🏛️', titulo: 'Cierre Rápido Tacna', desc: 'Partida SUNARP, Pórtico y Vías', accion: () => { abrirModalHerramientasTacna(); cerrarDrawer(); } },
+      { icono: '🎯', titulo: 'Cadencias 1-Toque', desc: 'Scripts para Ferias, Chile y Visitas', accion: () => { abrirModalCadencias('Carlos Mamani', '952123456'); cerrarDrawer(); } },
+      { icono: '🎉', titulo: 'Domingo de Cierres TV', desc: 'Campana acústica y confeti en vivo', accion: () => { abrirModalDomingoDeCierres(); cerrarDrawer(); } },
+      { icono: '✍️', titulo: 'Minuta Legal & Firma', desc: 'Contrato preparatorio en pantalla táctil', accion: () => { abrirModalMinutaCompraventa(); cerrarDrawer(); } },
+      { icono: '🤝', titulo: 'Red de Embajadores', desc: 'Código de referido con bono S/ 500', accion: () => { abrirModalEmbajadores(); cerrarDrawer(); } }
+    ]
+  },
+  comercial: {
+    titulo: 'Ventas & Cierres',
+    icono: '💼',
+    subtitulo: 'Pipeline comercial y clientes',
+    items: [
+      { icono: '📊', titulo: 'Tablero de Control & KPIs', desc: 'Métricas de ventas y rendimiento', accion: () => { irAVista('control'); cerrarDrawer(); } },
+      { icono: '👥', titulo: 'Cartera de Clientes & Kanban', desc: 'Pipeline de prospectos y estados', accion: () => { irAVista('clientes'); cerrarDrawer(); } },
+      { icono: '🧮', titulo: 'Cotizador Rápido de Lotes', desc: 'Cuotas dobles, Dúo y financiamiento', accion: () => { abrirModalCotizador(); cerrarDrawer(); } },
+      { icono: '🗺️', titulo: 'Planos Interactivos', desc: 'Disponibilidad y Master Plan 360°', accion: () => { irAVista('planos'); cerrarDrawer(); } },
+      { icono: '🏷️', titulo: 'Separaciones de Lotes', desc: 'Lotes reservados y control de pagos', accion: () => { irAVista('separaciones'); cerrarDrawer(); } },
+      { icono: '🚐', titulo: 'Movilidad Van (14 Asientos)', desc: 'Control de salidas a La Yarada', accion: () => { irAVista('visitas'); cerrarDrawer(); } },
+      { icono: '📁', titulo: 'Portafolio Multimedia', desc: 'Brochure, videos de dron y fotos', accion: () => { irAVista('portafolio'); cerrarDrawer(); } },
+      { icono: '🎯', titulo: 'Manual de Ventas & Speeches', desc: 'Argumentarios y objeciones', accion: () => { irAVista('manualventas'); cerrarDrawer(); } }
+    ]
+  },
+  finanzas: {
+    titulo: 'Finanzas & ERP',
+    icono: '💰',
+    subtitulo: 'Caja, comisiones y cobranzas',
+    items: [
+      { icono: '💵', titulo: 'Billetera de Comisiones', desc: 'Liquidación y escala de comisiones', accion: () => { abrirModalComisionesERP(); cerrarDrawer(); } },
+      { icono: '🧾', titulo: 'Caja & Vouchers Oficiales', desc: 'Arqueo de caja y emisión de recibos', accion: () => { abrirModalCajaTesoreria(); cerrarDrawer(); } },
+      { icono: '🏦', titulo: 'Inventario de Lotes (ERP)', desc: 'Control de manzanas y precios m²', accion: () => { abrirModalInventarioLotes(); cerrarDrawer(); } },
+      { icono: '💳', titulo: 'Control de Cobranzas', desc: 'Letras mensuales y cuotas directas', accion: () => { irACobranzas(); cerrarDrawer(); } },
+      { icono: '💱', titulo: 'Conversor Multidivisa', desc: 'Tipo de cambio Soles, Dólares y CLP', accion: () => { abrirModalConversorDivisas(); cerrarDrawer(); } },
+      { icono: '📈', titulo: 'Simulador Plusvalía & ROI', desc: 'Proyección de valorización a 10 años', accion: () => { abrirModalPlusvalia(); cerrarDrawer(); } }
+    ]
+  },
+  operativa: {
+    titulo: 'Gestión & Equipo',
+    icono: '📋',
+    subtitulo: 'Actividades, agenda y equipo',
+    items: [
+      { icono: '✓', titulo: 'Actividades y Tareas Hoy', desc: 'Bitácora y horas de trabajo efectivas', accion: () => { irAVista('actividades'); cerrarDrawer(); } },
+      { icono: '📅', titulo: 'Agenda & Google Calendar', desc: 'Citas y eventos programados', accion: () => { irAVista('agenda'); cerrarDrawer(); } },
+      { icono: '📝', titulo: 'Solicitudes y Requerimientos', desc: 'Trámites y pedidos a gerencia', accion: () => { irAVista('solicitudes'); cerrarDrawer(); } },
+      { icono: '📈', titulo: 'Rendimiento por Área', desc: 'Métricas diarias de llamadas y citas', accion: () => { irAVista('rendimiento'); cerrarDrawer(); } },
+      { icono: '🧑‍🤝‍🧑', titulo: 'Reporte Diario de Equipo', desc: 'Consolidado de actividades y horas', accion: () => { irAVista('reporte_equipo'); cerrarDrawer(); } },
+      { icono: '🏖️', titulo: 'Portal del Propietario', desc: 'Área para clientes de Costa Dorada', accion: () => { abrirPortalPropietario(); cerrarDrawer(); } }
+    ]
+  },
+  sistema: {
+    titulo: 'Gerencia & Legal',
+    icono: '⚙️',
+    subtitulo: 'Inteligencia, ajustes y seguridad',
+    items: [
+      { icono: '🤖', titulo: 'MAJO · Inteligencia Corporativa', desc: 'Asistente IA y base de conocimiento', accion: () => { irAVista('majo_assistant'); cerrarDrawer(); } },
+      { icono: '📋', titulo: 'Checklist Legal de Expedientes', desc: 'Saneamiento y documentos SUNARP', accion: () => { abrirChecklistLegal(null); cerrarDrawer(); } },
+      { icono: '🧑‍💼', titulo: 'Gestión de Equipo & Permisos', desc: 'Checklist SuperAdmin y roles', accion: () => { irAVista('admin'); cerrarDrawer(); } },
+      { icono: '🛠️', titulo: 'Configuración del Sistema', desc: 'Parámetros generales del CRM', accion: () => { irAVista('sistema'); cerrarDrawer(); } },
+      { icono: '💾', titulo: 'Descargar Respaldo JSON', desc: 'Copia de seguridad local', accion: () => { descargarRespaldo(); cerrarDrawer(); } },
+      { icono: '🔄', titulo: 'Sincronización Rápida', desc: 'Actualizar datos con la nube', accion: () => { sincronizacionRapida(); cerrarDrawer(); } }
+    ]
+  }
+};
+
+function abrirSubMenuLateral(categoria, btnEl) {
+  const data = SUBMENUS_DATA[categoria];
+  if (!data) return;
+
+  subMenuCategoriaActiva = categoria;
+
+  // Actualizar clases activas en macro-items
+  document.querySelectorAll('.drawer-macro-item').forEach(b => b.classList.remove('active'));
+  if (btnEl) btnEl.classList.add('active');
+
+  // Actualizar contenido del subpanel
+  const subPanel = document.getElementById('drawerSubPanel');
+  const iconoEl = document.getElementById('subPanelIcono');
+  const tituloEl = document.getElementById('subPanelTitulo');
+  const subtituloEl = document.getElementById('subPanelSubtitulo');
+  const listaEl = document.getElementById('subPanelListaItems');
+
+  if (iconoEl) iconoEl.textContent = data.icono;
+  if (tituloEl) tituloEl.textContent = data.titulo;
+  if (subtituloEl) subtituloEl.textContent = data.subtitulo;
+
+  if (listaEl) {
+    listaEl.innerHTML = data.items.map((item, idx) => `
+      <div class="subpanel-item" onclick="ejecutarAccionSubMenu('${categoria}', ${idx})">
+        <span style="font-size:20px; flex-shrink:0;">${item.icono}</span>
+        <div style="flex:1; min-width:0;">
+          <span class="sp-title">${item.titulo}</span>
+          <span class="sp-desc">${item.desc}</span>
+        </div>
+        <span style="font-size:14px; color:#CBD5E1; font-weight:800;">›</span>
+      </div>
+    `).join('');
+  }
+
+  if (subPanel) subPanel.classList.add('open');
+}
+
+function cerrarSubMenuLateral() {
+  const subPanel = document.getElementById('drawerSubPanel');
+  if (subPanel) subPanel.classList.remove('open');
+  document.querySelectorAll('.drawer-macro-item').forEach(b => b.classList.remove('active'));
+  subMenuCategoriaActiva = null;
+}
+
+function ejecutarAccionSubMenu(categoria, idx) {
+  const item = SUBMENUS_DATA[categoria]?.items[idx];
+  if (item && typeof item.accion === 'function') {
+    item.accion();
+  }
+  cerrarSubMenuLateral();
+}
+
+// Sobrescribir cerrarDrawer para cerrar también el submenú lateral
+const origCerrarDrawer = window.cerrarDrawer || function(){};
+window.cerrarDrawer = function() {
+  cerrarSubMenuLateral();
+  const db = document.getElementById('drawerBackdrop');
+  if (db) db.classList.remove('open');
+  document.body.classList.remove('drawer-abierto');
+};
+
+/* ============================================================== */
+/* PARSER INTELIGENTE DE HORARIOS Y TRABAJO EFECTIVO POR VOZ */
+/* ============================================================== */
+function analizarHorarioDesdeVoz(texto) {
+  if (!texto) return null;
+  let t = texto.toLowerCase();
+
+  t = t.replace(/\bde la ma[ñn]ana\b/gi, "am")
+       .replace(/\bde la tarde\b/gi, "pm")
+       .replace(/\bde la noche\b/gi, "pm")
+       .replace(/\bdel mediod[ií]a\b/gi, "pm")
+       .replace(/\ba\.m\.\b/gi, "am")
+       .replace(/\bp\.m\.\b/gi, "pm")
+       .replace(/\s+y\s+media\b/gi, ":30")
+       .replace(/\s+y\s+cuarto\b/gi, ":15")
+       .replace(/\s+y\s+cuarenta\s+y\s+cinco\b/gi, ":45");
+
+  const regex = /(?:de|desde)\s*(?:las?)?\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*(?:a|hasta|al)\s*(?:las?)?\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i;
+  const match = t.match(regex);
+  if (!match) return null;
+
+  let h1 = parseInt(match[1], 10);
+  let m1 = match[2] ? parseInt(match[2], 10) : 0;
+  let ap1 = (match[3] || "").toLowerCase();
+
+  let h2 = parseInt(match[4], 10);
+  let m2 = match[5] ? parseInt(match[5], 10) : 0;
+  let ap2 = (match[6] || "").toLowerCase();
+
+  if (ap2 === "pm") {
+    if (h2 < 12) h2 += 12;
+    if (!ap1) {
+      if (h1 >= 1 && h1 < 12 && h1 <= h2 - 12 + 1) {
+        h1 += 12;
+      } else if (h1 >= 8 && h1 <= 12) {
+        ap1 = "am";
+      }
+    }
+  } else if (ap2 === "am") {
+    if (!ap1 && h1 < 12) ap1 = "am";
+  }
+
+  if (ap1 === "pm" && h1 < 12) h1 += 12;
+  if (ap1 === "am" && h1 === 12) h1 = 0;
+
+  if (!ap1 && !ap2) {
+    if (h1 >= 1 && h1 <= 7) h1 += 12;
+    if (h2 >= 1 && h2 <= 7) h2 += 12;
+    if (h2 < h1 && h2 <= 12) h2 += 12;
+  }
+
+  const minTotales1 = h1 * 60 + m1;
+  const minTotales2 = h2 * 60 + m2;
+  let difMinutos = minTotales2 - minTotales1;
+  if (difMinutos <= 0) return null;
+
+  const horasEfectivas = +(difMinutos / 60).toFixed(2);
+  const fmt1 = `${String(h1).padStart(2, "0")}:${String(m1).padStart(2, "0")}`;
+  const fmt2 = `${String(h2).padStart(2, "0")}:${String(m2).padStart(2, "0")}`;
+
+  return {
+    horaInicio: fmt1,
+    horaFin: fmt2,
+    horasEfectivas: horasEfectivas,
+    minutos: difMinutos
+  };
+}
+
+function calcularHorasEfectivasEntre(hIni, hFin) {
+  if (!hIni || !hFin) return 0.5;
+  try {
+    const [h1, m1] = hIni.split(':').map(Number);
+    const [h2, m2] = hFin.split(':').map(Number);
+    let min1 = h1 * 60 + (m1 || 0);
+    let min2 = h2 * 60 + (m2 || 0);
+    if (min2 < min1) min2 += 24 * 60;
+    const diff = (min2 - min1) / 60;
+    return diff > 0 ? +diff.toFixed(2) : 0.5;
+  } catch(e) { return 0.5; }
+}
+
+function alCambiarTextoDictado(texto) {
+  const card = document.getElementById('dictado_horario_card');
+  const badge = document.getElementById('dictado_horas_badge');
+  const iniTxt = document.getElementById('dictado_hora_ini_txt');
+  const finTxt = document.getElementById('dictado_hora_fin_txt');
+
+  const horario = analizarHorarioDesdeVoz(texto);
+  if (horario) {
+    if (card) card.classList.remove('hidden');
+    if (badge) badge.textContent = `${horario.horasEfectivas} hrs efectivas`;
+    if (iniTxt) iniTxt.textContent = horario.horaInicio;
+    if (finTxt) finTxt.textContent = horario.horaFin;
+  } else {
+    if (card) card.classList.add('hidden');
+  }
+}
+
+function actualizarHorasEfectivasModalActividad() {
+  const hIni = document.getElementById('actHoraInicio')?.value;
+  const hFin = document.getElementById('actHoraFin')?.value;
+  const badge = document.getElementById('actHorasEfectivasBadge');
+  if (hIni && hFin) {
+    const hrs = calcularHorasEfectivasEntre(hIni, hFin);
+    if (badge) {
+      badge.textContent = `⏱️ ${hrs} hrs efectivas`;
+      badge.style.background = '#DCFCE7';
+      badge.style.color = '#15803D';
+    }
+  }
+}
+
+
 /* 2. DICTADO POR VOZ EN CAMPO (WEB SPEECH API) */
 let recognition = null;
 let estaGrabando = false;
@@ -12529,7 +13269,10 @@ function iniciarReconocimientoVoz() {
       transcriptFinal += event.results[i][0].transcript;
     }
     const txt = document.getElementById('dictado_transcripcion');
-    if (txt) txt.value = transcriptFinal;
+    if (txt) {
+      txt.value = transcriptFinal;
+      alCambiarTextoDictado(transcriptFinal);
+    }
   };
   recognition.onerror = () => detenerGrabacionVoz();
   recognition.onend = () => detenerGrabacionVoz();
@@ -12565,21 +13308,36 @@ async function procesarDictadoConIA() {
   if (!texto) { toast('Dicta notas de la visita primero'); return; }
   const btn = document.getElementById('btnProcesarDictadoIA');
   if (btn) btn.disabled = true;
+
+  const horario = analizarHorarioDesdeVoz(texto);
+  const horaIni = horario ? horario.horaInicio : null;
+  const horaFin = horario ? horario.horaFin : null;
+  const hrsEf = horario ? horario.horasEfectivas : 1.0;
+
   try {
     await sb.from('actividades').insert({
       usuario_id: currentUser.id,
-      titulo: 'Bitácora Dictada: ' + texto.slice(0, 45) + '...',
-      locacion: 'Visita / Terreno',
+      titulo: 'Bitácora de Gestión: ' + texto.slice(0, 45) + (texto.length > 45 ? '...' : ''),
+      locacion: 'Terreno / Campo',
       fecha_programada: obtenerHoyLocal(),
+      hora_inicio: horaIni,
+      hora_fin: horaFin,
+      horas_efectivas: hrsEf,
       estado: 'completada',
-      temas_acuerdos: [{ tema: 'Registro de Voz en Campo', acuerdo: texto }]
+      fecha_completada: new Date().toISOString(),
+      temas_acuerdos: [{ tema: 'Registro de Voz con Horas', acuerdo: texto }]
     });
-    toast('¡Bitácora guardada en Tareas! ✓');
+    
+    toast(horario 
+      ? `¡Actividad guardada: ${hrsEf} hrs efectivas (${horaIni} a ${horaFin})! ✓` 
+      : '¡Bitácora guardada en actividades! ✓');
+      
     closeModal('modalDictadoVoz');
     cargarPendientesInicio();
     cargarActividadesHoy();
   } catch (e) {
     toast('Error al guardar');
+    console.error(e);
   } finally {
     if (btn) btn.disabled = false;
   }
@@ -12689,6 +13447,7 @@ function abrirModalHerramientasTacna() {
 }
 
 function enviarPruebaSocialSUNARP() {
+  closeModal('modalHerramientasTacna');
   const msg = `🏛️ *GARANTÍA JURÍDICA & SANEAMIENTO NOTARIAL · COSTA DORADA*\n` +
     `Constructora e Inmobiliaria Casa Dorada S.A.C.\n` +
     `• Partida Matriz inscrita en la Zona Registral de Tacna (SUNARP).\n` +
@@ -12699,6 +13458,7 @@ function enviarPruebaSocialSUNARP() {
 }
 
 function enviarPruebaPortico() {
+  closeModal('modalHerramientasTacna');
   const msg = `🏗️ *AVANCE REAL DE OBRAS · COSTA DORADA (LA YARADA LOS PALOS)*\n` +
     `• Pórtico de ingreso terminado y consolidado.\n` +
     `• Vías principales afirmadas y señalizadas.\n` +
@@ -12708,6 +13468,7 @@ function enviarPruebaPortico() {
 }
 
 function enviarFichaConectividad() {
+  closeModal('modalHerramientasTacna');
   const msg = `🚗 *CONECTIVIDAD RÁPIDA TACNA - COSTA DORADA*\n` +
     `• A solo 20 minutos desde el Óvalo Tarapacá por la autopista Costanera.\n` +
     `• A 15 minutos de la Playa Los Palos.\n` +
@@ -12772,7 +13533,18 @@ function descargarHojaResumen1PaginaPDF() {
     doc.text(`DNI: ${dni}`, 120, 147);
 
     doc.save(`Hoja_Resumen_CasaDorada_${cli.replace(/\s+/g,'_')}.pdf`);
-    toast('Hoja Resumen (1 pág) descargada ✓');
+    toast('Hoja Resumen descargada y abriendo WhatsApp… ✓');
+
+    // Enrutamiento directo de descarga vía WhatsApp
+    const wspMsgHR = `📑 *HOJA RESUMEN DE CONDICIONES · COSTA DORADA*\n` +
+      `Constructora e Inmobiliaria Casa Dorada S.A.C.\n\n` +
+      `• *Cliente:* ${cli} · DNI: ${dni}\n` +
+      `• *Lote:* Manzana ${mz} - Lote ${lt}\n` +
+      `• *Valor del Lote:* S/ ${Number(total).toLocaleString('es-PE')} · *Inicial:* S/ ${Number(inicial).toLocaleString('es-PE')}\n` +
+      `• *Inversión Mensual:* ${cuota}\n` +
+      `• *Garantías:* Partida Matriz SUNARP Tacna, financiamiento directo en soles sin evaluación bancaria.\n\n` +
+      `_Documento formal descargado para envío oficial al cliente._`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(wspMsgHR)}`, '_blank');
   } catch(e) {
     toast('Error al generar la Hoja Resumen');
     console.error(e);
@@ -13022,6 +13794,91 @@ function ejecutarCierreConCampana() {
 }
 
 /* ============================================================== */
+/* FUNCIONALIDADES DE TRANSMISIÓN A GOOGLE TV / ANDROID TV */
+/* ============================================================== */
+function iniciarTransmisionTV() {
+  const urlTv = window.location.href.split('#')[0] + '#showroom-tv';
+  const urlInput = document.getElementById('tv_url_display');
+  if (urlInput) urlInput.value = urlTv;
+
+  if (window.PresentationRequest) {
+    conectarGoogleCastNativo();
+  } else {
+    openModal('modalOpcionesTransmitirTV');
+  }
+}
+
+async function conectarGoogleCastNativo() {
+  const urlTv = window.location.href.split('#')[0] + '#showroom-tv';
+  const urlInput = document.getElementById('tv_url_display');
+  if (urlInput) urlInput.value = urlTv;
+
+  try {
+    if (window.PresentationRequest) {
+      const presRequest = new PresentationRequest([urlTv]);
+      presRequest.addEventListener('connectionavailable', (event) => {
+        toast('📺 Conectado a Google TV / Android TV con éxito ✓');
+        closeModal('modalOpcionesTransmitirTV');
+      });
+      await presRequest.start();
+      return;
+    }
+  } catch(err) {
+    if (err.name !== 'AbortError' && err.name !== 'NotAllowedError') {
+      console.warn('Presentation API:', err);
+    }
+  }
+  openModal('modalOpcionesTransmitirTV');
+}
+
+function copiarUrlShowroomTV() {
+  const urlInput = document.getElementById('tv_url_display');
+  if (urlInput) {
+    navigator.clipboard?.writeText(urlInput.value);
+    toast('URL del Showroom TV copiada al portapapeles ✓');
+  }
+}
+
+function togglePantallaCompletaTV() {
+  const sheet = document.querySelector('#modalDomingoDeCierres .modal-sheet') || document.documentElement;
+  if (!document.fullscreenElement) {
+    if (sheet.requestFullscreen) {
+      sheet.requestFullscreen().catch(e => {
+        document.documentElement.requestFullscreen?.();
+      });
+    } else if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen();
+    }
+    toast('Modo Pantalla Completa activado ⛶');
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    }
+    toast('Modo Pantalla Completa desactivado');
+  }
+}
+
+// DETECCIÓN AUTOMÁTICA DE MODO TV STANDALONE AL CARGAR
+window.addEventListener('DOMContentLoaded', () => {
+  if (window.location.hash === '#showroom-tv' || window.location.search.includes('tv=1')) {
+    setTimeout(() => {
+      abrirModalDomingoDeCierres();
+      const sheet = document.querySelector('#modalDomingoDeCierres .modal-sheet');
+      if (sheet) {
+        sheet.style.maxWidth = '100vw';
+        sheet.style.width = '100vw';
+        sheet.style.height = '100vh';
+        sheet.style.maxHeight = '100vh';
+        sheet.style.borderRadius = '0';
+        sheet.style.border = 'none';
+      }
+      toast('📺 Modo Showroom TV activado en pantalla');
+    }, 800);
+  }
+});
+
+
+/* ============================================================== */
 /* 12. MINUTA LEGAL DE COMPRAVENTA & FIRMA DIGITAL TÁCTIL (CANVAS) */
 /* ============================================================== */
 let canvasFirma = null;
@@ -13066,6 +13923,7 @@ function abrirModalMinutaCompraventa() {
 }
 
 function abrirMinutaDesdeCotizador() {
+  closeModal('modalCotizador');
   const cliente = document.getElementById('cot_cliente')?.value || '';
   const dni = document.getElementById('cot_dni')?.value || '';
   const tel = document.getElementById('cot_celular')?.value || '';
@@ -13230,7 +14088,18 @@ b) Saldo a Financiar: S/ ${saldo.toLocaleString('es-PE', {minimumFractionDigits:
   doc.text('Documento formal emitido bajo la Ley N° 27269 de Firmas y Certificados Digitales en el Perú.', 22, 152);
 
   doc.save(`Minuta_Preparatoria_CostaDorada_Mz${mz}_Lote${lote}.pdf`);
-  toast('Minuta formal descargada en PDF');
+  toast('Minuta firmada descargada y abriendo WhatsApp… ✓');
+
+  // Enrutamiento directo de descarga vía WhatsApp
+  const wspMsgMin = `📑 *CONTRATO PREPARATORIO FIRMADO · COSTA DORADA*\n` +
+    `Constructora e Inmobiliaria Casa Dorada S.A.C.\n\n` +
+    `• *Comprador:* ${nombre.toUpperCase()} · DNI: ${dni}\n` +
+    `• *Lote Adquirido:* Manzana ${mz} - Lote ${lote} (${area} m²)\n` +
+    `• *Precio:* S/ ${precio.toLocaleString('es-PE')} · *Inicial:* S/ ${inicial.toLocaleString('es-PE')}\n` +
+    `• *Financiamiento:* ${meses} cuotas fijas en soles sin intereses.\n` +
+    `• *Firma Digital:* Formalizado con firma digital táctil bajo la Ley N° 27269 de Firmas Digitales.\n\n` +
+    `_Documento notarial emitido desde el Planner Corporativo Casa Dorada._`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(wspMsgMin)}`, '_blank');
 }
 
 /* ============================================================== */
