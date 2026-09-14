@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-<title>MAJO · CRM/ERP Inmobiliario</title>
+<title>Casa Dorada · Planner Corporativo</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1A2332">
 <link rel="apple-touch-icon" href="icono-apple-touch.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="MAJO CRM/ERP">
+<meta name="apple-mobile-web-app-title" content="Casa Dorada">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
@@ -120,10 +120,80 @@
       overflow: visible !important;
     }
     .kpi-card{ min-width: 0 !important; }
-      }
+    .drawer-container{
+    display: flex; height: 100%; position: relative; overflow: hidden;
+  }
+  .drawer-panel{
+    width: 250px; max-width: 78vw; height: 100%; background: #fff;
+    display: flex; flex-direction: column; transform: translateX(-100%);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 4px 0 24px rgba(0,0,0,0.25);
+    z-index: 100001;
+  }
+  .drawer-backdrop.open .drawer-panel{ transform: translateX(0); }
 
-  /* MEJORAS DE ESCRITORIO Y MODALES */
-  @media (min-width: 768px){
+  .drawer-macro-item{
+    display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 14px;
+    background: transparent; border: none; border-radius: 12px; cursor: pointer; text-align: left;
+    transition: all 0.2s ease; margin-bottom: 4px; position: relative;
+  }
+  .drawer-macro-item:hover, .drawer-macro-item.active{
+    background: #F8FAFC; border-left: 4px solid var(--gold);
+  }
+  .dr-macro-texts{ display: flex; flex-direction: column; flex: 1; min-width: 0; }
+  .dr-macro-texts .dr-label{ font-size: 13px; font-weight: 800; color: var(--navy); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dr-macro-texts .dr-subdesc{ font-size: 10.5px; color: var(--ink-dim); margin-top: 1px; }
+  .dr-arrow{ font-size: 18px; font-weight: 800; color: #94A3B8; margin-left: auto; transition: transform 0.2s; }
+  .drawer-macro-item.active .dr-arrow{ transform: translateX(4px); color: var(--gold); }
+
+  /* SUBPANEL LATERAL AL COSTADO (FLYOUT SUB-DRAWER) */
+  .drawer-subpanel{
+    width: 270px; max-width: 82vw; height: 100%; background: #F8FAFC; border-left: 1px solid #E2E8F0;
+    display: none; flex-direction: column; box-shadow: 6px 0 25px rgba(0,0,0,0.18);
+    z-index: 100002; animation: slideInSubMenu 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .drawer-subpanel.open{ display: flex !important; }
+
+  @keyframes slideInSubMenu{
+    from{ transform: translateX(-15px); opacity: 0; }
+    to{ transform: translateX(0); opacity: 1; }
+  }
+
+  .drawer-subpanel-header{
+    padding: 14px 14px 12px; background: #fff; border-bottom: 1px solid #E2E8F0;
+    display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  }
+  .subpanel-back-btn{
+    background: #F1F5F9; border: 1px solid #E2E8F0; border-radius: 8px; font-size: 11px;
+    font-weight: 800; color: var(--navy); padding: 5px 9px; cursor: pointer; display: flex; align-items: center; gap: 4px;
+  }
+  .subpanel-close-btn{
+    background: #F1F5F9; border: none; border-radius: 8px; width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; color: #475569; font-weight: 800; font-size: 13px;
+  }
+  .drawer-subpanel-list{
+    flex: 1; overflow-y: auto; padding: 10px 8px; display: flex; flex-direction: column; gap: 6px;
+  }
+  .subpanel-item{
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #fff;
+    border: 1px solid #E2E8F0; border-radius: 10px; cursor: pointer; text-align: left; transition: all 0.15s ease;
+  }
+  .subpanel-item:hover{
+    background: #FFFBEB; border-color: var(--gold-soft); transform: translateX(2px); box-shadow: 0 2px 6px rgba(200,155,60,0.12);
+  }
+  .subpanel-item .sp-title{ font-size: 12px; font-weight: 800; color: var(--navy); display: block; }
+  .subpanel-item .sp-desc{ font-size: 10px; color: var(--ink-dim); display: block; margin-top: 2px; }
+
+  @media (max-width: 540px){
+    .drawer-panel{ width: 230px; }
+    .drawer-subpanel{
+      position: absolute; left: 0; top: 0; width: 270px; height: 100%;
+      box-shadow: 4px 0 25px rgba(0,0,0,0.3);
+    }
+  }
+
+  .drawer-panel{
+      max-width: 300px !important;
+    }
     .modal-backdrop{
       align-items: center !important;
       justify-content: center !important;
@@ -1109,208 +1179,107 @@ main.app-content {
 
   <!-- MENÚ LATERAL DESLIZANTE (DRAWER) -->
   <div class="drawer-backdrop" id="drawerBackdrop">
-    <div class="drawer-panel" id="drawerPanel">
-      <div class="drawer-header">
-        <label for="drFotoPerfilInput" class="drawer-user-circle" id="drUserInitial" title="Cambiar foto de perfil" style="cursor:pointer; background-size:cover; background-position:center;">J</label>
-        <input type="file" id="drFotoPerfilInput" accept="image/*" style="display:none;">
-        <div class="drawer-user-info">
-          <div class="drawer-user-name" id="drUserName">Jorge Alexander Luque Cepeda</div>
-          <div class="drawer-user-cargo" id="drUserCargo" style="font-weight:700; color:#C89B3C; font-size:12px; margin-top:2px;">Director Comercial</div>
-          <div class="drawer-user-role" id="drUserRole">Departamento Comercial · SuperAdmin (Desarrollador / Matriz)</div>
-          <div class="drawer-user-email" id="drUserEmail">joreal.ft2020@gmail.com</div>
-        </div>
-        <img src="logo-crm-majo-icono.png" alt="CRM MAJO" style="width:38px; height:38px; object-fit:contain; border-radius:8px; background:#fff; padding:2px;">
-      </div>
-      <div class="drawer-menu-list">
-        <button class="drawer-item" data-nav="inicio">
-          <span class="dr-icon">🏠</span>
-          <span class="dr-label">Inicio / Portada</span>
-        </button>
-
-        <!-- 1. DEPARTAMENTO COMERCIAL -->
-        <div class="dr-dept-group" data-dept="comercial">
-          <button class="dr-dept-toggle" onclick="toggleDeptoMenu(this)">
-            <span>💼 1. COMERCIAL (VENTAS & CIERRES)</span><span class="dr-dept-arrow">▾</span>
-          </button>
-          <div class="dr-dept-items">
-            <!-- ACCESO DIRECTO AL PANEL OPERATIVO DE CAMPO -->
-            <button class="drawer-item active" data-nav="operaciones_campo" id="drNavOperacionesCampo" data-modkey="operaciones_campo" style="color:var(--gold); font-weight:800;">
-              <span class="dr-icon">🚀</span>
-              <span class="dr-label">Panel Operativo de Campo</span>
-              <span class="badge" style="background:#FFF3E0; color:#E65100; font-size:10px; margin-left:auto;">9 Módulos</span>
-            </button>
-            <button class="drawer-item" onclick="abrirModalDomingoDeCierres(); cerrarDrawer();" id="drNavDomingoCierres" style="color:#D97706; font-weight:700;">
-              <span class="dr-icon">🎉</span>
-              <span class="dr-label">Domingo de Cierres (Showroom TV)</span>
-            </button>
-            <button class="drawer-item" onclick="abrirModalMinutaCompraventa(); cerrarDrawer();" id="drNavMinutaLegal" style="color:#0F766E; font-weight:700;">
-              <span class="dr-icon">📑</span>
-              <span class="dr-label">Minuta Legal & Firma Táctil</span>
-            </button>
-            <button class="drawer-item" onclick="abrirModalEmbajadores(); cerrarDrawer();" id="drNavEmbajadores" style="color:#7C3AED; font-weight:700;">
-              <span class="dr-icon">🤝</span>
-              <span class="dr-label">Red de Embajadores (Referidos)</span>
-            </button>
-            <button class="drawer-item" data-nav="visitas" id="drNavVisitas" data-modkey="control_visitas">
-              <span class="dr-icon">🚐</span>
-              <span class="dr-label">Presentaciones & Movilidad (14 Asientos)</span>
-            </button>
-            <button class="drawer-item" id="drNavCotizador" data-modkey="cotizador" onclick="abrirModalCotizador(); cerrarDrawer();">
-              <span class="dr-icon">🧮</span>
-              <span class="dr-label">Cotizador Rápido de Lotes</span>
-            </button>
-            <button class="drawer-item" data-nav="control" id="drNavControl" data-modkey="control">
-              <span class="dr-icon">📊</span>
-              <span class="dr-label">Tablero de Control & KPIs</span>
-            </button>
-            <button class="drawer-item" data-nav="clientes" id="drNavClientes" data-modkey="clientes">
-              <span class="dr-icon">👥</span>
-              <span class="dr-label">Cartera de Clientes & Kanban</span>
-              <span class="badge hidden" id="drBadgeRiesgo" style="background:#FFEAEA; color:#D32F2F; font-size:10px; margin-left:auto;">0</span>
-            </button>
-            <button class="drawer-item" data-nav="actividades" id="drNavTareas" data-modkey="actividades">
-              <span class="dr-icon">✓</span>
-              <span class="dr-label">Actividades y Tareas Hoy</span>
-              <span class="badge hidden" id="drBadgeTareas" style="background:#EBF3FC; color:#1E4B82; font-size:10px; margin-left:auto;">0</span>
-            </button>
-            <button class="drawer-item" data-nav="agenda" id="drNavAgenda" data-modkey="agenda">
-              <span class="dr-icon">📅</span>
-              <span class="dr-label">Agenda & Google Calendar</span>
-            </button>
-            <button class="drawer-item" data-nav="separaciones" id="drNavSeparaciones" data-modkey="separaciones">
-              <span class="dr-icon">🏷️</span>
-              <span class="dr-label">Separaciones de Lotes</span>
-              <span class="badge hidden" id="drBadgeSeparaciones" style="background:#FFF3E0; color:#E65100; font-size:10px; margin-left:auto;">0</span>
-            </button>
+    <div class="drawer-container" id="drawerContainer">
+      <!-- 1. PANEL PRINCIPAL COMPACTO (5 MACRO-GRUPOS) -->
+      <div class="drawer-panel" id="drawerPanel">
+        <div class="drawer-header">
+          <label for="drFotoPerfilInput" class="drawer-user-circle" id="drUserInitial" title="Cambiar foto de perfil" style="cursor:pointer; background-size:cover; background-position:center;">J</label>
+          <input type="file" id="drFotoPerfilInput" accept="image/*" style="display:none;">
+          <div class="drawer-user-info">
+            <div class="drawer-user-name" id="drUserName">Jorge Alexander Luque</div>
+            <div class="drawer-user-cargo" id="drUserCargo" style="font-weight:700; color:#C89B3C; font-size:12px; margin-top:2px;">Director Comercial</div>
+            <div class="drawer-user-role" id="drUserRole">SuperAdmin</div>
+            <div class="drawer-user-email" id="drUserEmail">joreal.ft2020@gmail.com</div>
           </div>
+          <img src="logo-crm-majo-icono.png" alt="CRM MAJO" style="width:38px; height:38px; object-fit:contain; border-radius:8px; background:#fff; padding:2px;">
         </div>
-
-        <!-- 2. DEPARTAMENTO MARKETING & PROSPECCIÓN -->
-        <div class="dr-dept-group" data-dept="marketing">
-          <button class="dr-dept-toggle" onclick="toggleDeptoMenu(this)">
-            <span>📣 2. MARKETING & PROSPECCIÓN</span><span class="dr-dept-arrow">▾</span>
+        
+        <div class="drawer-menu-list" style="padding:10px 8px; flex:1; overflow-y:auto;">
+          <!-- ACCESO DIRECTO A INICIO / PORTADA -->
+          <button class="drawer-item active" data-nav="inicio" onclick="irAVista('inicio'); cerrarDrawer();" style="margin-bottom:6px;">
+            <span class="dr-icon">🏠</span>
+            <span class="dr-label">Inicio / Portada</span>
           </button>
-          <div class="dr-dept-items">
-            <button class="drawer-item" data-nav="planos" id="drNavPlanos" data-modkey="planos">
-              <span class="dr-icon">🗺️</span>
-              <span class="dr-label">Planos Interactivos Costa Dorada</span>
-            </button>
-            <button class="drawer-item" id="drNavConversor" data-modkey="conversor_divisas" onclick="abrirModalConversorDivisas(); cerrarDrawer();">
-              <span class="dr-icon">💱</span>
-              <span class="dr-label">Conversor Multidivisa (PEN · USD · CLP)</span>
-            </button>
-            <button class="drawer-item" id="drNavPlusvalia" data-modkey="plusvalia" onclick="abrirModalPlusvalia(); cerrarDrawer();">
-              <span class="dr-icon">📈</span>
-              <span class="dr-label">Simulador Plusvalía & ROI (10 Años)</span>
-            </button>
-            <button class="drawer-item" id="drNavInventario" data-modkey="inventario_lotes" onclick="abrirModalInventarioLotes(); cerrarDrawer();">
-              <span class="dr-icon">📦</span>
-              <span class="dr-label">Control de Inventario y Lotes (ERP)</span>
-            </button>
-            <button class="drawer-item" id="drNavComisiones" data-modkey="comisiones_erp" onclick="abrirModalComisionesERP(); cerrarDrawer();">
-              <span class="dr-icon">💰</span>
-              <span class="dr-label">Billetera de Comisiones (ERP)</span>
-            </button>
-            <button class="drawer-item" id="drNavCaja" data-modkey="caja_tesoreria" onclick="abrirModalCajaTesoreria(); cerrarDrawer();">
-              <span class="dr-icon">💵</span>
-              <span class="dr-label">Caja y Vouchers Oficiales (ERP)</span>
-            </button>
-            <button class="drawer-item" id="drNavPortalPropietario" data-modkey="portal_propietario" onclick="abrirPortalPropietario(); cerrarDrawer();">
-              <span class="dr-icon">🏛️</span>
-              <span class="dr-label">Portal del Propietario (Club Costa Dorada)</span>
-            </button>
-            <button class="drawer-item" id="drNavGemeloDigital" data-modkey="gemelo_digital" onclick="abrirModalGemeloDigital(); cerrarDrawer();">
-              <span class="dr-icon">🗺️</span>
-              <span class="dr-label">Visualizador de Lote & Proyección 3D</span>
-            </button>
-            <button class="drawer-item" data-nav="portafolio" id="drNavPortafolio" data-modkey="portafolio">
-              <span class="dr-icon">📁</span>
-              <span class="dr-label">Portafolio Multimedia (La Yarada)</span>
-            </button>
-            <button class="drawer-item" data-nav="manualventas" id="drNavManualVentas" data-modkey="manualventas">
-              <span class="dr-icon">🎯</span>
-              <span class="dr-label">Manual de Ventas & Speeches</span>
-            </button>
-            <button class="drawer-item" data-nav="majo_assistant" id="drNavMajoAssistant" data-modkey="majo_assistant">
-              <span class="dr-icon">🤖</span>
-              <span class="dr-label">MAJO · Inteligencia Corporativa</span>
-            </button>
-          </div>
-        </div>
 
-        <!-- 3. DEPARTAMENTO LEGAL & CONTRATACIÓN -->
-        <div class="dr-dept-group" data-dept="legal">
-          <button class="dr-dept-toggle" onclick="toggleDeptoMenu(this)">
-            <span>⚖️ 3. LEGAL & CONTRATACIÓN</span><span class="dr-dept-arrow">▾</span>
-          </button>
-          <div class="dr-dept-items">
-            <button class="drawer-item" id="drNavChecklistLegal" data-modkey="checklist_legal" onclick="abrirChecklistLegal(null); cerrarDrawer();">
-              <span class="dr-icon">📋</span>
-              <span class="dr-label">Checklist Legal de Expedientes</span>
-            </button>
-            <button class="drawer-item" id="drNavGenerarDoc" data-modkey="generador_doc" onclick="abrirGenerarDocumento(null, '', ''); cerrarDrawer();">
-              <span class="dr-icon">✍️</span>
-              <span class="dr-label">Generador de Minutas y Contratos (IA)</span>
-            </button>
-          </div>
-        </div>
+          <div style="height:1px; background:#E2E8F0; margin:6px 4px 10px;"></div>
 
-        <!-- 4. DEPARTAMENTO ADMINISTRACIÓN & COBRANZAS -->
-        <div class="dr-dept-group" data-dept="administracion">
-          <button class="dr-dept-toggle" onclick="toggleDeptoMenu(this)">
-            <span>🗂️ 4. ADMINISTRACIÓN & COBRANZAS</span><span class="dr-dept-arrow">▾</span>
+          <!-- MACRO-GRUPO 1: OPERACIONES DE CAMPO -->
+          <button type="button" class="drawer-macro-item" onclick="abrirSubMenuLateral('campo', this)" id="drMacroCampo">
+            <span class="dr-icon" style="font-size:20px;">🚀</span>
+            <div class="dr-macro-texts">
+              <span class="dr-label">Operaciones de Campo</span>
+              <span class="dr-subdesc">Terreno, Cierre & Minutas (9)</span>
+            </div>
+            <span class="dr-arrow">›</span>
           </button>
-          <div class="dr-dept-items">
-            <button class="drawer-item" id="drNavCobranzas" data-modkey="cobranzas" onclick="irACobranzas(); cerrarDrawer();">
-              <span class="dr-icon">💳</span>
-              <span class="dr-label">Control de Cobranzas y Cuotas</span>
-            </button>
-            <button class="drawer-item" data-nav="rendimiento" id="drNavRendimiento" data-modkey="rendimiento">
-              <span class="dr-icon">📈</span>
-              <span class="dr-label">Rendimiento por Área</span>
-            </button>
-            <button class="drawer-item" data-nav="solicitudes" id="drNavSolicitudes" data-modkey="solicitudes">
-              <span class="dr-icon">📝</span>
-              <span class="dr-label">Solicitudes y Requerimientos</span>
-            </button>
-            <button class="drawer-item hidden" data-nav="reporte_equipo" id="drNavReporteEquipo" data-modkey="reporte_equipo">
-              <span class="dr-icon">🧑‍🤝‍🧑</span>
-              <span class="dr-label">Reporte Diario del Equipo</span>
-            </button>
-          </div>
-        </div>
 
-        <!-- 5. DEPARTAMENTO GERENCIA & AJUSTES -->
-        <div class="dr-dept-group hidden" data-dept="ajustes" id="drDeptAjustes">
-          <button class="dr-dept-toggle" onclick="toggleDeptoMenu(this)">
-            <span>⚙️ 5. GERENCIA & AJUSTES</span><span class="dr-dept-arrow">▾</span>
+          <!-- MACRO-GRUPO 2: VENTAS & CIERRES -->
+          <button type="button" class="drawer-macro-item" onclick="abrirSubMenuLateral('comercial', this)" id="drMacroComercial">
+            <span class="dr-icon" style="font-size:20px;">💼</span>
+            <div class="dr-macro-texts">
+              <span class="dr-label">Ventas & Cierres</span>
+              <span class="dr-subdesc">Clientes, Cotizador & Planos (8)</span>
+            </div>
+            <span class="dr-arrow">›</span>
           </button>
-          <div class="dr-dept-items">
-            <button class="drawer-item hidden" data-nav="admin" id="drNavAdmin" data-modkey="gestion_equipo">
-              <span class="dr-icon">🧑‍💼</span>
-              <span class="dr-label">Gestión de Equipo & Permisos</span>
+
+          <!-- MACRO-GRUPO 3: FINANZAS & ERP -->
+          <button type="button" class="drawer-macro-item" onclick="abrirSubMenuLateral('finanzas', this)" id="drMacroFinanzas">
+            <span class="dr-icon" style="font-size:20px;">💰</span>
+            <div class="dr-macro-texts">
+              <span class="dr-label">Finanzas & ERP</span>
+              <span class="dr-subdesc">Comisiones, Caja & Cuotas (6)</span>
+            </div>
+            <span class="dr-arrow">›</span>
+          </button>
+
+          <!-- MACRO-GRUPO 4: GESTIÓN & EQUIPO -->
+          <button type="button" class="drawer-macro-item" onclick="abrirSubMenuLateral('operativa', this)" id="drMacroOperativa">
+            <span class="dr-icon" style="font-size:20px;">📋</span>
+            <div class="dr-macro-texts">
+              <span class="dr-label">Gestión & Equipo</span>
+              <span class="dr-subdesc">Agenda, Tareas & Reportes (6)</span>
+            </div>
+            <span class="dr-arrow">›</span>
+          </button>
+
+          <!-- MACRO-GRUPO 5: GERENCIA, LEGAL & SISTEMA -->
+          <button type="button" class="drawer-macro-item" onclick="abrirSubMenuLateral('sistema', this)" id="drMacroSistema">
+            <span class="dr-icon" style="font-size:20px;">⚙️</span>
+            <div class="dr-macro-texts">
+              <span class="dr-label">Gerencia & Legal</span>
+              <span class="dr-subdesc">MAJO IA, Permisos & Ajustes (6)</span>
+            </div>
+            <span class="dr-arrow">›</span>
+          </button>
+
+          <div style="margin-top:auto; padding-top:10px; border-top:1px solid #E2E8F0;">
+            <button class="drawer-item logout" id="drBtnLogout" onclick="cerrarSesionApp()" style="width:100%; color:#B4453C; font-weight:700;">
+              <span class="dr-icon">🚪</span>
+              <span class="dr-label">Cerrar Sesión</span>
             </button>
-            <button class="drawer-item hidden" data-nav="sistema" id="drNavSistema" data-modkey="configuracion_sistema">
-              <span class="dr-icon">🛠️</span>
-              <span class="dr-label">Configuración del Sistema</span>
-            </button>
-            <button class="drawer-item" id="drNavRespaldos" data-modkey="respaldos" onclick="descargarRespaldo(); cerrarDrawer();">
-              <span class="dr-icon">💾</span>
-              <span class="dr-label">Descargar Respaldo JSON</span>
-            </button>
-            <button class="drawer-item" id="drBtnConfigRapida">
-              <span class="dr-icon">🔄</span>
-              <span class="dr-label">Configuración Rápida / Sincronización</span>
-            </button>
+            <p style="text-align:center; font-size:9.5px; color:#94A3B8; margin:8px 0 0;">© CRM MAJO · Jorge Luque</p>
           </div>
         </div>
       </div>
-      <div class="drawer-footer">
-        <button class="drawer-item logout" id="drBtnLogout" onclick="cerrarSesionApp()">
-          <span class="dr-icon">🚪</span>
-          <span class="dr-label">Cerrar Sesión</span>
-        </button>
-        <p style="text-align:center; font-size:9.5px; color:#B8B2A0; margin:10px 0 0;">© <span id="drCopyrightYear">2026</span> CRM MAJO · Jorge Luque — Todos los derechos reservados</p>
+
+      <!-- 2. SUBPANEL LATERAL AL COSTADO (SUB-DRAWER DINÁMICO) -->
+      <div class="drawer-subpanel" id="drawerSubPanel">
+        <div class="drawer-subpanel-header">
+          <div style="display:flex; align-items:center; gap:8px; min-width:0;">
+            <button type="button" class="subpanel-back-btn" onclick="cerrarSubMenuLateral()">← Volver</button>
+            <span id="subPanelIcono" style="font-size:20px;">🚀</span>
+            <div style="min-width:0;">
+              <h4 id="subPanelTitulo" style="margin:0; font-size:13px; font-weight:800; color:var(--navy); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Submódulos</h4>
+              <p id="subPanelSubtitulo" style="margin:0; font-size:10px; color:var(--ink-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Selecciona una opción</p>
+            </div>
+          </div>
+          <button type="button" class="subpanel-close-btn" onclick="cerrarDrawer()" title="Cerrar menú">✕</button>
+        </div>
+
+        <div class="drawer-subpanel-list" id="subPanelListaItems">
+          <!-- Opciones inyectadas dinámicamente -->
+        </div>
       </div>
     </div>
   </div>
@@ -1319,9 +1288,8 @@ main.app-content {
   <div class="login-screen" id="loginScreen">
     <img class="login-logo" src="logo-casa-dorada.png" alt="Casa Dorada">
     <div class="login-card">
-      <h1 style="font-size:42px; font-weight:900; letter-spacing:1.5px; margin:0 0 2px; color:#fff; text-shadow:0 3px 12px rgba(0,0,0,0.4); line-height:1;">MAJO</h1>
-      <div style="font-size:15px; font-weight:800; color:var(--gold-soft); letter-spacing:3.5px; margin-bottom:14px; text-transform:uppercase;">CRM / ERP</div>
-      <p style="color:#A9B4C4; font-size:13.5px; margin:0 0 26px; line-height:1.45; max-width:320px;">Plataforma comercial y operativa. Entra con tu cuenta de Google para acceder a tus actividades, clientes y equipo.</p>
+      <h1>Casa Dorada</h1>
+      <p>Planner comercial y operativo. Entra con tu cuenta de Google para acceder a tus actividades, clientes y equipo.</p>
       <button class="btn-google" id="btnGoogleLogin">
         <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84c-.21 1.13-.84 2.09-1.8 2.73v2.27h2.91c1.7-1.57 2.69-3.88 2.69-6.64z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.17l-2.91-2.27c-.81.54-1.84.86-3.05.86-2.34 0-4.33-1.58-5.04-3.71H.96v2.34C2.44 15.98 5.48 18 9 18z"/><path fill="#FBBC05" d="M3.96 10.71A5.4 5.4 0 013.68 9c0-.6.1-1.18.28-1.71V4.96H.96A9 9 0 000 9c0 1.45.35 2.83.96 4.04l3-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.96l3 2.33C4.67 5.16 6.66 3.58 9 3.58z"/></svg>
         Continuar con Google
@@ -1369,11 +1337,7 @@ main.app-content {
             <img src="logo-casa-dorada.png" alt="Casa Dorada" class="logo-3d-flotante" style="animation-delay:0s;">
             <img src="logo-costa-dorada.png" alt="Costa Dorada" class="logo-3d-flotante" style="animation-delay:0.5s;">
           </div>
-          <div style="margin-top:10px; margin-bottom:2px;">
-            <span style="font-size:32px; font-weight:900; color:#fff; letter-spacing:1px; line-height:1; display:block; text-shadow:0 2px 10px rgba(0,0,0,0.35);">MAJO</span>
-            <span style="font-size:12.5px; font-weight:800; color:var(--gold-soft); letter-spacing:2.5px; text-transform:uppercase; display:block; margin-top:2px;">CRM / ERP</span>
-          </div>
-          <h2 class="welcome-title" id="wb_saludo" style="margin-top:8px;">¡Buenos días!</h2>
+          <h2 class="welcome-title" id="wb_saludo" style="margin-top:14px;">¡Buenos días!</h2>
           <p class="welcome-sub" id="wb_subtitulo" style="margin-bottom:0;">Bienvenido a tu jornada comercial y de gestión. Enfoque total en metas y cierres.</p>
         </div>
       </div>
@@ -5841,33 +5805,36 @@ document.getElementById('btnConfirmarDescargaReporte').addEventListener('click',
         const metaStr = doc.splitTextToSize(detalles.join('   |   '), anchoUtil - 24);
         doc.text(metaStr, marginX + 14, y + cardHeight - 8);
 
-        y += cardHeight + 6;
-
-        // ==============================================================
-        // IMÁGENES / EVIDENCIAS JUSTO DEBAJO DE ESTA ACTIVIDAD ESPECÍFICA
-        // ==============================================================
         if (act.evidencias && act.evidencias.length > 0) {
-          const fotoW = 120;
-          const fotoH = 80;
-          let fotoX = marginX + 14;
+          fotosParaAdjuntar.push({ titulo: act.titulo, urls: act.evidencias });
+        }
 
-          // Etiqueta formal vinculando la foto directamente a esta actividad
-          doc.setFontSize(8);
-          doc.setFont(undefined, 'bold');
-          doc.setTextColor(200, 155, 60); // cGold
-          doc.text(`📷 Evidencia fotográfica de la actividad (${act.titulo.slice(0, 35)}…):`, marginX + 14, y + 8);
-          y += 12;
+        y += cardHeight + 8;
+      }
 
-          for (const url of act.evidencias) {
+      if (fotosParaAdjuntar.length > 0) {
+        if (y > pageHeight - 180) { doc.addPage(); dibujarFondoYMembrete(); y = 120; }
+        doc.setTextColor(...cNavy);
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'bold');
+        doc.text(`${seccionNum++}. SUSTENTO FOTOGRÁFICO DE CAMPO`, marginX, y);
+        y += 14;
+
+        for (const item of fotosParaAdjuntar) {
+          const fotoW = 100;
+          const fotoH = 75;
+          let fotoX = marginX;
+
+          for (const url of item.urls) {
             if (fotoX + fotoW > pageWidth - marginX) {
-              fotoX = marginX + 14;
-              y += fotoH + 10;
+              fotoX = marginX;
+              y += fotoH + 18;
             }
-            if (y + fotoH > pageHeight - 110) {
+            if (y + fotoH > pageHeight - 120) {
               doc.addPage();
               dibujarFondoYMembrete();
               y = 120;
-              fotoX = marginX + 14;
+              fotoX = marginX;
             }
 
             try {
@@ -5879,18 +5846,15 @@ document.getElementById('btnConfirmarDescargaReporte').addEventListener('click',
                 r.readAsDataURL(blobImg);
               });
               doc.setDrawColor(...cBorder);
-              doc.setLineWidth(0.8);
-              doc.roundedRect(fotoX - 1, y - 1, fotoW + 2, fotoH + 2, 3, 3, 'S');
+              doc.rect(fotoX - 1, y - 1, fotoW + 2, fotoH + 2);
               doc.addImage(b64Img, fotoX, y, fotoW, fotoH);
               fotoX += fotoW + 12;
             } catch (err) {
-              console.error('Error al cargar evidencia debajo de actividad', err);
+              console.error('Error al cargar evidencia en PDF', err);
             }
           }
-          y += fotoH + 12;
+          y += fotoH + 16;
         }
-
-        y += 4; // Espacio antes de la siguiente actividad
       }
     }
 
@@ -6280,33 +6244,6 @@ document.getElementById('btnGenerarInformeFormal').addEventListener('click', asy
         doc.text(tituloLines, marginX + 80, y);
         doc.text(estadoLabel(act.estado), pageWidth - marginX - 70, y);
         y += Math.max(13, tituloLines.length * 11);
-
-        // Evidencia fotográfica justo debajo de la actividad en informe formal
-        if (act.evidencias && act.evidencias.length > 0) {
-          const fotoW = 95;
-          const fotoH = 65;
-          if (y + fotoH > pageHeight - 120) {
-            doc.addPage();
-            dibujarMembrete();
-            y = 150;
-          }
-          try {
-            const respImg = await fetch(act.evidencias[0]);
-            const blobImg = await respImg.blob();
-            const b64Img = await new Promise(res => {
-              const r = new FileReader();
-              r.onloadend = () => res(r.result);
-              r.readAsDataURL(blobImg);
-            });
-            doc.setDrawColor(200, 155, 60);
-            doc.rect(marginX + 80 - 1, y - 1, fotoW + 2, fotoH + 2);
-            doc.addImage(b64Img, marginX + 80, y, fotoW, fotoH);
-            y += fotoH + 8;
-          } catch(err) {
-            console.error('Error imagen informe formal', err);
-          }
-        }
-
         doc.setDrawColor(230, 230, 230);
         doc.line(marginX, y - 4, pageWidth - marginX, y - 4);
       }
