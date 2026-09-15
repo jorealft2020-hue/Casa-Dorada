@@ -1963,8 +1963,8 @@ main.app-content {
         <p style="font-size:12px; font-weight:700; color:var(--ink-dim); margin:16px 0 4px;">💻 CÓDIGO — GITHUB (frontend)</p>
         <div class="card">
           <p class="card-title">Repositorio (código fuente index.html)</p>
-          <p class="card-sub">jorealft2020-hue/casa-dorada-app</p>
-          <a href="https://github.com/jorealft2020-hue/casa-dorada-app" target="_blank" rel="noopener" class="chip-btn gold" style="display:inline-block; text-decoration:none; margin-top:8px;">Abrir repositorio</a>
+          <p class="card-sub">jorealft2020-hue/Casa-Dorada</p>
+          <a href="https://github.com/jorealft2020-hue/Casa-Dorada" target="_blank" rel="noopener" class="chip-btn gold" style="display:inline-block; text-decoration:none; margin-top:8px;">Abrir repositorio</a>
         </div>
         <div class="card">
           <p class="card-title">Generar token de acceso (para subir cambios)</p>
@@ -1972,7 +1972,7 @@ main.app-content {
         </div>
         <div class="card">
           <p class="card-title">GitHub Pages (dónde vive la app publicada)</p>
-          <a href="https://github.com/jorealft2020-hue/casa-dorada-app/settings/pages" target="_blank" rel="noopener" class="chip-btn gold" style="display:inline-block; text-decoration:none; margin-top:8px;">Ver configuración de Pages</a>
+          <a href="https://github.com/jorealft2020-hue/Casa-Dorada/settings/pages" target="_blank" rel="noopener" class="chip-btn gold" style="display:inline-block; text-decoration:none; margin-top:8px;">Ver configuración de Pages</a>
         </div>
 
         <p style="font-size:12px; font-weight:700; color:var(--ink-dim); margin:16px 0 4px;">🔑 GOOGLE CLOUD (login y Calendar)</p>
@@ -1988,8 +1988,8 @@ main.app-content {
         <p style="font-size:12px; font-weight:700; color:var(--ink-dim); margin:16px 0 4px;">🌐 APP EN VIVO</p>
         <div class="card">
           <p class="card-title">Link que usan todos los colaboradores</p>
-          <p class="card-sub">https://jorealft2020-hue.github.io/casa-dorada-app/</p>
-          <a href="https://jorealft2020-hue.github.io/casa-dorada-app/" target="_blank" rel="noopener" class="chip-btn gold" style="display:inline-block; text-decoration:none; margin-top:8px;">Abrir app</a>
+          <p class="card-sub">https://jorealft2020-hue.github.io/Casa-Dorada/</p>
+          <a href="https://jorealft2020-hue.github.io/Casa-Dorada/" target="_blank" rel="noopener" class="chip-btn gold" style="display:inline-block; text-decoration:none; margin-top:8px;">Abrir app</a>
         </div>
       </div>
     
@@ -4681,7 +4681,7 @@ document.getElementById('btnGoogleLogin').addEventListener('click', async () => 
   await sb.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: 'https://jorealft2020-hue.github.io/casa-dorada-app/',
+      redirectTo: 'https://jorealft2020-hue.github.io/Casa-Dorada/',
       scopes: 'https://www.googleapis.com/auth/calendar.events',
       queryParams: { access_type: 'offline', prompt: 'consent' }
     }
@@ -6410,7 +6410,7 @@ document.getElementById('btnGenerarInformeFormal').addEventListener('click', asy
 });
 
 function copiarLinkInstalacion(tipo){
-  const urlApp = 'https://jorealft2020-hue.github.io/casa-dorada-app/';
+  const urlApp = 'https://jorealft2020-hue.github.io/Casa-Dorada/';
   let mensaje = '';
 
   if (tipo === 'celular') {
@@ -6451,13 +6451,13 @@ function fallbackCopiar(texto){
     document.execCommand('copy');
     toast('Instrucciones copiadas al portapapeles ✓');
   } catch (e) {
-    toast('Copia el enlace manualmente: https://jorealft2020-hue.github.io/casa-dorada-app/');
+    toast('Copia el enlace manualmente: https://jorealft2020-hue.github.io/Casa-Dorada/');
   }
   document.body.removeChild(t);
 }
 
 function compartirWhatsAppInvitacion(){
-  const urlApp = 'https://jorealft2020-hue.github.io/casa-dorada-app/';
+  const urlApp = 'https://jorealft2020-hue.github.io/Casa-Dorada/';
   const texto = `¡Hola! Te comparto el enlace de acceso al Planner Corporativo de Constructora & Inmobiliaria Casa Dorada.\n\n` +
     `Ingresa aquí desde tu celular o computadora con tu correo de Google autorizado:\n${urlApp}\n\n` +
     `Recuerda que puedes instalarlo como aplicación tocando en 'Instalar' o 'Agregar al inicio'.`;
@@ -11755,7 +11755,7 @@ async function notificarAdminConductorSilencioso(datosCita){
     });
 
     // 2. Disparo silencioso en segundo plano (Edge Function o Webhook)
-    const linkDirecto = `https://jorealft2020-hue.github.io/casa-dorada-app/?vista=visitas&fecha=${fecha}&accion=designar_conductor`;
+    const linkDirecto = `https://jorealft2020-hue.github.io/Casa-Dorada/?vista=visitas&fecha=${fecha}&accion=designar_conductor`;
     fetch('https://nboikojylmkujdxinztj.supabase.co/functions/v1/enviar-whatsapp-admin', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
