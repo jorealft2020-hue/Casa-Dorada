@@ -4839,8 +4839,12 @@ async function cargarPerfil(){
   }
 
   if (!data) {
-    const { data: activado } = await sb.rpc('activar_usuario_preautorizado').catch(() => ({ data: null }));
-    if (activado) data = activado;
+    try {
+      const { data: activado } = await sb.rpc('activar_usuario_preautorizado');
+      if (activado) data = activado;
+    } catch (e) {
+      console.warn('No se pudo activar el usuario preautorizado:', e);
+    }
   }
 
   currentProfile = data || {};
@@ -6639,9 +6643,10 @@ document.getElementById('btnGuardarPreautorizado').addEventListener('click', asy
     }
 
     if (error) { toast('Error al guardar: ' + error.message); console.error(error); return; }
-    // Sincronizar también con la tabla usuarios si el colaborador ya inició sesión previamente
+    // Sincronizar también con la tabla usuarios si el colaborador ya inició sesión previamente.
+    // No bloquea el resto del guardado si falla: ya se persistió lo importante (usuarios_preautorizados).
     if (email) {
-      await sb.from('usuarios').update({
+      const { error: errorUsuario } = await sb.from('usuarios').update({
         nombre,
         dni: dni || null,
         celular: celular || null,
@@ -6651,7 +6656,8 @@ document.getElementById('btnGuardarPreautorizado').addEventListener('click', asy
         cargo,
         rol,
         permisos
-      }).eq('email', email).catch(() => {});
+      }).eq('email', email);
+      if (errorUsuario) console.warn('No se pudo sincronizar usuarios:', errorUsuario.message);
     }
 
     toast(editandoEmailPreautorizado ? 'Colaborador actualizado ✓' : 'Colaborador pre-autorizado con éxito ✓');
@@ -6660,6 +6666,9 @@ document.getElementById('btnGuardarPreautorizado').addEventListener('click', asy
       const el = document.getElementById(id); if (el) el.value = '';
     });
     cargarPreautorizados();
+  } catch (e) {
+    console.error('Error inesperado al guardar preautorizado:', e);
+    toast('Error inesperado al guardar: ' + (e?.message || e));
   } finally {
     btn.disabled = false;
     btn.textContent = editandoEmailPreautorizado ? 'Guardar cambios' : 'Agregar colaborador';
@@ -6824,10 +6833,11 @@ document.getElementById('btnGuardarUsuario').addEventListener('click', async () 
       return;
     }
 
-    // Sincronizar también con usuarios_preautorizados si existe para que ambas listas queden idénticas
+    // Sincronizar también con usuarios_preautorizados si existe para que ambas listas queden idénticas.
+    // No bloquea el resto del guardado si falla: ya se persistió lo importante (la tabla usuarios).
     const emailColab = (document.getElementById('eu_email').value || '').trim().toLowerCase();
     if (emailColab) {
-      await sb.from('usuarios_preautorizados').update({
+      const { error: errorPreautorizado } = await sb.from('usuarios_preautorizados').update({
         nombre,
         dni: dni || null,
         celular: celular || null,
@@ -6837,7 +6847,8 @@ document.getElementById('btnGuardarUsuario').addEventListener('click', async () 
         cargo,
         rol,
         permisos
-      }).eq('email', emailColab).catch(() => {});
+      }).eq('email', emailColab);
+      if (errorPreautorizado) console.warn('No se pudo sincronizar usuarios_preautorizados:', errorPreautorizado.message);
     }
 
     toast('Colaborador y permisos actualizados ✓');
@@ -6847,6 +6858,9 @@ document.getElementById('btnGuardarUsuario').addEventListener('click', async () 
       await cargarPerfil();
       mostrarApp();
     }
+  } catch (e) {
+    console.error('Error inesperado al guardar colaborador:', e);
+    toast('Error inesperado al guardar: ' + (e?.message || e));
   } finally {
     btn.disabled = false;
     btn.textContent = 'Guardar cambios';
@@ -8720,7 +8734,13 @@ document.getElementById('btnGuardarSeparacion').addEventListener('click', async 
 
   toast('Guardando separación…');
   try {
-    const { data: codigoGenerado } = await sb.rpc('generar_codigo_cliente', { p_vendedor_id: currentUser.id }).catch(() => ({ data: null }));
+    let codigoGenerado = null;
+    try {
+      const resCodigo = await sb.rpc('generar_codigo_cliente', { p_vendedor_id: currentUser.id });
+      codigoGenerado = resCodigo.data;
+    } catch (e) {
+      console.warn('No se pudo generar el código correlativo de cliente:', e);
+    }
 
     const { data: nuevoCliente, error: errCliente } = await sb.from('clientes').insert({
       vendedor_id: currentUser.id,
@@ -8988,14 +9008,18 @@ async function obtenerTokenGoogleFresco(){
 async function sincronizarEventoCalendar(ev){
   const googleToken = await obtenerTokenGoogleFresco();
   if (!googleToken) {
-    const intentosActuales = (ev.sync_calendar_intentos || 0) + 1;
-    await sb.from('agenda').update({ sync_calendar_intentos: intentosActuales }).eq('id', ev.id).catch(() => {});
-    if (intentosActuales === 1) {
-      await sb.from('notificaciones').insert({
-        usuario_id: currentUser.id, tipo: 'error_sync_calendar',
-        titulo: '⚠️ No se pudo obtener token de Google',
-        mensaje: `Cita "${ev.titulo}" no se sincronizó. Motivo: ${ultimoErrorTokenGoogle || 'no hay ningún token guardado.'}`,
-      }).catch(() => {});
+    try {
+      const intentosActuales = (ev.sync_calendar_intentos || 0) + 1;
+      await sb.from('agenda').update({ sync_calendar_intentos: intentosActuales }).eq('id', ev.id);
+      if (intentosActuales === 1) {
+        await sb.from('notificaciones').insert({
+          usuario_id: currentUser.id, tipo: 'error_sync_calendar',
+          titulo: '⚠️ No se pudo obtener token de Google',
+          mensaje: `Cita "${ev.titulo}" no se sincronizó. Motivo: ${ultimoErrorTokenGoogle || 'no hay ningún token guardado.'}`,
+        });
+      }
+    } catch (e) {
+      console.warn('No se pudo registrar el intento fallido de sync (agenda):', e);
     }
     return;
   }
@@ -9048,14 +9072,18 @@ async function sincronizarEventoCalendar(ev){
     }
   } catch (err) {
     const intentosActuales = (ev.sync_calendar_intentos || 0) + 1;
-    await sb.from('agenda').update({ sync_calendar_intentos: intentosActuales }).eq('id', ev.id).catch(() => {});
-    if (intentosActuales === 1) {
-      const msg = `Error de conexión al sincronizar "${ev.titulo}" con Google Calendar: ${String(err)}`;
-      console.error(msg);
-      await sb.from('notificaciones').insert({
-        usuario_id: currentUser.id, tipo: 'error_sync_calendar',
-        titulo: '⚠️ Error de conexión con Google Calendar', mensaje: msg,
-      }).catch(() => {});
+    try {
+      await sb.from('agenda').update({ sync_calendar_intentos: intentosActuales }).eq('id', ev.id);
+      if (intentosActuales === 1) {
+        const msg = `Error de conexión al sincronizar "${ev.titulo}" con Google Calendar: ${String(err)}`;
+        console.error(msg);
+        await sb.from('notificaciones').insert({
+          usuario_id: currentUser.id, tipo: 'error_sync_calendar',
+          titulo: '⚠️ Error de conexión con Google Calendar', mensaje: msg,
+        });
+      }
+    } catch (e2) {
+      console.warn('No se pudo registrar el error de sync (agenda):', e2);
     }
   }
 }
@@ -9063,14 +9091,18 @@ async function sincronizarEventoCalendar(ev){
 async function sincronizarSolicitudCalendar(sol){
   const googleToken = await obtenerTokenGoogleFresco();
   if (!googleToken) {
-    const intentosActuales = (sol.sync_calendar_intentos || 0) + 1;
-    await sb.from('solicitudes').update({ sync_calendar_intentos: intentosActuales }).eq('id', sol.id).catch(() => {});
-    if (intentosActuales === 1) {
-      await sb.from('notificaciones').insert({
-        usuario_id: sol.asignado_a || currentUser.id, tipo: 'error_sync_calendar',
-        titulo: '⚠️ No se pudo obtener token de Google',
-        mensaje: `Solicitud "${sol.titulo}" no se sincronizó con Calendar. Motivo: ${ultimoErrorTokenGoogle || 'no hay ningún token guardado.'}`,
-      }).catch(() => {});
+    try {
+      const intentosActuales = (sol.sync_calendar_intentos || 0) + 1;
+      await sb.from('solicitudes').update({ sync_calendar_intentos: intentosActuales }).eq('id', sol.id);
+      if (intentosActuales === 1) {
+        await sb.from('notificaciones').insert({
+          usuario_id: sol.asignado_a || currentUser.id, tipo: 'error_sync_calendar',
+          titulo: '⚠️ No se pudo obtener token de Google',
+          mensaje: `Solicitud "${sol.titulo}" no se sincronizó con Calendar. Motivo: ${ultimoErrorTokenGoogle || 'no hay ningún token guardado.'}`,
+        });
+      }
+    } catch (e) {
+      console.warn('No se pudo registrar el intento fallido de sync (solicitudes):', e);
     }
     return;
   }
@@ -9100,11 +9132,15 @@ async function sincronizarSolicitudCalendar(sol){
     if (resp.ok) {
       const gEvent = await resp.json();
       await sb.from('solicitudes').update({ google_calendar_event_id: gEvent.id }).eq('id', sol.id);
-      await sb.from('notificaciones').insert({
-        usuario_id: sol.asignado_a || currentUser.id, tipo: 'solicitud_alarma',
-        titulo: `📋 Recordatorio: "${sol.titulo}" vence el ${fmtFecha(sol.fecha_limite)}`,
-        mensaje: `Solicitud de ${sol.solicitante_nombre || 'un colaborador'}. Se sincronizó con Google Calendar.`,
-      }).catch(() => {});
+      try {
+        await sb.from('notificaciones').insert({
+          usuario_id: sol.asignado_a || currentUser.id, tipo: 'solicitud_alarma',
+          titulo: `📋 Recordatorio: "${sol.titulo}" vence el ${fmtFecha(sol.fecha_limite)}`,
+          mensaje: `Solicitud de ${sol.solicitante_nombre || 'un colaborador'}. Se sincronizó con Google Calendar.`,
+        });
+      } catch (e) {
+        console.warn('No se pudo registrar la notificación de recordatorio:', e);
+      }
     } else {
       const errBody = await resp.json().catch(() => ({}));
       const intentosActuales = (sol.sync_calendar_intentos || 0) + 1;
@@ -9120,13 +9156,17 @@ async function sincronizarSolicitudCalendar(sol){
     }
   } catch (err) {
     const intentosActuales = (sol.sync_calendar_intentos || 0) + 1;
-    await sb.from('solicitudes').update({ sync_calendar_intentos: intentosActuales }).eq('id', sol.id).catch(() => {});
-    if (intentosActuales === 1) {
-      console.error(`Error de conexión al sincronizar solicitud:`, err);
-      await sb.from('notificaciones').insert({
-        usuario_id: sol.asignado_a || currentUser.id, tipo: 'error_sync_calendar',
-        titulo: '⚠️ Error de conexión con Google Calendar', mensaje: String(err),
-      }).catch(() => {});
+    try {
+      await sb.from('solicitudes').update({ sync_calendar_intentos: intentosActuales }).eq('id', sol.id);
+      if (intentosActuales === 1) {
+        console.error(`Error de conexión al sincronizar solicitud:`, err);
+        await sb.from('notificaciones').insert({
+          usuario_id: sol.asignado_a || currentUser.id, tipo: 'error_sync_calendar',
+          titulo: '⚠️ Error de conexión con Google Calendar', mensaje: String(err),
+        });
+      }
+    } catch (e2) {
+      console.warn('No se pudo registrar el error de sync (solicitudes):', e2);
     }
   }
 }
