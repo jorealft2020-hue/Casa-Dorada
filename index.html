@@ -10886,21 +10886,18 @@ async function cargarPendientesInicio(){
 
     const totalAlertas = tareasPendientes.length + citasPendientes.length + solicitudesPendientes.length + sepPorVencer.length;
 
-    // 6. Actividades, citas y solicitudes registradas HOY, para la barra de
+    // 6. Actividades y citas de agenda REALIZADAS hoy, para la barra de
     // Jornada Efectiva -- actualizarBarraJornadaEfectiva() ya calculaba esto
     // correctamente pero nunca se llamaba desde ningún lado, así que la
     // barra se quedaba fija en 0.0/8.0 hrs sin importar lo que se registrara.
+    // Suma exclusivamente actividades completadas + agendas realizadas.
     const { data: actsHoy } = await sb.from('actividades')
       .select('*')
       .eq('usuario_id', currentUser.id)
-      .eq('fecha_programada', hoy);
-    const citasHoy = (citas || []).filter(c => c.estado !== 'cancelada' && (c.fecha_inicio || '').split('T')[0] === hoy);
-    const { data: solsHoy } = await sb.from('solicitudes')
-      .select('id')
-      .eq('usuario_id', currentUser.id)
-      .gte('created_at', hoy + 'T00:00:00')
-      .lte('created_at', hoy + 'T23:59:59');
-    actualizarBarraJornadaEfectiva(actsHoy, citasHoy, solsHoy);
+      .eq('fecha_programada', hoy)
+      .eq('estado', 'completada');
+    const citasHoy = (citas || []).filter(c => c.estado === 'realizada' && (c.fecha_inicio || '').split('T')[0] === hoy);
+    actualizarBarraJornadaEfectiva(actsHoy, citasHoy);
 
     const elNumT = document.getElementById('pi_num_tareas');
     if (elNumT) elNumT.textContent = tareasPendientes.length;
@@ -13123,11 +13120,14 @@ function alSeleccionarClienteModalVisita() {
   }
 }
 
-function actualizarBarraJornadaEfectiva(acts = [], agendas = [], sols = []) {
+function actualizarBarraJornadaEfectiva(acts = [], agendas = []) {
   let horasTerreno = 0;
   let horasOficina = 0;
 
-  (acts || []).forEach(a => {
+  // Solo actividades REALIZADAS (estado 'completada') cuentan como horas
+  // efectivas -- una actividad pendiente o en proceso todavia no es trabajo
+  // hecho.
+  (acts || []).filter(a => a.estado === 'completada').forEach(a => {
     let dur = 0;
     if (a.hora_inicio && a.hora_fin) {
       dur = calcularHorasEfectivasEntre(a.hora_inicio, a.hora_fin);
@@ -13144,20 +13144,25 @@ function actualizarBarraJornadaEfectiva(acts = [], agendas = [], sols = []) {
     }
   });
 
-  (agendas || []).forEach(ag => {
-    let dur = 1.0;
-    if (ag.fecha_inicio && ag.fecha_fin) {
+  // Solo agendas REALIZADAS (resueltas con "Realizada", no una cita todavia
+  // pendiente). Se usa la hora real de inicio/fin capturada al resolver la
+  // cita si existe -- es mas precisa que la hora originalmente agendada.
+  (agendas || []).filter(ag => ag.estado === 'realizada').forEach(ag => {
+    let dur;
+    if (ag.hora_inicio_real && ag.hora_fin_real) {
+      dur = calcularHorasEfectivasEntre(ag.hora_inicio_real, ag.hora_fin_real);
+    } else if (ag.fecha_inicio && ag.fecha_fin) {
       dur = Math.max(0.5, (new Date(ag.fecha_fin) - new Date(ag.fecha_inicio)) / (1000 * 60 * 60));
+    } else {
+      dur = 1.0;
     }
-    const loc = ((ag.lugar || '') + ' ' + (ag.titulo || '')).toLowerCase();
+    const loc = ((ag.locacion || '') + ' ' + (ag.titulo || '')).toLowerCase();
     if (loc.includes('terreno') || loc.includes('yarada') || loc.includes('visita')) {
       horasTerreno += dur;
     } else {
       horasOficina += dur;
     }
   });
-
-  horasOficina += (sols || []).length * 0.5;
 
   const total = +(horasTerreno + horasOficina).toFixed(1);
   const pct = Math.min(100, Math.round((total / 8.0) * 100));
