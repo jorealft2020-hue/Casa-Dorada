@@ -1,4 +1,4 @@
-const CACHE_NAME = 'casa-dorada-v3';
+const CACHE_NAME = 'casa-dorada-v4';
 
 // MODO OFFLINE BÁSICO: se precargan los archivos esenciales de la app apenas
 // se instala el service worker, para que funcione sin conexión desde la
