@@ -4961,6 +4961,15 @@ function actualizarDatosDrawer(){
   const puedeVerAjustes = tienePermiso('gestionar_equipo') || tienePermiso('ver_ajustes') || tienePermiso('descargar_respaldos');
   showDr('drDeptAjustes', puedeVerAjustes);
 
+  // Oculta el macro-botón de cada categoría del drawer nuevo cuando el
+  // usuario no tiene permiso para ningún ítem dentro de ella, para no
+  // mostrar una categoría vacía o que termine en "no tienes permiso".
+  showDr('drMacroCampo', itemsVisiblesSubMenu('campo').length > 0);
+  showDr('drMacroComercial', itemsVisiblesSubMenu('comercial').length > 0);
+  showDr('drMacroFinanzas', itemsVisiblesSubMenu('finanzas').length > 0);
+  showDr('drMacroOperativa', itemsVisiblesSubMenu('operativa').length > 0);
+  showDr('drMacroSistema', itemsVisiblesSubMenu('sistema').length > 0);
+
   reorganizarDrawerPorDepartamentos();
 }
 
@@ -13095,15 +13104,15 @@ const SUBMENUS_DATA = {
     icono: '🚀',
     subtitulo: 'Herramientas in situ para La Yarada',
     items: [
-      { icono: '🚀', titulo: 'Panel de Campo Completo', desc: 'Pantalla única con los 9 módulos', accion: () => { irAVista('operaciones_campo'); cerrarDrawer(); } },
+      { icono: '🚀', titulo: 'Panel de Campo Completo', desc: 'Pantalla única con los 9 módulos', permiso: 'ver_operaciones_campo', accion: () => { irAVista('operaciones_campo'); cerrarDrawer(); } },
       { icono: '⚡', titulo: 'Speed to Lead (<90s)', desc: 'Alerta reactiva y cronómetro 300s', accion: () => { simularAlertaSpeedToLead(); cerrarDrawer(); } },
-      { icono: '🎙️', titulo: 'Dictado por Voz', desc: 'Bitácora de acuerdos en terreno', accion: () => { abrirModalDictadoVoz(); cerrarDrawer(); } },
-      { icono: '📱', titulo: 'Pre-Reserva QR (S/ 500)', desc: 'Generador offline BCP/Yape/Chile', accion: () => { abrirModalPreReservaEnTerreno('B','12',500); cerrarDrawer(); } },
-      { icono: '🏛️', titulo: 'Cierre Rápido Tacna', desc: 'Partida SUNARP, Pórtico y Vías', accion: () => { abrirModalHerramientasTacna(); cerrarDrawer(); } },
-      { icono: '🎯', titulo: 'Cadencias 1-Toque', desc: 'Scripts para Ferias, Chile y Visitas', accion: () => { abrirModalCadencias('Carlos Mamani', '952123456'); cerrarDrawer(); } },
-      { icono: '🎉', titulo: 'Domingo de Cierres TV', desc: 'Campana acústica y confeti en vivo', accion: () => { abrirModalDomingoDeCierres(); cerrarDrawer(); } },
-      { icono: '✍️', titulo: 'Minuta Legal & Firma', desc: 'Contrato preparatorio en pantalla táctil', accion: () => { abrirModalMinutaCompraventa(); cerrarDrawer(); } },
-      { icono: '🚐', titulo: 'Movilidad Van (14 Asientos)', desc: 'Control de salidas a La Yarada', accion: () => { irAVista('visitas'); cerrarDrawer(); } }
+      { icono: '🎙️', titulo: 'Dictado por Voz', desc: 'Bitácora de acuerdos en terreno', permiso: 'usar_dictado_voz', accion: () => { abrirModalDictadoVoz(); cerrarDrawer(); } },
+      { icono: '📱', titulo: 'Pre-Reserva QR (S/ 500)', desc: 'Generador offline BCP/Yape/Chile', permiso: 'usar_pre_reserva_qr', accion: () => { abrirModalPreReservaEnTerreno('B','12',500); cerrarDrawer(); } },
+      { icono: '🏛️', titulo: 'Cierre Rápido Tacna', desc: 'Partida SUNARP, Pórtico y Vías', permiso: 'ver_herramientas_tacna', accion: () => { abrirModalHerramientasTacna(); cerrarDrawer(); } },
+      { icono: '🎯', titulo: 'Cadencias 1-Toque', desc: 'Scripts para Ferias, Chile y Visitas', permiso: 'ver_cadencias_seguimiento', accion: () => { abrirModalCadencias('Carlos Mamani', '952123456'); cerrarDrawer(); } },
+      { icono: '🎉', titulo: 'Domingo de Cierres TV', desc: 'Campana acústica y confeti en vivo', permiso: 'ver_domingo_cierres', accion: () => { abrirModalDomingoDeCierres(); cerrarDrawer(); } },
+      { icono: '✍️', titulo: 'Minuta Legal & Firma', desc: 'Contrato preparatorio en pantalla táctil', permiso: 'generar_minuta_digital', accion: () => { abrirModalMinutaCompraventa(); cerrarDrawer(); } },
+      { icono: '🚐', titulo: 'Movilidad Van (14 Asientos)', desc: 'Control de salidas a La Yarada', permiso: 'ver_control_visitas', accion: () => { irAVista('visitas'); cerrarDrawer(); } }
     ]
   },
   comercial: {
@@ -13111,15 +13120,15 @@ const SUBMENUS_DATA = {
     icono: '💼',
     subtitulo: 'Pipeline comercial y clientes',
     items: [
-      { icono: '📊', titulo: 'Tablero de Control & KPIs', desc: 'Métricas de ventas y rendimiento', accion: () => { irAVista('control'); cerrarDrawer(); } },
-      { icono: '👥', titulo: 'Cartera de Clientes & Kanban', desc: 'Pipeline de prospectos y estados', accion: () => { irAVista('clientes'); cerrarDrawer(); } },
-      { icono: '🧮', titulo: 'Cotizador Rápido de Lotes', desc: 'Cuotas dobles, Dúo y financiamiento', accion: () => { abrirModalCotizador(); cerrarDrawer(); } },
-      { icono: '🗺️', titulo: 'Planos Interactivos', desc: 'Disponibilidad y Master Plan 360°', accion: () => { irAVista('planos'); cerrarDrawer(); } },
-      { icono: '🏷️', titulo: 'Separaciones de Lotes', desc: 'Lotes reservados y control de pagos', accion: () => { irAVista('separaciones'); cerrarDrawer(); } },
-      { icono: '🏖️', titulo: 'Portal del Propietario', desc: 'Área para clientes de Costa Dorada', accion: () => { abrirPortalPropietario(); cerrarDrawer(); } },
-      { icono: '🤝', titulo: 'Red de Embajadores', desc: 'Código de referido con bono S/ 500', accion: () => { abrirModalEmbajadores(); cerrarDrawer(); } },
-      { icono: '📁', titulo: 'Portafolio Multimedia', desc: 'Brochure, videos de dron y fotos', accion: () => { irAVista('portafolio'); cerrarDrawer(); } },
-      { icono: '🎯', titulo: 'Manual de Ventas & Speeches', desc: 'Argumentarios y objeciones', accion: () => { irAVista('manualventas'); cerrarDrawer(); } }
+      { icono: '📊', titulo: 'Tablero de Control & KPIs', desc: 'Métricas de ventas y rendimiento', permiso: 'ver_control', accion: () => { irAVista('control'); cerrarDrawer(); } },
+      { icono: '👥', titulo: 'Cartera de Clientes & Kanban', desc: 'Pipeline de prospectos y estados', permiso: 'ver_clientes', accion: () => { irAVista('clientes'); cerrarDrawer(); } },
+      { icono: '🧮', titulo: 'Cotizador Rápido de Lotes', desc: 'Cuotas dobles, Dúo y financiamiento', permiso: 'ver_cotizador', accion: () => { abrirModalCotizador(); cerrarDrawer(); } },
+      { icono: '🗺️', titulo: 'Planos Interactivos', desc: 'Disponibilidad y Master Plan 360°', permiso: 'ver_planos', accion: () => { irAVista('planos'); cerrarDrawer(); } },
+      { icono: '🏷️', titulo: 'Separaciones de Lotes', desc: 'Lotes reservados y control de pagos', permiso: 'ver_separaciones', accion: () => { irAVista('separaciones'); cerrarDrawer(); } },
+      { icono: '🏖️', titulo: 'Portal del Propietario', desc: 'Área para clientes de Costa Dorada', permiso: 'ver_portal_propietarios', accion: () => { abrirPortalPropietario(); cerrarDrawer(); } },
+      { icono: '🤝', titulo: 'Red de Embajadores', desc: 'Código de referido con bono S/ 500', permiso: 'ver_red_embajadores', accion: () => { abrirModalEmbajadores(); cerrarDrawer(); } },
+      { icono: '📁', titulo: 'Portafolio Multimedia', desc: 'Brochure, videos de dron y fotos', permiso: 'ver_portafolio', accion: () => { irAVista('portafolio'); cerrarDrawer(); } },
+      { icono: '🎯', titulo: 'Manual de Ventas & Speeches', desc: 'Argumentarios y objeciones', permiso: 'ver_manualventas', accion: () => { irAVista('manualventas'); cerrarDrawer(); } }
     ]
   },
   finanzas: {
@@ -13127,12 +13136,12 @@ const SUBMENUS_DATA = {
     icono: '💰',
     subtitulo: 'Caja, comisiones y cobranzas',
     items: [
-      { icono: '💵', titulo: 'Billetera de Comisiones', desc: 'Liquidación y escala de comisiones', accion: () => { abrirModalComisionesERP(); cerrarDrawer(); } },
-      { icono: '🧾', titulo: 'Caja & Vouchers Oficiales', desc: 'Arqueo de caja y emisión de recibos', accion: () => { abrirModalCajaTesoreria(); cerrarDrawer(); } },
-      { icono: '🏦', titulo: 'Inventario de Lotes (ERP)', desc: 'Control de manzanas y precios m²', accion: () => { abrirModalInventarioLotes(); cerrarDrawer(); } },
-      { icono: '💳', titulo: 'Control de Cobranzas', desc: 'Letras mensuales y cuotas directas', accion: () => { irACobranzas(); cerrarDrawer(); } },
-      { icono: '💱', titulo: 'Conversor Multidivisa', desc: 'Tipo de cambio Soles, Dólares y CLP', accion: () => { abrirModalConversorDivisas(); cerrarDrawer(); } },
-      { icono: '📈', titulo: 'Simulador Plusvalía & ROI', desc: 'Proyección de valorización a 10 años', accion: () => { abrirModalPlusvalia(); cerrarDrawer(); } }
+      { icono: '💵', titulo: 'Billetera de Comisiones', desc: 'Liquidación y escala de comisiones', permiso: 'ver_comisiones_erp', accion: () => { abrirModalComisionesERP(); cerrarDrawer(); } },
+      { icono: '🧾', titulo: 'Caja & Vouchers Oficiales', desc: 'Arqueo de caja y emisión de recibos', permiso: 'gestionar_caja_tesoreria', accion: () => { abrirModalCajaTesoreria(); cerrarDrawer(); } },
+      { icono: '🏦', titulo: 'Inventario de Lotes (ERP)', desc: 'Control de manzanas y precios m²', permiso: 'ver_inventario_lotes', accion: () => { abrirModalInventarioLotes(); cerrarDrawer(); } },
+      { icono: '💳', titulo: 'Control de Cobranzas', desc: 'Letras mensuales y cuotas directas', permiso: 'ver_cobranzas', accion: () => { irACobranzas(); cerrarDrawer(); } },
+      { icono: '💱', titulo: 'Conversor Multidivisa', desc: 'Tipo de cambio Soles, Dólares y CLP', permiso: 'usar_conversor_divisas', accion: () => { abrirModalConversorDivisas(); cerrarDrawer(); } },
+      { icono: '📈', titulo: 'Simulador Plusvalía & ROI', desc: 'Proyección de valorización a 10 años', permiso: 'ver_simulador_plusvalia', accion: () => { abrirModalPlusvalia(); cerrarDrawer(); } }
     ]
   },
   operativa: {
@@ -13140,11 +13149,11 @@ const SUBMENUS_DATA = {
     icono: '📋',
     subtitulo: 'Actividades, agenda y equipo',
     items: [
-      { icono: '✓', titulo: 'Actividades y Tareas Hoy', desc: 'Bitácora y horas de trabajo efectivas', accion: () => { irAVista('actividades'); cerrarDrawer(); } },
-      { icono: '📅', titulo: 'Agenda & Google Calendar', desc: 'Citas y eventos programados', accion: () => { irAVista('agenda'); cerrarDrawer(); } },
-      { icono: '📝', titulo: 'Solicitudes y Requerimientos', desc: 'Trámites y pedidos a gerencia', accion: () => { irAVista('solicitudes'); cerrarDrawer(); } },
-      { icono: '📈', titulo: 'Rendimiento por Área', desc: 'Métricas diarias de llamadas y citas', accion: () => { irAVista('rendimiento'); cerrarDrawer(); } },
-      { icono: '🧑‍🤝‍🧑', titulo: 'Reporte Diario de Equipo', desc: 'Consolidado de actividades y horas', accion: () => { irAVista('reporte_equipo'); cerrarDrawer(); } }
+      { icono: '✓', titulo: 'Actividades y Tareas Hoy', desc: 'Bitácora y horas de trabajo efectivas', permiso: 'ver_actividades', accion: () => { irAVista('actividades'); cerrarDrawer(); } },
+      { icono: '📅', titulo: 'Agenda & Google Calendar', desc: 'Citas y eventos programados', permiso: 'ver_agenda', accion: () => { irAVista('agenda'); cerrarDrawer(); } },
+      { icono: '📝', titulo: 'Solicitudes y Requerimientos', desc: 'Trámites y pedidos a gerencia', permiso: 'ver_solicitudes', accion: () => { irAVista('solicitudes'); cerrarDrawer(); } },
+      { icono: '📈', titulo: 'Rendimiento por Área', desc: 'Métricas diarias de llamadas y citas', permiso: 'ver_rendimiento', accion: () => { irAVista('rendimiento'); cerrarDrawer(); } },
+      { icono: '🧑‍🤝‍🧑', titulo: 'Reporte Diario de Equipo', desc: 'Consolidado de actividades y horas', permiso: 'ver_reporte_equipo', accion: () => { irAVista('reporte_equipo'); cerrarDrawer(); } }
     ]
   },
   sistema: {
@@ -13152,15 +13161,23 @@ const SUBMENUS_DATA = {
     icono: '⚙️',
     subtitulo: 'Inteligencia, ajustes y seguridad',
     items: [
-      { icono: '🤖', titulo: 'MAJO · Inteligencia Corporativa', desc: 'Asistente IA y base de conocimiento', accion: () => { irAVista('majo_assistant'); cerrarDrawer(); } },
-      { icono: '📋', titulo: 'Checklist Legal de Expedientes', desc: 'Saneamiento y documentos SUNARP', accion: () => { abrirChecklistLegal(null); cerrarDrawer(); } },
-      { icono: '🧑‍💼', titulo: 'Gestión de Equipo & Permisos', desc: 'Checklist SuperAdmin y roles', accion: () => { irAVista('admin'); cerrarDrawer(); } },
-      { icono: '🛠️', titulo: 'Configuración del Sistema', desc: 'Parámetros generales del CRM', accion: () => { irAVista('sistema'); cerrarDrawer(); } },
-      { icono: '💾', titulo: 'Descargar Respaldo JSON', desc: 'Copia de seguridad local', accion: () => { descargarRespaldo(); cerrarDrawer(); } },
+      { icono: '🤖', titulo: 'MAJO · Inteligencia Corporativa', desc: 'Asistente IA y base de conocimiento', permiso: 'ver_majo_assistant', accion: () => { irAVista('majo_assistant'); cerrarDrawer(); } },
+      { icono: '📋', titulo: 'Checklist Legal de Expedientes', desc: 'Saneamiento y documentos SUNARP', permiso: 'ver_checklist_legal', accion: () => { abrirChecklistLegal(null); cerrarDrawer(); } },
+      { icono: '🧑‍💼', titulo: 'Gestión de Equipo & Permisos', desc: 'Checklist SuperAdmin y roles', permiso: 'gestionar_equipo', accion: () => { irAVista('admin'); cerrarDrawer(); } },
+      { icono: '🛠️', titulo: 'Configuración del Sistema', desc: 'Parámetros generales del CRM', permiso: 'ver_ajustes', accion: () => { irAVista('sistema'); cerrarDrawer(); } },
+      { icono: '💾', titulo: 'Descargar Respaldo JSON', desc: 'Copia de seguridad local', permiso: 'descargar_respaldos', accion: () => { descargarRespaldo(); cerrarDrawer(); } },
       { icono: '🔄', titulo: 'Sincronización Rápida', desc: 'Actualizar datos con la nube', accion: () => { sincronizacionRapida(); cerrarDrawer(); } }
     ]
   }
 };
+
+// Items sin `permiso` (ej. Speed to Lead, Sincronizacion Rapida) son
+// acciones sin dato sensible, visibles para cualquier usuario autenticado.
+function itemsVisiblesSubMenu(categoria){
+  const data = SUBMENUS_DATA[categoria];
+  if (!data) return [];
+  return data.items.filter(item => !item.permiso || tienePermiso(item.permiso));
+}
 
 function abrirSubMenuLateral(categoria, btnEl) {
   const data = SUBMENUS_DATA[categoria];
@@ -13184,7 +13201,8 @@ function abrirSubMenuLateral(categoria, btnEl) {
   if (subtituloEl) subtituloEl.textContent = data.subtitulo;
 
   if (listaEl) {
-    listaEl.innerHTML = data.items.map((item, idx) => `
+    const itemsVisibles = itemsVisiblesSubMenu(categoria);
+    listaEl.innerHTML = itemsVisibles.map((item, idx) => `
       <div class="subpanel-item" onclick="ejecutarAccionSubMenu('${categoria}', ${idx})">
         <span style="font-size:20px; flex-shrink:0;">${item.icono}</span>
         <div style="flex:1; min-width:0;">
@@ -13193,7 +13211,7 @@ function abrirSubMenuLateral(categoria, btnEl) {
         </div>
         <span style="font-size:14px; color:#CBD5E1; font-weight:800;">›</span>
       </div>
-    `).join('');
+    `).join('') || `<p class="card-sub" style="padding:12px;">No tienes módulos habilitados en esta sección.</p>`;
   }
 
   if (subPanel) subPanel.classList.add('open');
@@ -13207,7 +13225,7 @@ function cerrarSubMenuLateral() {
 }
 
 function ejecutarAccionSubMenu(categoria, idx) {
-  const item = SUBMENUS_DATA[categoria]?.items[idx];
+  const item = itemsVisiblesSubMenu(categoria)[idx];
   if (item && typeof item.accion === 'function') {
     item.accion();
   }
