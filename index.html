@@ -3024,6 +3024,7 @@ main.app-content {
           <option value="true">Activo</option>
           <option value="false">Inactivo (bloqueado)</option>
         </select>
+        <p style="font-size:11px; color:var(--ink-dim); margin:4px 0 0;">"Inactivo" cierra su sesión y le impide volver a entrar con su correo, aunque siga en Google Workspace.</p>
       </div>
 
       <!-- AVISO DE SOLO SUPERADMIN -->
@@ -4736,6 +4737,19 @@ function mostrarLogin(){
   document.getElementById('mainScreen').classList.add('hidden');
 }
 async function mostrarApp(){
+  // La cuenta puede quedar Inactiva desde Gestión de Equipo (usuarios.activo).
+  // Hasta ahora ese estado era solo decorativo: nada impedía que un usuario
+  // desactivado siguiera entrando con su correo de Google (Supabase Auth no
+  // sabe nada de esta columna, solo valida la identidad). Se corta el acceso
+  // aquí, en el único punto por el que pasan los 3 flujos de login.
+  if (currentProfile?.activo === false && !esUsuarioSuperAdmin()) {
+    await sb.auth.signOut();
+    currentUser = null;
+    mostrarLogin();
+    toast('Tu cuenta fue desactivada. Contacta a un administrador.');
+    return;
+  }
+
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('mainScreen').classList.remove('hidden');
   document.getElementById('mainScreen').style.display = 'flex';
@@ -11990,6 +12004,17 @@ function suscribirCambiosPerfilEnTiempoReal(){
       }, async (payload) => {
         console.log('⚡ Perfil o permisos actualizados en tiempo real:', payload.new);
         await cargarPerfil();
+
+        // Si lo desactivaron mientras tenía la sesión abierta, se lo saca
+        // de inmediato en vez de esperar a que recargue o cierre la app.
+        if (currentProfile?.activo === false && !esUsuarioSuperAdmin()) {
+          await sb.auth.signOut();
+          currentUser = null;
+          mostrarLogin();
+          toast('Tu cuenta fue desactivada. Contacta a un administrador.');
+          return;
+        }
+
         actualizarDatosDrawer();
         actualizarItemsDockHorizontal();
         const elNavAdmin = document.getElementById('navAdmin');
