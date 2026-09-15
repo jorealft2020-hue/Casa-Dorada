@@ -6126,7 +6126,7 @@ document.getElementById('btnGenerarInformeFormal').addEventListener('click', asy
 
     const logoBase64 = await cargarLogoBase64();
 
-    await sb.from('informes_formales').insert({
+    const { error: informeError } = await sb.from('informes_formales').insert({
       usuario_id: currentUser.id,
       tipo,
       fecha_inicio: fechaInicio,
@@ -6134,6 +6134,9 @@ document.getElementById('btnGenerarInformeFormal').addEventListener('click', asy
       resumen_ejecutivo: resumen,
       conclusiones: conclusiones
     });
+    if (informeError) {
+      console.warn('No se pudo guardar el informe formal en Supabase:', informeError);
+    }
 
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit: 'pt', format: 'a4' });
@@ -7542,7 +7545,19 @@ document.getElementById('btnGenerarDocumento')?.addEventListener('click', async 
   btn.textContent = 'Generando…';
 
   try {
-    const { data: sep } = await sb.from('separaciones').select('*').eq('cliente_id', documentoClienteActual.id).order('created_at', { ascending: false }).limit(1).maybeSingle();
+    if (!documentoClienteActual?.id) {
+      throw new Error('No hay un cliente seleccionado para generar el documento.');
+    }
+
+    const { data: sep, error: sepError } = await sb.from('separaciones')
+      .select('*')
+      .eq('cliente_id', documentoClienteActual.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (sepError) throw sepError;
+
     const datos = {
       cliente: documentoClienteActual.nombre,
       celular: documentoClienteActual.celular || '[___]',
@@ -8276,7 +8291,8 @@ async function cargarPortafolio(){
 async function abrirVisorDocumento({ url, titulo }){
   document.getElementById('visdoc_titulo').textContent = titulo;
   document.getElementById('visdoc_btn_descargar').href = url;
-  document.getElementById('visdoc_btn_whatsapp').href = `https://wa.me/?text=${encodeURIComponent(titulo + ': ' + url)}`;
+  const btnWhats = document.getElementById('visdoc_btn_whatsapp');
+  if (btnWhats) btnWhats.href = `https://wa.me/?text=${encodeURIComponent(titulo + ': ' + url)}`;
 
   const cont = document.getElementById('visdoc_contenedor');
   const esPDF = /\.pdf(\?|$)/i.test(url);
@@ -10129,11 +10145,13 @@ async function cargarSitiosMajo(){
 }
 
 async function toggleSitioMajo(id, activo){
-  await sb.from('majo_sitios_oficiales').update({ activo }).eq('id', id);
+  const { error } = await sb.from('majo_sitios_oficiales').update({ activo }).eq('id', id);
+  if (error) { toast('Error al actualizar el sitio'); console.error(error); return; }
   toast(activo ? 'Sitio activado' : 'Sitio desactivado');
 }
 async function eliminarSitioMajo(id){
-  await sb.from('majo_sitios_oficiales').delete().eq('id', id);
+  const { error } = await sb.from('majo_sitios_oficiales').delete().eq('id', id);
+  if (error) { toast('Error al eliminar el sitio'); console.error(error); return; }
   cargarSitiosMajo();
 }
 document.getElementById('btnAgregarSitioMajo')?.addEventListener('click', async () => {
@@ -10980,17 +10998,25 @@ async function guardarDesignacionConductor(){
   };
 
   // Guardar en Supabase
+  let conductorGuardadoEnSupabase = false;
   try {
-    await sb.from('conductores_movilidad').upsert(payload, { onConflict: 'fecha' });
+    const { error: conductorError } = await sb.from('conductores_movilidad').upsert(payload, { onConflict: 'fecha' });
+    if (conductorError) throw conductorError;
+    conductorGuardadoEnSupabase = true;
   } catch (e) {
     console.warn('Error guardando conductor en Supabase:', e);
   }
+
+  // Guardar en localStorage como respaldo local
+  if (!conductorGuardadoEnSupabase) toast('Guardado localmente; no se pudo sincronizar con el servidor.');
 
   // Guardar en localStorage
   localStorage.setItem('cd_conductor_' + fecha, JSON.stringify(payload));
   conductorDesignadoCache[fecha] = payload;
 
-  toast('Conductor de movilidad designado ✓');
+  toast(conductorGuardadoEnSupabase
+    ? 'Conductor de movilidad designado ✓'
+    : 'Conductor guardado localmente; pendiente de sincronización');
   closeModal('modalDesignarConductor');
   cargarConductorFecha(fecha);
 }
@@ -11152,8 +11178,13 @@ function alCambiarAsientosModal(){
 }
 
 function calcularHoraRetorno(horaInicio){
-  if (!horaInicio) return '11:15';
-  const [h, m] = horaInicio.split(':').map(Number);
+  if (!horaInicio || typeof horaInicio !== 'string') return '11:15';
+  const match = horaInicio.match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return '11:15';
+  const h = Number(match[1]);
+  const m = Number(match[2]);
+  if (h < 0 || h > 23 || m < 0 || m > 59) return '11:15';
+
   const totalMin = (h * 60 + m) + 135; // 2 horas y 15 min de ciclo completo
   const finH = Math.floor(totalMin / 60) % 24;
   const finM = totalMin % 60;
@@ -11344,6 +11375,11 @@ function abrirModalNuevaVisita(){
 
 async function guardarNuevaVisita(){
 
+  if (!currentUser?.id) {
+    toast('⚠️ Tu sesión no está disponible. Vuelve a iniciar sesión.');
+    return;
+  }
+
   const tipo = document.getElementById('nv_tipo').value;
   const clienteSel = document.getElementById('nv_cliente_sel');
   const clienteId = clienteSel.value || null;
@@ -11374,6 +11410,17 @@ async function guardarNuevaVisita(){
   if (!numClientes || numClientes < 1) {
     toast('⚠️ Bloqueo: Debes indicar los Asientos solicitados por el cliente.');
     return;
+  }
+  if (!Number.isInteger(numAsientos) || numAsientos < 1 || numAsientos > 14) {
+    toast('⚠️ Bloqueo: La Van permite como máximo 14 asientos.');
+    return;
+  }
+  if (!/^\d{2}:\d{2}$/.test(hora) || calcularHoraRetorno(hora) === '11:15' && hora !== '09:00' && hora !== '08:00') {
+    const [hh, mm] = (hora || '').split(':').map(Number);
+    if (!Number.isInteger(hh) || !Number.isInteger(mm) || hh < 0 || hh > 23 || mm < 0 || mm > 59) {
+      toast('⚠️ Bloqueo: La hora de partida no es válida.');
+      return;
+    }
   }
   if (!procedencia) {
     toast('⚠️ Bloqueo: La Procedencia del prospecto es obligatoria.');
@@ -11413,31 +11460,39 @@ async function guardarNuevaVisita(){
     created_at: new Date().toISOString()
   };
 
-  // Guardar en Supabase y localmente
+  // Guardar en Supabase y, si no hay conexión/política, mantener respaldo local.
+  let visitaGuardadaEnSupabase = false;
   try {
-    await sb.from('visitas_presentaciones').insert(nuevaVisita);
+    const { error: visitaError } = await sb.from('visitas_presentaciones').insert(nuevaVisita);
+    if (visitaError) throw visitaError;
+    visitaGuardadaEnSupabase = true;
   } catch (e) {
     console.warn('Fallback a guardado local para visita:', e);
   }
 
   const key = 'cd_visitas_' + fecha;
   const listaLocal = JSON.parse(localStorage.getItem(key) || '[]');
-  listaLocal.push(nuevaVisita);
+  listaLocal.push({ ...nuevaVisita, _localOnly: !visitaGuardadaEnSupabase });
   localStorage.setItem(key, JSON.stringify(listaLocal));
 
-  // Sincronizar automáticamente con Agenda interna
-  try {
-    await sb.from('agenda').insert({
-      usuario_id: currentUser.id,
-      titulo: `${tipo === 'visita_proyecto' ? '🚐 Visita a Terreno' : '🤝 Presentación'}: ${clienteNombre}`,
-      fecha_inicio: `${fecha}T${hora}:00`,
-      fecha_fin: `${fecha}T${calcularHoraRetorno(hora)}:00`,
-      tipo: 'visita_campo',
-      lugar: tipo === 'visita_proyecto' || tipo === 'oficina_visita' ? 'Costa Dorada · La Yarada Los Palos' : 'Oficina Tacna',
-      notas: `Tipo: ${tipo}. Asientos en Van: ${numAsientos}. ${observaciones}`,
-      estado: 'programada'
-    });
-  } catch (errAg) { console.warn('Error sincronizando con agenda:', errAg); }
+  // Sincronizar automáticamente con Agenda interna solo si la visita quedó guardada en BD.
+  if (visitaGuardadaEnSupabase) {
+    try {
+      const { error: agendaError } = await sb.from('agenda').insert({
+        usuario_id: currentUser.id,
+        titulo: `${tipo === 'visita_proyecto' ? '🚐 Visita a Terreno' : '🤝 Presentación'}: ${clienteNombre}`,
+        fecha_inicio: `${fecha}T${hora}:00`,
+        fecha_fin: `${fecha}T${calcularHoraRetorno(hora)}:00`,
+        tipo: 'visita_campo',
+        lugar: tipo === 'visita_proyecto' || tipo === 'oficina_visita' ? 'Costa Dorada · La Yarada Los Palos' : 'Oficina Tacna',
+        notas: `Tipo: ${tipo}. Asientos en Van: ${numAsientos}. ${observaciones}`,
+        estado: 'programada'
+      });
+      if (agendaError) throw agendaError;
+    } catch (errAg) {
+      console.warn('Error sincronizando con agenda:', errAg);
+    }
+  }
 
   // Si la visita usa la Van corporativa, alertar silenciosamente a Administración
   if (tipo === 'visita_proyecto' || tipo === 'oficina_visita') {
@@ -11520,16 +11575,22 @@ function enviarReporteObligatorioWhatsApp(){
 
 async function eliminarVisitaPresentacion(id, fecha){
   if (!confirm('¿Eliminar esta presentación / visita?')) return;
+
+  let eliminadoEnSupabase = false;
   try {
-    await sb.from('visitas_presentaciones').delete().eq('id', id);
-  } catch (e) {}
+    const { error } = await sb.from('visitas_presentaciones').delete().eq('id', id);
+    if (error) throw error;
+    eliminadoEnSupabase = true;
+  } catch (e) {
+    console.error('No se pudo eliminar la visita en Supabase:', e);
+  }
 
   const key = 'cd_visitas_' + fecha;
   let listaLocal = JSON.parse(localStorage.getItem(key) || '[]');
   listaLocal = listaLocal.filter(v => v.id !== id);
   localStorage.setItem(key, JSON.stringify(listaLocal));
 
-  toast('Visita eliminada');
+  toast(eliminadoEnSupabase ? 'Visita eliminada ✓' : 'Visita eliminada del respaldo local; revisa la sincronización');
   cargarVisitasPresentaciones();
 }
 
@@ -12434,18 +12495,24 @@ async function cargarInventarioLotes(){
 
   try {
     // Consultar separaciones activas y vendidas para mapear disponibilidad
-    const { data: seps } = await sb.from('separaciones')
-      .select('manzana, lote, estado, cliente_id, clientes(nombre), valor_total')
-      .order('manzana')
-      .order('lote');
+    const { data: seps, error: sepsError } = await sb.from('separaciones')
+      .select('manzana, lote, estado, cliente_id, clientes(nombre), valor_total, created_at')
+      .order('created_at', { ascending: false });
+
+    if (sepsError) throw sepsError;
 
     const mapaOcupados = {};
     (seps || []).forEach(s => {
       const key = `${(s.manzana||'').trim().toUpperCase()}-${(s.lote||'').trim()}`;
+      // La consulta viene ordenada de más reciente a más antigua: el primer
+      // registro de cada lote representa su estado vigente/histórico más reciente.
+      if (mapaOcupados[key]) return;
+
+      const estado = String(s.estado || '').toLowerCase();
       mapaOcupados[key] = {
-        estado: s.estado === 'convertida_venta' ? 'vendido' : (s.estado === 'activa' ? 'separado' : 'disponible'),
+        estado: estado === 'convertida_venta' ? 'vendido' : (estado === 'activa' ? 'separado' : 'disponible'),
         cliente: s.clientes?.nombre || 'Cliente Registrado',
-        valor: s.valor_total || 38000
+        valor: Number(s.valor_total) || 38000
       };
     });
 
@@ -13246,6 +13313,7 @@ function actualizarHorasEfectivasModalActividad() {
 /* 2. DICTADO POR VOZ EN CAMPO (WEB SPEECH API) */
 let recognition = null;
 let estaGrabando = false;
+let dictadoTranscripcionAcumulada = '';
 
 function iniciarReconocimientoVoz() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -13264,14 +13332,18 @@ function iniciarReconocimientoVoz() {
     if (el) el.textContent = '🔴 Escuchando... habla libremente';
   };
   recognition.onresult = (event) => {
-    let transcriptFinal = '';
+    let interim = '';
     for (let i = event.resultIndex; i < event.results.length; ++i) {
-      transcriptFinal += event.results[i][0].transcript;
+      const parte = event.results[i][0].transcript;
+      if (event.results[i].isFinal) dictadoTranscripcionAcumulada += parte + ' ';
+      else interim += parte;
     }
+
+    const textoVisible = (dictadoTranscripcionAcumulada + interim).trim();
     const txt = document.getElementById('dictado_transcripcion');
     if (txt) {
-      txt.value = transcriptFinal;
-      alCambiarTextoDictado(transcriptFinal);
+      txt.value = textoVisible;
+      alCambiarTextoDictado(textoVisible);
     }
   };
   recognition.onerror = () => detenerGrabacionVoz();
@@ -13297,6 +13369,7 @@ function detenerGrabacionVoz() {
 }
 
 function abrirModalDictadoVoz() {
+  dictadoTranscripcionAcumulada = '';
   const txt = document.getElementById('dictado_transcripcion');
   if (txt) txt.value = '';
   detenerGrabacionVoz();
@@ -13367,9 +13440,12 @@ function descargarQRParaCliente() {
 async function confirmarPreReservaEnTerreno() {
   toast('Registrando congelamiento por 48 horas…');
   try {
+    if (!currentUser?.id) throw new Error('Sesión de usuario no disponible.');
+    if (!preReservaData?.manzana || !preReservaData?.lote) throw new Error('No hay lote seleccionado.');
+
     const dVence = new Date();
     dVence.setHours(dVence.getHours() + 48);
-    await sb.from('separaciones').insert({
+    const { error: reservaError } = await sb.from('separaciones').insert({
       vendedor_id: currentUser.id,
       manzana: preReservaData?.manzana || 'B',
       lote: preReservaData?.lote || '12',
@@ -13380,6 +13456,7 @@ async function confirmarPreReservaEnTerreno() {
       condicion: 'contado',
       estado: 'activa'
     });
+    if (reservaError) throw reservaError;
     toast('🎉 ¡LOTE CONGELADO POR 48 HORAS!');
     closeModal('modalPreReservaQR');
     cargarSeparacionesTodas();
