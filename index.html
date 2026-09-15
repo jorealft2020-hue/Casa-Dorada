@@ -1234,7 +1234,7 @@ main.app-content {
             <span class="dr-icon" style="font-size:20px;">💼</span>
             <div class="dr-macro-texts">
               <span class="dr-label">Ventas & Cierres</span>
-              <span class="dr-subdesc">Clientes, Cotizador & Planos (8)</span>
+              <span class="dr-subdesc">Clientes, Cotizador & Planos (9)</span>
             </div>
             <span class="dr-arrow">›</span>
           </button>
@@ -1254,7 +1254,7 @@ main.app-content {
             <span class="dr-icon" style="font-size:20px;">📋</span>
             <div class="dr-macro-texts">
               <span class="dr-label">Gestión & Equipo</span>
-              <span class="dr-subdesc">Agenda, Tareas & Reportes (6)</span>
+              <span class="dr-subdesc">Agenda, Tareas & Reportes (5)</span>
             </div>
             <span class="dr-arrow">›</span>
           </button>
@@ -13102,7 +13102,7 @@ const SUBMENUS_DATA = {
       { icono: '🎯', titulo: 'Cadencias 1-Toque', desc: 'Scripts para Ferias, Chile y Visitas', accion: () => { abrirModalCadencias('Carlos Mamani', '952123456'); cerrarDrawer(); } },
       { icono: '🎉', titulo: 'Domingo de Cierres TV', desc: 'Campana acústica y confeti en vivo', accion: () => { abrirModalDomingoDeCierres(); cerrarDrawer(); } },
       { icono: '✍️', titulo: 'Minuta Legal & Firma', desc: 'Contrato preparatorio en pantalla táctil', accion: () => { abrirModalMinutaCompraventa(); cerrarDrawer(); } },
-      { icono: '🤝', titulo: 'Red de Embajadores', desc: 'Código de referido con bono S/ 500', accion: () => { abrirModalEmbajadores(); cerrarDrawer(); } }
+      { icono: '🚐', titulo: 'Movilidad Van (14 Asientos)', desc: 'Control de salidas a La Yarada', accion: () => { irAVista('visitas'); cerrarDrawer(); } }
     ]
   },
   comercial: {
@@ -13115,7 +13115,8 @@ const SUBMENUS_DATA = {
       { icono: '🧮', titulo: 'Cotizador Rápido de Lotes', desc: 'Cuotas dobles, Dúo y financiamiento', accion: () => { abrirModalCotizador(); cerrarDrawer(); } },
       { icono: '🗺️', titulo: 'Planos Interactivos', desc: 'Disponibilidad y Master Plan 360°', accion: () => { irAVista('planos'); cerrarDrawer(); } },
       { icono: '🏷️', titulo: 'Separaciones de Lotes', desc: 'Lotes reservados y control de pagos', accion: () => { irAVista('separaciones'); cerrarDrawer(); } },
-      { icono: '🚐', titulo: 'Movilidad Van (14 Asientos)', desc: 'Control de salidas a La Yarada', accion: () => { irAVista('visitas'); cerrarDrawer(); } },
+      { icono: '🏖️', titulo: 'Portal del Propietario', desc: 'Área para clientes de Costa Dorada', accion: () => { abrirPortalPropietario(); cerrarDrawer(); } },
+      { icono: '🤝', titulo: 'Red de Embajadores', desc: 'Código de referido con bono S/ 500', accion: () => { abrirModalEmbajadores(); cerrarDrawer(); } },
       { icono: '📁', titulo: 'Portafolio Multimedia', desc: 'Brochure, videos de dron y fotos', accion: () => { irAVista('portafolio'); cerrarDrawer(); } },
       { icono: '🎯', titulo: 'Manual de Ventas & Speeches', desc: 'Argumentarios y objeciones', accion: () => { irAVista('manualventas'); cerrarDrawer(); } }
     ]
@@ -13142,8 +13143,7 @@ const SUBMENUS_DATA = {
       { icono: '📅', titulo: 'Agenda & Google Calendar', desc: 'Citas y eventos programados', accion: () => { irAVista('agenda'); cerrarDrawer(); } },
       { icono: '📝', titulo: 'Solicitudes y Requerimientos', desc: 'Trámites y pedidos a gerencia', accion: () => { irAVista('solicitudes'); cerrarDrawer(); } },
       { icono: '📈', titulo: 'Rendimiento por Área', desc: 'Métricas diarias de llamadas y citas', accion: () => { irAVista('rendimiento'); cerrarDrawer(); } },
-      { icono: '🧑‍🤝‍🧑', titulo: 'Reporte Diario de Equipo', desc: 'Consolidado de actividades y horas', accion: () => { irAVista('reporte_equipo'); cerrarDrawer(); } },
-      { icono: '🏖️', titulo: 'Portal del Propietario', desc: 'Área para clientes de Costa Dorada', accion: () => { abrirPortalPropietario(); cerrarDrawer(); } }
+      { icono: '🧑‍🤝‍🧑', titulo: 'Reporte Diario de Equipo', desc: 'Consolidado de actividades y horas', accion: () => { irAVista('reporte_equipo'); cerrarDrawer(); } }
     ]
   },
   sistema: {
