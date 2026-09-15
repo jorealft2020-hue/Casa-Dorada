@@ -5523,7 +5523,7 @@ document.getElementById('btnGuardarActividad').addEventListener('click', async (
   document.getElementById('actPersonas').value = '';
   document.getElementById('actArchivo').value = '';
   document.getElementById('actClienteId').value = '';
-  cargarActividadesHoy(); cargarActividadesTodas(); cargarKPIs();
+  cargarActividadesHoy(); cargarActividadesTodas(); cargarKPIs(); cargarPendientesInicio();
 });
 
 /* ============ REPORTE DIARIO EN PDF ============ */
@@ -10871,6 +10871,22 @@ async function cargarPendientesInicio(){
     });
 
     const totalAlertas = tareasPendientes.length + citasPendientes.length + solicitudesPendientes.length + sepPorVencer.length;
+
+    // 6. Actividades, citas y solicitudes registradas HOY, para la barra de
+    // Jornada Efectiva -- actualizarBarraJornadaEfectiva() ya calculaba esto
+    // correctamente pero nunca se llamaba desde ningún lado, así que la
+    // barra se quedaba fija en 0.0/8.0 hrs sin importar lo que se registrara.
+    const { data: actsHoy } = await sb.from('actividades')
+      .select('*')
+      .eq('usuario_id', currentUser.id)
+      .eq('fecha_programada', hoy);
+    const citasHoy = (citas || []).filter(c => c.estado !== 'cancelada' && (c.fecha_inicio || '').split('T')[0] === hoy);
+    const { data: solsHoy } = await sb.from('solicitudes')
+      .select('id')
+      .eq('usuario_id', currentUser.id)
+      .gte('created_at', hoy + 'T00:00:00')
+      .lte('created_at', hoy + 'T23:59:59');
+    actualizarBarraJornadaEfectiva(actsHoy, citasHoy, solsHoy);
 
     const elNumT = document.getElementById('pi_num_tareas');
     if (elNumT) elNumT.textContent = tareasPendientes.length;
