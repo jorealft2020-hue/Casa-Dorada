@@ -10031,13 +10031,14 @@ async function enviarMensajeMajo(){
     
     let respuestaFinal = null;
     let fuentesFinal = null;
+    let imagenesFinal = null;
 
     try {
       const resp = await fetch(`${SUPABASE_URL}/functions/v1/majo-chat`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          conversacion_id: majoConversacionActual, 
+        body: JSON.stringify({
+          conversacion_id: majoConversacionActual,
           mensaje,
           contexto_global: contextoGlobal
         }),
@@ -10047,6 +10048,7 @@ async function enviarMensajeMajo(){
         const data = await resp.json();
         respuestaFinal = data.respuesta;
         fuentesFinal = data.fuentes;
+        imagenesFinal = data.imagenes;
       }
     } catch (errNet) {
       console.warn('Edge Function no disponible, usando motor MAJO local:', errNet);
@@ -10059,7 +10061,7 @@ async function enviarMensajeMajo(){
       fuentesFinal = ["Documentación Oficial Costa Dorada", "Portafolio Multimedia", "Manual de Ventas"];
     }
 
-    renderBurbujaMajo('assistant', respuestaFinal, fuentesFinal);
+    renderBurbujaMajo('assistant', respuestaFinal, fuentesFinal, imagenesFinal);
   } catch (e) {
     document.getElementById('majoEscribiendo')?.remove();
     const fallback = generarRespuestaMAJOLocal(mensaje, '');
