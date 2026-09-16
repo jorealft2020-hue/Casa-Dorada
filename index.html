@@ -1873,12 +1873,19 @@ main.app-content {
         <div id="ghlDiaAviso"></div>
 
         <div class="ghl-tabs">
-          <button class="ghl-tab activo" id="ghlTabHoy" onclick="ghlCambiarTab('hoy')">Hoy</button>
+          <button class="ghl-tab activo" id="ghlTabHoy" onclick="ghlCambiarTab('hoy')">Por día</button>
           <button class="ghl-tab" id="ghlTabMes" onclick="ghlCambiarTab('mes')">Resumen del mes</button>
         </div>
 
-        <!-- Pestaña: HOY -->
+        <!-- Pestaña: POR DÍA -->
         <div id="ghlPanelHoy">
+          <div class="card" style="margin-bottom:10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <label for="ghlDiaFechaSelector" style="font-size:12px; font-weight:700; color:var(--ink-dim);">Ver día:</label>
+            <input type="date" id="ghlDiaFechaSelector" onchange="cargarGhlDiaFecha(this.value)" style="border:1px solid var(--border); border-radius:8px; padding:6px 8px; font-size:13px;">
+            <button class="chip-btn" onclick="ghlIrADiaRelativo(0)">Hoy</button>
+            <button class="chip-btn" onclick="ghlIrADiaRelativo(-1)">Ayer</button>
+          </div>
+
           <div id="ghlDiaKpis" class="kpi-row" style="display:flex; gap:10px; overflow-x:auto; padding-bottom:4px;"></div>
 
           <div class="section-title">Por asesor <span style="font-weight:400; font-size:11px; color:var(--ink-dim);">(toca un asesor para filtrar)</span></div>
@@ -10244,22 +10251,29 @@ function ghlRenderLeadsList(containerEl, leads, vacioTexto){
   }).join('') : `<div class="card"><p class="card-sub" style="margin:0;">${vacioTexto}</p></div>`;
 }
 
+let ghlVistaHoyActual = null; // los datos del día que se está mostrando ahora mismo (hoy u otro día elegido)
+let ghlVistaHoyOpciones = { cuando: 'hoy', esHoy: true }; // qué día representan esos datos (para no perderlo al re-renderizar por el filtro de asesor)
+
 function ghlFiltrarPorAsesor(nombre){
   ghlFiltroAsesorHoy = (ghlFiltroAsesorHoy === nombre) ? null : nombre;
-  renderGhlHoy(ghlUltimoReporte?.today);
+  renderGhlHoy(ghlVistaHoyActual, ghlVistaHoyOpciones);
   document.getElementById('ghlDiaLeads')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function renderGhlHoy(t){
+function renderGhlHoy(t, opciones){
   if (!t) return;
+  ghlVistaHoyActual = t;
+  if (opciones) ghlVistaHoyOpciones = opciones;
+  const cuando = (opciones && opciones.cuando) || ghlVistaHoyOpciones.cuando || 'hoy';
+  const esHoy = opciones ? opciones.esHoy !== false : ghlVistaHoyOpciones.esHoy !== false;
   const kpisEl = document.getElementById('ghlDiaKpis');
   const asesoresEl = document.getElementById('ghlDiaAsesores');
   const leadsEl = document.getElementById('ghlDiaLeads');
   const leadsTituloEl = document.getElementById('ghlDiaLeadsTitulo');
 
   kpisEl.innerHTML = [
-    { num: t.totals.leads, lbl: 'Leads asignados hoy', ic: '📥', tone: 'info' },
-    { num: t.totals.opp, lbl: 'Oportunidades hoy', ic: '🆕', tone: 'info' },
+    { num: t.totals.leads, lbl: 'Leads asignados ' + cuando, ic: '📥', tone: 'info' },
+    { num: t.totals.opp, lbl: 'Oportunidades ' + cuando, ic: '🆕', tone: 'info' },
     { num: t.totals.advisorsPending, lbl: 'Asesores con pendientes', ic: '🔴', tone: t.totals.advisorsPending > 0 ? 'warn' : 'ok' },
     { num: t.totals.noTipificacion, lbl: 'Leads sin tipificar', ic: '🏷️', tone: t.totals.noTipificacion > 0 ? 'warn' : 'ok' }
   ].map(i => `
@@ -10273,10 +10287,10 @@ function renderGhlHoy(t){
     <div class="card ghl-advisor-card${ghlFiltroAsesorHoy === a.name ? ' activo' : ''}" data-asesor-idx="${i}" style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; gap:10px; cursor:pointer;">
       <div>
         <p class="card-title" style="margin:0;">${escapeHtml(a.name)}</p>
-        <p class="card-sub" style="margin:2px 0 0;">${a.leads} lead${a.leads === 1 ? '' : 's'} hoy · ${a.opp} oportunidad${a.opp === 1 ? '' : 'es'} · último mensaje ${ghlFmtHora(a.lastMsg)}</p>
+        <p class="card-sub" style="margin:2px 0 0;">${a.leads} lead${a.leads === 1 ? '' : 's'} ${cuando} · ${a.opp} oportunidad${a.opp === 1 ? '' : 'es'} · último mensaje ${ghlFmtHora(a.lastMsg)}</p>
       </div>
       <span class="badge ${a.pending > 0 ? 'badge-vencida' : 'badge-completada'}">${a.pending > 0 ? a.pending + (a.pending === 1 ? ' mensaje' : ' mensajes') : 'Al día'}</span>
-    </div>`).join('') : `<div class="card"><p class="card-sub" style="margin:0;">Sin asesores con actividad todavía.</p></div>`;
+    </div>`).join('') : `<div class="card"><p class="card-sub" style="margin:0;">Sin asesores con actividad ${esHoy ? 'todavía' : 'ese día'}.</p></div>`;
 
   asesoresEl.querySelectorAll('.ghl-advisor-card').forEach(el => {
     el.addEventListener('click', () => {
@@ -10288,10 +10302,60 @@ function renderGhlHoy(t){
   const leadsFiltrados = ghlFiltroAsesorHoy ? (t.leads || []).filter(l => l.advisor === ghlFiltroAsesorHoy) : (t.leads || []);
   if (leadsTituloEl) {
     leadsTituloEl.innerHTML = ghlFiltroAsesorHoy
-      ? `Leads de ${escapeHtml(ghlFiltroAsesorHoy)} · hoy <button class="chip-btn" style="margin-left:8px; padding:3px 10px; font-size:11px;" onclick="ghlFiltrarPorAsesor('${escapeHtml(ghlFiltroAsesorHoy).replace(/'/g,"\\'")}')">✕ Ver todos</button>`
-      : 'Cada lead de hoy';
+      ? `Leads de ${escapeHtml(ghlFiltroAsesorHoy)} · ${cuando} <button class="chip-btn" style="margin-left:8px; padding:3px 10px; font-size:11px;" onclick="ghlFiltrarPorAsesor('${escapeHtml(ghlFiltroAsesorHoy).replace(/'/g,"\\'")}')">✕ Ver todos</button>`
+      : `Cada lead · ${cuando}`;
   }
-  ghlRenderLeadsList(leadsEl, leadsFiltrados, ghlFiltroAsesorHoy ? 'Este asesor no tiene leads hoy.' : 'Ningún lead ha llegado hoy todavía.');
+  const vacioTexto = esHoy ? 'Ningún lead ha llegado hoy todavía.' : `Ningún lead llegó ${cuando}.`;
+  ghlRenderLeadsList(leadsEl, leadsFiltrados, ghlFiltroAsesorHoy ? `Este asesor no tiene leads ${cuando}.` : vacioTexto);
+}
+
+// Convierte una fecha YYYY-MM-DD a "hoy" / "ayer" / "el 15 de septiembre de
+// 2026" para usar en los títulos y mensajes de la pestaña "Por día".
+function ghlEtiquetaDia(fecha){
+  const hoyPeru = ghlYmdPeruHoy(0);
+  if (fecha === hoyPeru) return { cuando: 'hoy', esHoy: true, corte: 'Corte de hoy' };
+  if (fecha === ghlYmdPeruHoy(-1)) return { cuando: 'ayer', esHoy: false, corte: 'Corte de ayer' };
+  const larga = ghlFmtFechaLarga(fecha);
+  return { cuando: 'el ' + larga, esHoy: false, corte: 'Corte del ' + larga };
+}
+
+async function cargarGhlDiaFecha(fecha){
+  const estadoEl = document.getElementById('ghlDiaEstado');
+  const avisoEl = document.getElementById('ghlDiaAviso');
+  if (!fecha) return;
+  ghlFiltroAsesorHoy = null;
+  const etiqueta = ghlEtiquetaDia(fecha);
+  estadoEl.textContent = 'Consultando GoHighLevel…';
+  avisoEl.innerHTML = '';
+
+  try {
+    let scopeData, asOf;
+    if (etiqueta.esHoy && ghlUltimoReporte?.today) {
+      // Ya lo trajimos con la carga inicial de la pantalla -- no repetir la llamada.
+      scopeData = ghlUltimoReporte.today;
+      asOf = ghlUltimoReporte.asOf;
+    } else {
+      const { data, error } = await sb.functions.invoke('ghl-reporte-dia', { body: { desde: fecha, hasta: fecha } });
+      if (error) throw error;
+      if (!data || data.ok === false) throw new Error(data?.error || 'La función no devolvió datos.');
+      if (!data.rango) throw new Error('No se pudo calcular ese día.');
+      scopeData = data.rango;
+      asOf = data.asOf;
+    }
+    estadoEl.textContent = etiqueta.corte + ': ' + ghlFmtHora(asOf) + ' · vía GoHighLevel';
+    renderGhlHoy(scopeData, { cuando: etiqueta.cuando, esHoy: etiqueta.esHoy });
+  } catch (e) {
+    console.error(e);
+    estadoEl.textContent = 'No se pudo actualizar.';
+    avisoEl.innerHTML = `<div class="card" style="border-color:var(--danger); margin-bottom:14px;"><p class="card-sub" style="margin:0; color:var(--danger);">⚠️ ${escapeHtml(e.message || 'Error al conectar con GoHighLevel')}. Intenta de nuevo.</p></div>`;
+  }
+}
+
+function ghlIrADiaRelativo(offsetDias){
+  const fecha = ghlYmdPeruHoy(offsetDias);
+  const input = document.getElementById('ghlDiaFechaSelector');
+  if (input) input.value = fecha;
+  cargarGhlDiaFecha(fecha);
 }
 
 async function cargarGhlDia(){
@@ -10303,6 +10367,7 @@ async function cargarGhlDia(){
   btn.disabled = true;
   estadoEl.textContent = 'Consultando GoHighLevel…';
   avisoEl.innerHTML = '';
+  ghlFiltroAsesorHoy = null;
 
   try {
     const { data, error } = await sb.functions.invoke('ghl-reporte-dia', { body: {} });
@@ -10312,7 +10377,9 @@ async function cargarGhlDia(){
     ghlUltimoReporte = data;
     estadoEl.textContent = 'Corte de hoy: ' + ghlFmtHora(data.asOf) + ' · vía GoHighLevel';
 
-    renderGhlHoy(data.today);
+    const fechaInput = document.getElementById('ghlDiaFechaSelector');
+    if (fechaInput) fechaInput.value = ghlYmdPeruHoy(0);
+    renderGhlHoy(data.today, { cuando: 'hoy', esHoy: true });
 
     if (data.month && !document.getElementById('ghlPanelMes').classList.contains('hidden')) {
       renderGhlMes(data.month);
