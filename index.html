@@ -364,6 +364,9 @@
   .badge-activa{ background: var(--warning-bg); color: var(--warning); }
   .badge-vencida{ background: var(--danger-bg); color: var(--danger); }
   .badge-convertida_venta{ background: var(--ok-bg); color: var(--ok); }
+  .ghl-dots{ display:inline-flex; gap:3px; }
+  .ghl-dot{ display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; font-size:10px; font-weight:700; border:1.5px solid var(--border); color: var(--ink-dim); }
+  .ghl-dot.lleno{ border-color: var(--ok); color: var(--ok); background: var(--ok-bg); }
   .card-actions{ display:flex; gap:8px; margin-top:10px; }
   .chip-btn{
     font-size:12px; font-weight:600; border:1px solid var(--border); background:#fff;
@@ -1847,6 +1850,23 @@ main.app-content {
           <button class="btn-primary" id="btnCargarReporteEquipo" style="height:44px;">Ver reporte</button>
         </div>
         <div id="reporteEquipoContenido"></div>
+      </div>
+
+      <!-- VISTA: SEGUIMIENTO DE LEADS (GOHIGHLEVEL) -->
+      <div id="viewGhlDia" class="hidden">
+        <div class="section-title" style="margin-top:0;">Seguimiento de Leads · GoHighLevel</div>
+        <div class="card" style="margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+          <p class="card-sub" id="ghlDiaEstado" style="margin:0;">Cargando…</p>
+          <button class="chip-btn gold" id="btnActualizarGhlDia" onclick="cargarGhlDia()">🔄 Actualizar</button>
+        </div>
+        <div id="ghlDiaAviso"></div>
+        <div id="ghlDiaKpis" class="kpi-row" style="display:flex; gap:10px; overflow-x:auto; padding-bottom:4px;"></div>
+
+        <div class="section-title">Por asesor</div>
+        <div id="ghlDiaAsesores"></div>
+
+        <div class="section-title">Cada lead de hoy</div>
+        <div id="ghlDiaLeads"></div>
       </div>
 
       <!-- VISTA: MAJO ASSISTANT -->
@@ -4324,6 +4344,7 @@ const PERMISOS_CATALOGO = [
   { key: 'aprobar_solicitudes',      label: 'Aprobar/Rechazar Requerimientos',        dept: 'Administración', default: false },
   { key: 'designar_conductor_movilidad', label: 'Designar Conductor y Placa de Movilidad', dept: 'Administración', default: false },
   { key: 'ver_reporte_equipo',       label: 'Ver Reporte Diario del Equipo (9pm)',    dept: 'Administración', default: false },
+  { key: 'ver_seguimiento_ghl',      label: 'Ver Seguimiento de Leads GoHighLevel',   dept: 'Administración', default: false },
   { key: 'reportes_pasados',         label: 'Emitir Reportes de Fechas Anteriores',   dept: 'Administración', default: false },
   { key: 'generar_informes',         label: 'Generar Informes Formales en PDF',       dept: 'Administración', default: false },
 
@@ -5063,6 +5084,7 @@ function irAVista(vista){
       rendimiento: 'ver_rendimiento',
       solicitudes: 'ver_solicitudes',
       reporte_equipo: 'ver_reporte_equipo',
+      ghl_dia: 'ver_seguimiento_ghl',
       admin: 'gestionar_equipo',
       sistema: 'ver_ajustes'
     };
@@ -5088,6 +5110,7 @@ function irAVista(vista){
     rendimiento:'viewRendimiento', 
     notificaciones:'viewNotificaciones', solicitudes:'viewSolicitudes', manualventas:'viewManualVentas', 
     reporte_equipo:'viewReporteEquipo',
+    ghl_dia:'viewGhlDia',
     majo_assistant:'viewMajoAssistant',
     admin:'viewAdmin',
     sistema:'viewSistema'
@@ -5113,6 +5136,7 @@ function irAVista(vista){
     if (elF && !elF.value) elF.value = obtenerHoyLocal();
     cargarReporteEquipo(elF?.value || obtenerHoyLocal());
   }
+  if (vista === 'ghl_dia') cargarGhlDia();
   if (vista === 'manualventas') cargarManualVentas();
   if (vista === 'majo_assistant') iniciarMajoAssistant();
   if (vista === 'admin') { cargarUsuariosAdmin(); cargarPreautorizados(); }
@@ -9995,6 +10019,100 @@ document.getElementById('btnCargarReporteEquipo')?.addEventListener('click', () 
   cargarReporteEquipo(fecha);
 });
 
+/* ============ SEGUIMIENTO DE LEADS (GOHIGHLEVEL, EN VIVO) ============ */
+function ghlFmtHora(iso){
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleTimeString('es-PE', { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit' });
+}
+function ghlFmtDuracion(ms){
+  if (ms == null || isNaN(ms) || ms < 0) return '—';
+  const mins = Math.round(ms / 60000);
+  if (mins < 1) return '<1m';
+  if (mins < 60) return mins + 'm';
+  const hrs = Math.floor(mins / 60), remMin = mins % 60;
+  if (hrs < 24) return hrs + 'h' + (remMin ? ' ' + remMin + 'm' : '');
+  const days = Math.floor(hrs / 24), remHr = hrs % 24;
+  return days + 'd' + (remHr ? ' ' + remHr + 'h' : '');
+}
+function ghlPuntoContacto(label, lleno){
+  return `<span class="ghl-dot ${lleno ? 'lleno' : ''}" title="${label}${lleno ? ': lleno' : ': vacío'}">${label}</span>`;
+}
+
+async function cargarGhlDia(){
+  const btn = document.getElementById('btnActualizarGhlDia');
+  const estadoEl = document.getElementById('ghlDiaEstado');
+  const avisoEl = document.getElementById('ghlDiaAviso');
+  const kpisEl = document.getElementById('ghlDiaKpis');
+  const asesoresEl = document.getElementById('ghlDiaAsesores');
+  const leadsEl = document.getElementById('ghlDiaLeads');
+  if (!estadoEl) return;
+
+  btn.disabled = true;
+  estadoEl.textContent = 'Consultando GoHighLevel…';
+  avisoEl.innerHTML = '';
+
+  try {
+    const { data, error } = await sb.functions.invoke('ghl-reporte-dia', { body: {} });
+    if (error) throw error;
+    if (!data || data.ok === false) throw new Error(data?.error || 'La función no devolvió datos.');
+
+    const t = data.today;
+    estadoEl.textContent = 'Corte de hoy: ' + ghlFmtHora(data.asOf) + ' · vía GoHighLevel';
+
+    kpisEl.innerHTML = [
+      { num: t.totals.leads, lbl: 'Leads asignados hoy', ic: '📥', tone: 'info' },
+      { num: t.totals.opp, lbl: 'Oportunidades hoy', ic: '🆕', tone: 'info' },
+      { num: t.totals.advisorsPending, lbl: 'Asesores con pendientes', ic: '🔴', tone: t.totals.advisorsPending > 0 ? 'warn' : 'ok' },
+      { num: t.totals.noTipificacion, lbl: 'Leads sin tipificar', ic: '🏷️', tone: t.totals.noTipificacion > 0 ? 'warn' : 'ok' }
+    ].map(i => `
+      <div class="kpi-card kpi-${i.tone}">
+        <div class="kpi-ic">${i.ic}</div>
+        <div class="num">${i.num}</div>
+        <div class="lbl">${i.lbl}</div>
+      </div>`).join('');
+
+    asesoresEl.innerHTML = (t.advisors || []).length ? t.advisors.map(a => `
+      <div class="card" style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; gap:10px;">
+        <div>
+          <p class="card-title" style="margin:0;">${escapeHtml(a.name)}</p>
+          <p class="card-sub" style="margin:2px 0 0;">${a.leads} lead${a.leads === 1 ? '' : 's'} hoy · ${a.opp} oportunidad${a.opp === 1 ? '' : 'es'} · último mensaje ${ghlFmtHora(a.lastMsg)}</p>
+        </div>
+        <span class="badge ${a.pending > 0 ? 'badge-vencida' : 'badge-completada'}">${a.pending > 0 ? a.pending + (a.pending === 1 ? ' mensaje' : ' mensajes') : 'Al día'}</span>
+      </div>`).join('') : `<div class="card"><p class="card-sub" style="margin:0;">Sin asesores con actividad todavía.</p></div>`;
+
+    leadsEl.innerHTML = (t.leads || []).length ? t.leads.map(l => {
+      let respBadge;
+      if (l.responded) respBadge = `<span class="badge badge-completada">En ${ghlFmtDuracion(l.responseMs)}</span>`;
+      else if (l.unassigned) respBadge = `<span class="badge" style="background:var(--cream-dim); color:var(--ink-dim);">Sin asesor</span>`;
+      else respBadge = `<span class="badge badge-vencida">Esperando ${ghlFmtDuracion(l.waitingMs)}</span>`;
+
+      return `
+        <div class="card" style="margin-bottom:10px;">
+          <div class="card-row">
+            <div>
+              <p class="card-title">${escapeHtml(l.name)}</p>
+              <p class="card-sub">${escapeHtml(l.advisor)}${l.advisorVia ? ' <span style="color:var(--ink-dim);">(' + l.advisorVia + ')</span>' : ''} · llegó ${ghlFmtHora(l.createdAt)}${l.stage ? ' · ' + escapeHtml(l.stage) : ''}</p>
+            </div>
+            ${respBadge}
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; flex-wrap:wrap; gap:8px;">
+            <span style="font-size:12.5px; ${l.condicion ? 'color:var(--ink);' : 'color:var(--danger); font-weight:700;'}">${l.condicion ? escapeHtml(l.condicion) : 'Sin tipificar'}</span>
+            <span class="ghl-dots">${ghlPuntoContacto('1°', l.c1)}${ghlPuntoContacto('2°', l.c2)}${ghlPuntoContacto('3°', l.c3)}</span>
+          </div>
+        </div>`;
+    }).join('') : `<div class="card"><p class="card-sub" style="margin:0;">Ningún lead ha llegado hoy todavía.</p></div>`;
+
+  } catch (e) {
+    console.error(e);
+    estadoEl.textContent = 'No se pudo actualizar.';
+    avisoEl.innerHTML = `<div class="card" style="border-color:var(--danger); margin-bottom:14px;"><p class="card-sub" style="margin:0; color:var(--danger);">⚠️ ${escapeHtml(e.message || 'Error al conectar con GoHighLevel')}. Pulsa Actualizar para reintentar.</p></div>`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 /* ============ MAJO ASSISTANT ============ */
 let majoConversacionActual = null;
 
@@ -11237,6 +11355,7 @@ function actualizarItemsDockHorizontal(){
     { key: 'solicitudes',     label: 'Solicitudes',      icon: '📝', visible: tienePermiso('ver_solicitudes') },
     { key: 'rendimiento',     label: 'Rendimiento',      icon: '📈', visible: tienePermiso('ver_rendimiento') },
     { key: 'reporte_equipo',  label: 'Reporte 9pm',      icon: '🧑‍🤝‍🧑', visible: tienePermiso('ver_reporte_equipo') },
+    { key: 'ghl_dia',         label: 'Seguim. GHL',      icon: '📞', visible: tienePermiso('ver_seguimiento_ghl') },
     { key: 'admin',           label: 'Equipo',           icon: '🧑‍💼', visible: tienePermiso('gestionar_equipo') },
     { key: 'sistema',         label: 'Ajustes',          icon: '⚙️', visible: tienePermiso('ver_ajustes') }
   ];
@@ -13244,7 +13363,8 @@ const SUBMENUS_DATA = {
       { icono: '📅', titulo: 'Agenda & Google Calendar', desc: 'Citas y eventos programados', permiso: 'ver_agenda', accion: () => { irAVista('agenda'); cerrarDrawer(); } },
       { icono: '📝', titulo: 'Solicitudes y Requerimientos', desc: 'Trámites y pedidos a gerencia', permiso: 'ver_solicitudes', accion: () => { irAVista('solicitudes'); cerrarDrawer(); } },
       { icono: '📈', titulo: 'Rendimiento por Área', desc: 'Métricas diarias de llamadas y citas', permiso: 'ver_rendimiento', accion: () => { irAVista('rendimiento'); cerrarDrawer(); } },
-      { icono: '🧑‍🤝‍🧑', titulo: 'Reporte Diario de Equipo', desc: 'Consolidado de actividades y horas', permiso: 'ver_reporte_equipo', accion: () => { irAVista('reporte_equipo'); cerrarDrawer(); } }
+      { icono: '🧑‍🤝‍🧑', titulo: 'Reporte Diario de Equipo', desc: 'Consolidado de actividades y horas', permiso: 'ver_reporte_equipo', accion: () => { irAVista('reporte_equipo'); cerrarDrawer(); } },
+      { icono: '📞', titulo: 'Seguimiento de Leads (GHL)', desc: 'Asignación, respuesta y tipificación en vivo', permiso: 'ver_seguimiento_ghl', accion: () => { irAVista('ghl_dia'); cerrarDrawer(); } }
     ]
   },
   sistema: {
