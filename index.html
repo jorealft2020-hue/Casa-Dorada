@@ -5380,6 +5380,7 @@ function renderActividades(items, contenedorId, mensajeVacio){
           <input type="file" accept="image/*" capture="environment" style="display:none;" onchange="subirEvidencia('${a.id}', this.files[0])">
         </label>
         ${puedeEliminar ? `<button class="chip-btn" style="color:var(--danger); border-color:var(--danger);" onclick="archivarActividad('${a.id}')">🗄️ Archivar</button>` : ''}
+        ${puedeEliminar ? `<button class="chip-btn" style="color:var(--danger); border-color:var(--danger);" onclick="eliminarActividad('${a.id}')">🗑️ Eliminar</button>` : ''}
       </div>
     </div>
   `).join('');
@@ -5390,6 +5391,14 @@ async function archivarActividad(id){
   const { error } = await sb.from('actividades').update({ archivada: true }).eq('id', id);
   if (error) { toast('Error al archivar'); console.error(error); return; }
   toast('Actividad archivada (se conserva para reportes)');
+  cargarActividadesHoy(); cargarActividadesTodas(); cargarKPIs();
+}
+
+async function eliminarActividad(id){
+  if (!confirm('¿Eliminar esta actividad? Esta acción no se puede deshacer y no quedará en los reportes.')) return;
+  const { error } = await sb.from('actividades').delete().eq('id', id);
+  if (error) { toast('Error al eliminar'); console.error(error); return; }
+  toast('Actividad eliminada');
   cargarActividadesHoy(); cargarActividadesTodas(); cargarKPIs();
 }
 
