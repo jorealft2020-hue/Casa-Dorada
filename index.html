@@ -1864,7 +1864,10 @@ main.app-content {
         <div class="section-title" style="margin-top:0;">Seguimiento de Leads · GoHighLevel</div>
         <div class="card" style="margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
           <p class="card-sub" id="ghlDiaEstado" style="margin:0;">Cargando…</p>
-          <button class="chip-btn gold" id="btnActualizarGhlDia" onclick="cargarGhlDia()">🔄 Actualizar</button>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="chip-btn" id="btnPdfGhlDia" onclick="descargarReporteGhlDia()" style="background:#25D366; color:#fff; border-color:#25D366;">📲 PDF / WhatsApp</button>
+            <button class="chip-btn gold" id="btnActualizarGhlDia" onclick="cargarGhlDia()">🔄 Actualizar</button>
+          </div>
         </div>
         <div id="ghlDiaAviso"></div>
 
@@ -10210,9 +10213,21 @@ async function cargarGhlDia(){
 
     leadsEl.innerHTML = (t.leads || []).length ? t.leads.map(l => {
       let respBadge;
-      if (l.responded) respBadge = `<span class="badge badge-completada">En ${ghlFmtDuracion(l.responseMs)}</span>`;
+      if (l.responded) respBadge = `<span class="badge badge-completada">🧑 Asesor: ${ghlFmtDuracion(l.responseMs)}</span>`;
       else if (l.unassigned) respBadge = `<span class="badge" style="background:var(--cream-dim); color:var(--ink-dim);">Sin asesor</span>`;
-      else respBadge = `<span class="badge badge-vencida">Esperando ${ghlFmtDuracion(l.waitingMs)}</span>`;
+      else respBadge = `<span class="badge badge-vencida">🧑 Asesor: esperando ${ghlFmtDuracion(l.waitingMs)}</span>`;
+
+      const iaBadge = l.iaResponded
+        ? `<span class="badge badge-en_proceso">🤖 IA: ${ghlFmtDuracion(l.iaResponseMs)}</span>`
+        : `<span class="badge" style="background:var(--cream-dim); color:var(--ink-dim);">🤖 IA: sin respuesta</span>`;
+
+      const convBadge = l.conversacionMantenida
+        ? `<span class="badge badge-completada">💬 Conversó</span>`
+        : `<span class="badge" style="background:var(--cream-dim); color:var(--ink-dim);">💬 Sin ida y vuelta</span>`;
+
+      const citaBadge = l.citaCreada
+        ? `<span class="badge badge-completada">📅 Cita: ${ghlFmtHora(l.citaFecha)}</span>`
+        : '';
 
       return `
         <div class="card" style="margin-bottom:10px;">
@@ -10223,10 +10238,16 @@ async function cargarGhlDia(){
             </div>
             ${respBadge}
           </div>
+          <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;">
+            ${iaBadge}
+            ${convBadge}
+            ${citaBadge}
+          </div>
           <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; flex-wrap:wrap; gap:8px;">
             <span style="font-size:12.5px; ${l.condicion ? 'color:var(--ink);' : 'color:var(--danger); font-weight:700;'}">${l.condicion ? escapeHtml(l.condicion) : 'Sin tipificar'}</span>
             <span class="ghl-dots">${ghlPuntoContacto('1°', l.c1)}${ghlPuntoContacto('2°', l.c2)}${ghlPuntoContacto('3°', l.c3)}</span>
           </div>
+          ${l.acuerdo ? `<p class="card-sub" style="margin:8px 0 0; font-style:italic; border-top:1px dashed var(--border); padding-top:6px;">💭 "${escapeHtml(l.acuerdo)}"</p>` : ''}
         </div>`;
     }).join('') : `<div class="card"><p class="card-sub" style="margin:0;">Ningún lead ha llegado hoy todavía.</p></div>`;
 
@@ -10240,6 +10261,175 @@ async function cargarGhlDia(){
     avisoEl.innerHTML = `<div class="card" style="border-color:var(--danger); margin-bottom:14px;"><p class="card-sub" style="margin:0; color:var(--danger);">⚠️ ${escapeHtml(e.message || 'Error al conectar con GoHighLevel')}. Pulsa Actualizar para reintentar.</p></div>`;
   } finally {
     btn.disabled = false;
+  }
+}
+
+async function descargarReporteGhlDia(){
+  const t = ghlUltimoReporte?.today;
+  if (!t) { toast('Primero pulsa Actualizar para cargar el reporte de hoy.'); return; }
+
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const marginX = 40;
+    const anchoUtil = pageWidth - (marginX * 2);
+    let y = 40;
+
+    const cNavy = [20, 42, 77];
+    const cGold = [200, 155, 60];
+    const cDim = [107, 114, 128];
+    const cBgCard = [251, 250, 246];
+    const cBorder = [229, 223, 207];
+    const cOk = [61, 139, 95];
+    const cDanger = [200, 60, 60];
+
+    function saltoDePagina(alturaNecesaria){
+      if (y + alturaNecesaria > pageHeight - 40) { doc.addPage(); y = 40; }
+    }
+
+    doc.setTextColor(...cNavy);
+    doc.setFontSize(14);
+    doc.setFont(undefined, 'bold');
+    doc.text('SEGUIMIENTO DE LEADS · HOY', marginX, y);
+    y += 14;
+    doc.setTextColor(...cGold);
+    doc.setFontSize(8.5);
+    doc.setFont(undefined, 'bold');
+    doc.text('CASA DORADA · GoHighLevel', marginX, y);
+    y += 10;
+    doc.setDrawColor(...cBorder);
+    doc.setLineWidth(0.8);
+    doc.line(marginX, y, pageWidth - marginX, y);
+    y += 16;
+
+    doc.setFontSize(8.5);
+    doc.setTextColor(...cDim);
+    doc.setFont(undefined, 'normal');
+    doc.text(`Corte: ${ghlFmtHora(ghlUltimoReporte.asOf)} · ${new Date().toLocaleDateString('es-PE', { timeZone: 'America/Lima', day: '2-digit', month: 'long', year: 'numeric' })}`, marginX, y);
+    y += 20;
+
+    // KPIs
+    const kpis = [
+      ['Leads asignados', String(t.totals.leads)],
+      ['Oportunidades', String(t.totals.opp)],
+      ['Asesores con pendientes', String(t.totals.advisorsPending)],
+      ['Sin tipificar', String(t.totals.noTipificacion)],
+    ];
+    const kpiW = anchoUtil / kpis.length;
+    kpis.forEach(([lbl, val], i) => {
+      const x = marginX + i * kpiW;
+      doc.setFillColor(...cBgCard);
+      doc.setDrawColor(...cBorder);
+      doc.roundedRect(x, y, kpiW - 8, 40, 4, 4, 'FD');
+      doc.setTextColor(...cNavy);
+      doc.setFontSize(13);
+      doc.setFont(undefined, 'bold');
+      doc.text(val, x + 10, y + 20);
+      doc.setTextColor(...cDim);
+      doc.setFontSize(7);
+      doc.setFont(undefined, 'normal');
+      doc.text(lbl, x + 10, y + 32, { maxWidth: kpiW - 20 });
+    });
+    y += 56;
+
+    // Leads
+    doc.setTextColor(...cNavy);
+    doc.setFontSize(10.5);
+    doc.setFont(undefined, 'bold');
+    doc.text('Cada lead de hoy', marginX, y);
+    y += 14;
+
+    const leads = t.leads || [];
+    if (!leads.length) {
+      doc.setFontSize(9);
+      doc.setTextColor(...cDim);
+      doc.setFont(undefined, 'normal');
+      doc.text('Ningún lead ha llegado hoy todavía.', marginX, y);
+      y += 14;
+    }
+
+    leads.forEach((l) => {
+      saltoDePagina(70);
+      const alturaCaja = l.acuerdo ? 70 : 54;
+      doc.setFillColor(255, 255, 255);
+      doc.setDrawColor(...cBorder);
+      doc.setLineWidth(0.6);
+      doc.roundedRect(marginX, y, anchoUtil, alturaCaja, 3, 3, 'FD');
+
+      let yy = y + 13;
+      doc.setTextColor(...cNavy);
+      doc.setFontSize(9.5);
+      doc.setFont(undefined, 'bold');
+      doc.text(l.name || '(sin nombre)', marginX + 8, yy);
+
+      doc.setFontSize(7.5);
+      doc.setTextColor(...cDim);
+      doc.setFont(undefined, 'normal');
+      doc.text(`${l.advisor}${l.stage ? ' · ' + l.stage : ''} · llegó ${ghlFmtHora(l.createdAt)}`, marginX + 8, yy + 11);
+
+      const asesorTxt = l.responded ? `Asesor: ${ghlFmtDuracion(l.responseMs)}` : (l.unassigned ? 'Sin asesor' : `Asesor: esperando ${ghlFmtDuracion(l.waitingMs)}`);
+      const iaTxt = l.iaResponded ? `IA: ${ghlFmtDuracion(l.iaResponseMs)}` : 'IA: sin respuesta';
+      const convTxt = l.conversacionMantenida ? 'Conversó' : 'Sin ida y vuelta';
+      const citaTxt = l.citaCreada ? `Cita: ${ghlFmtHora(l.citaFecha)}` : null;
+      doc.setTextColor(...(l.responded ? cOk : cDanger));
+      doc.setFontSize(7.5);
+      doc.setFont(undefined, 'bold');
+      doc.text([asesorTxt, iaTxt, convTxt, citaTxt].filter(Boolean).join('  ·  '), marginX + 8, yy + 23, { maxWidth: anchoUtil - 16 });
+
+      doc.setTextColor(...(l.condicion ? cNavy : cDanger));
+      doc.setFontSize(7.5);
+      doc.setFont(undefined, 'normal');
+      const seguim = `1°${l.c1 ? '✓' : '✗'} 2°${l.c2 ? '✓' : '✗'} 3°${l.c3 ? '✓' : '✗'}`;
+      doc.text(`${l.condicion || 'Sin tipificar'}  ·  ${seguim}`, marginX + 8, yy + 35);
+
+      if (l.acuerdo) {
+        doc.setTextColor(...cDim);
+        doc.setFontSize(7.2);
+        doc.setFont(undefined, 'italic');
+        doc.text(`"${l.acuerdo}"`, marginX + 8, yy + 47, { maxWidth: anchoUtil - 16 });
+      }
+
+      y += alturaCaja + 8;
+    });
+
+    const totalPaginas = doc.internal.getNumberOfPages();
+    for (let p = 1; p <= totalPaginas; p++) {
+      doc.setPage(p);
+      doc.setFontSize(6.5);
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(...cDim);
+      doc.text(`© ${new Date().getFullYear()} CRM MAJO · Jorge Luque — Todos los derechos reservados`, pageWidth / 2, pageHeight - 14, { align: 'center' });
+    }
+
+    const nombreArchivo = `seguimiento-ghl-hoy-${obtenerHoyLocal()}.pdf`;
+    const blob = doc.output('blob');
+    const archivoPDF = new File([blob], nombreArchivo, { type: 'application/pdf' });
+
+    if (navigator.canShare && navigator.canShare({ files: [archivoPDF] })) {
+      try {
+        await navigator.share({ files: [archivoPDF], title: 'Seguimiento de Leads · Hoy' });
+        toast('Reporte generado ✓');
+        return;
+      } catch (e) {}
+    }
+
+    const blobUrl = URL.createObjectURL(blob);
+    window.open(blobUrl, '_blank');
+    doc.save(nombreArchivo);
+    toast('Reporte generado y abriendo WhatsApp… ✓');
+
+    const wspMsg = `📞 *SEGUIMIENTO DE LEADS · HOY · CASA DORADA*\n` +
+      `• *Leads asignados:* ${t.totals.leads}\n` +
+      `• *Oportunidades:* ${t.totals.opp}\n` +
+      `• *Asesores con pendientes:* ${t.totals.advisorsPending}\n` +
+      `• *Sin tipificar:* ${t.totals.noTipificacion}\n\n` +
+      `_Reporte generado desde CRM Majo, vía GoHighLevel._`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(wspMsg)}`, '_blank');
+  } catch (e) {
+    console.error(e);
+    toast('Error al generar el reporte');
   }
 }
 
