@@ -2296,6 +2296,18 @@ main.app-content {
     </div>
   </div>
 
+  <!-- MODAL: detalle de cuotas de una separación financiada -->
+  <div class="modal-backdrop" id="modalDetalleCuotas">
+    <div class="modal-sheet" style="display:flex; flex-direction:column; max-height:85vh;">
+      <h3 id="detalleCuotasTitulo" style="margin-bottom:2px;">Cliente</h3>
+      <p class="card-sub" id="detalleCuotasSubtitulo" style="margin:0 0 10px;"></p>
+      <div id="detalleCuotasBody" style="flex:1; overflow-y:auto; padding:4px 2px;"></div>
+      <div class="modal-actions">
+        <button class="btn-secondary" data-close="modalDetalleCuotas">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: nueva actividad realizada (Tareas) -->
   <div class="modal-backdrop" id="modalActividad">
     <div class="modal-sheet">
@@ -8269,31 +8281,124 @@ async function cargarCobranzasCuotas(){
   el.innerHTML = finList.map(item => {
     const cliNombre = item.clientes?.nombre || 'Cliente financiado';
     const tel = item.clientes?.celular || item.clientes?.telefono || '';
-    const loteCod = item.propiedades?.codigo || `MZ ${item.manzana || ''} - LT ${item.lote || ''}`;
-    const cuotaMensual = item.inversion_mensual ? Number(item.inversion_mensual).toLocaleString('es-PE', {minimumFractionDigits:2}) : '0.00';
-    const meses = item.meses_financiar || 36;
-    const saldo = item.saldo ? Number(item.saldo).toLocaleString('es-PE') : '0';
+    const loteCod = item.propiedades?.codigo || `${item.manzana || ''}${item.manzana && item.lote ? '-' : ''}${item.lote || ''}` || 'Lote sin código';
+    // cuota_mensual/cuotas_totales vienen del historial real importado (hoja
+    // CTRL DE PAGOS); inversion_mensual/meses_financiar son los que llena el
+    // formulario de "Nueva separación" del propio app -- se usa el que haya.
+    const cuotaMensualNum = item.cuota_mensual ?? item.inversion_mensual;
+    const cuotaMensual = cuotaMensualNum != null ? Number(cuotaMensualNum).toLocaleString('es-PE', {minimumFractionDigits:2}) : '0.00';
+    const meses = item.cuotas_totales ?? item.meses_financiar ?? 36;
+    const valorTotal = item.valor_total != null ? Number(item.valor_total).toLocaleString('es-PE', {minimumFractionDigits:2}) : '0.00';
+    const valorInicial = item.valor_inicial != null ? Number(item.valor_inicial).toLocaleString('es-PE', {minimumFractionDigits:2}) : '0.00';
+    const saldo = item.saldo != null ? Number(item.saldo).toLocaleString('es-PE', {minimumFractionDigits:2}) : '0.00';
+
+    let badgeAtraso;
+    if (item.meses_atraso > 0) badgeAtraso = `<span class="badge" style="background:#FFEAEA; color:#D32F2F; border:1px solid #FFCDD2;">🔴 ${item.meses_atraso} ${item.meses_atraso === 1 ? 'mes' : 'meses'} de atraso</span>`;
+    else if (item.cuotas_pendientes === 0) badgeAtraso = `<span class="badge" style="background:#E8F5E9; color:#2E7D32; border:1px solid #C8E6C9;">✅ Plan completado</span>`;
+    else badgeAtraso = `<span class="badge badge-activa">🟢 Al día</span>`;
 
     return `
-      <div class="card" style="border-left: 4px solid var(--gold);">
+      <div class="card" style="border-left: 4px solid var(--gold); cursor:pointer;" onclick="abrirDetalleCuotas('${item.id}')">
         <div class="card-row">
           <div>
             <p class="card-title">👤 ${escapeHtml(cliNombre)}</p>
-            <p class="card-sub">📍 Lote: ${escapeHtml(loteCod)} · Saldo: S/ ${saldo}</p>
+            <p class="card-sub">📍 ${escapeHtml(loteCod)} · Total: S/ ${valorTotal} · Inicial: S/ ${valorInicial}</p>
             <p class="card-sub" style="color:var(--navy); font-weight:700; margin-top:3px;">
-              💵 Letra mensual: S/ ${cuotaMensual} (${meses} meses)
+              💵 S/ ${cuotaMensual} / mes · ${meses} cuotas · Saldo: S/ ${saldo}
             </p>
+            ${item.cuotas_totales ? `<p class="card-sub" style="margin-top:2px;">${item.cuotas_pagadas ?? 0} de ${item.cuotas_totales} cuotas pagadas</p>` : ''}
           </div>
-          <span class="badge badge-activa">Financiado</span>
+          ${badgeAtraso}
         </div>
-        <div class="card-actions" style="margin-top:10px;">
+        <div class="card-actions" style="margin-top:10px;" onclick="event.stopPropagation()">
+          <button class="chip-btn" style="color:var(--gold); border-color:var(--gold);" onclick="abrirDetalleCuotas('${item.id}')">📋 Ver cuotas</button>
           ${tel ? `<button class="chip-btn gold" onclick="enviarRecordatorioCuotaWhatsApp('${cliNombre.replace(/'/g,"\\\\'")}','${tel}','${loteCod.replace(/'/g,"\\\\\\'")}','${cuotaMensual}')">💬 Recordatorio WhatsApp</button>` : ''}
           ${tel ? `<a class="chip-btn" href="tel:${tel}">📞 Llamar</a>` : ''}
-          <button class="chip-btn" onclick="toast('Pago de cuota registrado ✓')">✓ Registrar Abono</button>
         </div>
       </div>
     `;
   }).join('');
+}
+
+// Suma de meses a una fecha "YYYY-MM-DD", devuelve otra "YYYY-MM-DD".
+function sumarMesesFecha(fechaStr, n){
+  const d = new Date(fechaStr + 'T00:00:00');
+  d.setMonth(d.getMonth() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+// Modal de detalle de una separación financiada: historial real de cuotas
+// pagadas (fecha + comprobante, desde separacion_cuotas) y el calendario de
+// las cuotas que aún faltan, calculado a partir de cuota_mensual/
+// cuotas_pendientes/fecha_proximo_pago -- estas ultimas no se guardan en la
+// base, se generan al vuelo porque son solo una proyección.
+async function abrirDetalleCuotas(separacionId){
+  openModal('modalDetalleCuotas');
+  const bodyEl = document.getElementById('detalleCuotasBody');
+  bodyEl.innerHTML = `<div class="spinner"></div>`;
+
+  const { data: sep, error: errSep } = await sb.from('separaciones')
+    .select('*, propiedades(codigo), clientes(nombre)')
+    .eq('id', separacionId)
+    .maybeSingle();
+  if (errSep || !sep) { bodyEl.innerHTML = emptyState('⚠️', 'No se pudo cargar el detalle.'); return; }
+
+  const { data: pagos } = await sb.from('separacion_cuotas')
+    .select('numero_cuota, fecha_pago, comprobante')
+    .eq('separacion_id', separacionId)
+    .order('numero_cuota', { ascending: true });
+
+  const loteCod = sep.propiedades?.codigo || `${sep.manzana || ''}${sep.manzana && sep.lote ? '-' : ''}${sep.lote || ''}`;
+  document.getElementById('detalleCuotasTitulo').textContent = sep.clientes?.nombre || 'Cliente';
+  document.getElementById('detalleCuotasSubtitulo').textContent = `📍 ${loteCod}`;
+
+  const valorTotal = sep.valor_total != null ? Number(sep.valor_total).toLocaleString('es-PE', {minimumFractionDigits:2}) : '0.00';
+  const valorInicial = sep.valor_inicial != null ? Number(sep.valor_inicial).toLocaleString('es-PE', {minimumFractionDigits:2}) : '0.00';
+  const saldo = sep.saldo != null ? Number(sep.saldo).toLocaleString('es-PE', {minimumFractionDigits:2}) : '0.00';
+  const montoPagado = sep.monto_pagado != null ? Number(sep.monto_pagado).toLocaleString('es-PE', {minimumFractionDigits:2}) : valorInicial;
+  const cuotaMensual = sep.cuota_mensual != null ? Number(sep.cuota_mensual).toLocaleString('es-PE', {minimumFractionDigits:2}) : null;
+
+  const resumenHtml = `
+    <div class="card" style="background:#F7F3EA;">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px 16px;">
+        <div><p class="card-sub" style="margin:0;">Valor total</p><p style="margin:0; font-weight:700;">S/ ${valorTotal}</p></div>
+        <div><p class="card-sub" style="margin:0;">Inicial</p><p style="margin:0; font-weight:700;">S/ ${valorInicial}</p></div>
+        <div><p class="card-sub" style="margin:0;">Pagado a la fecha</p><p style="margin:0; font-weight:700; color:#2E7D32;">S/ ${montoPagado}</p></div>
+        <div><p class="card-sub" style="margin:0;">Saldo pendiente</p><p style="margin:0; font-weight:700; color:var(--danger);">S/ ${saldo}</p></div>
+      </div>
+      ${cuotaMensual ? `<p class="card-sub" style="margin:10px 0 0; border-top:1px solid var(--border); padding-top:8px;">💵 Cuota mensual: <b>S/ ${cuotaMensual}</b> · ${sep.cuotas_pagadas ?? 0} de ${sep.cuotas_totales ?? '-'} cuotas pagadas${sep.meses_atraso > 0 ? ` · <span style="color:var(--danger); font-weight:700;">${sep.meses_atraso} ${sep.meses_atraso === 1 ? 'mes' : 'meses'} de atraso</span>` : ''}</p>` : ''}
+    </div>
+  `;
+
+  const pagadasHtml = (pagos && pagos.length)
+    ? `<h4 style="margin:14px 0 6px;">Historial de pagos</h4>` + pagos.map(p => `
+        <div class="card-row" style="padding:6px 0; border-bottom:1px solid var(--border);">
+          <span>Cuota ${p.numero_cuota} · ${fmtFecha(p.fecha_pago)}</span>
+          <span class="card-sub" style="margin:0;">${escapeHtml(p.comprobante || '')}</span>
+        </div>
+      `).join('')
+    : '';
+
+  // Proyección de cuotas pendientes (no guardadas en BD -- se calculan aqui).
+  let pendientesHtml = '';
+  if (sep.cuotas_pendientes > 0 && cuotaMensual) {
+    const ultimaPagada = pagos && pagos.length ? pagos[pagos.length - 1].numero_cuota : 0;
+    const fechaBase = sep.fecha_proximo_pago || new Date().toISOString().slice(0, 10);
+    const filas = [];
+    for (let i = 0; i < sep.cuotas_pendientes; i++) {
+      const fecha = i === 0 ? fechaBase : sumarMesesFecha(fechaBase, i);
+      const vencida = fecha < new Date().toISOString().slice(0, 10);
+      filas.push(`
+        <div class="card-row" style="padding:6px 0; border-bottom:1px solid var(--border);">
+          <span>Cuota ${ultimaPagada + i + 1} · ${fmtFecha(fecha)}</span>
+          <span class="badge" style="${vencida ? 'background:#FFEAEA; color:#D32F2F; border:1px solid #FFCDD2;' : 'background:#F0F0F0; color:var(--ink-dim); border:1px solid var(--border);'}">${vencida ? 'Vencida' : 'Pendiente'}</span>
+        </div>
+      `);
+    }
+    pendientesHtml = `<h4 style="margin:14px 0 6px;">Cuotas pendientes</h4>` + filas.join('');
+  }
+
+  bodyEl.innerHTML = resumenHtml + pagadasHtml + pendientesHtml;
 }
 
 function enviarRecordatorioCuotaWhatsApp(cliente, tel, lote, monto){
@@ -8998,7 +9103,16 @@ async function cargarSeparacionesTodas(){
   const rol = currentProfile?.rol;
   const esSuperAdminODirector = rol === 'admin' || rol === 'superadmin' || rol === 'director_comercial' || rol === 'gerencia';
 
-  let query = sb.from('separaciones').select('*, propiedades(codigo), clientes(nombre)');
+  // Esta pestaña se llama "Separaciones Activas": solo debe mostrar
+  // separaciones con estado 'activa' que todavia no vencieron -- las ya
+  // convertidas en venta, canceladas o vencidas no pertenecen aqui (las
+  // convertidas viven en "Control de Cobranzas y Cuotas", con su propio
+  // historial de pagos).
+  const hoyStr = new Date().toISOString().slice(0, 10);
+  let query = sb.from('separaciones')
+    .select('*, propiedades(codigo), clientes(nombre)')
+    .eq('estado', 'activa')
+    .gte('fecha_vencimiento', hoyStr);
   if (!esSuperAdminODirector) {
     query = query.eq('vendedor_id', currentUser.id);
   }
@@ -13411,70 +13525,85 @@ async function buscarPropietarioPorDocumento(){
     }
 
     const c = clientes[0];
-    // Buscar separaciones o compras del cliente
+    // Buscar TODAS las separaciones/lotes del cliente -- puede tener mas de
+    // uno (bastante comun: 26 de los 156 clientes reales importados poseen
+    // >1 lote), y cada una con su propio avance de pagos real.
     const { data: separaciones } = await sb.from('separaciones')
-      .select('*')
+      .select('*, propiedades(codigo)')
       .eq('cliente_id', c.id)
       .order('created_at', { ascending: false });
 
-    const sep = (separaciones && separaciones.length > 0) ? separaciones[0] : null;
-    const vTotal = Number(sep?.valor_total || 38000);
-    const inicial = Number(sep?.monto_inicial || sep?.monto_separacion || 10000);
-    const saldo = Math.max(0, vTotal - inicial);
-    const cuotasPagadas = sep ? (sep.estado === 'convertida_venta' ? 8 : 1) : 1;
-    const cuotasTotales = 36;
-    const progreso = Math.min(100, Math.round(((cuotasPagadas * (saldo / cuotasTotales) + inicial) / vTotal) * 100));
+    const seps = separaciones || [];
+    const vTotalAcumulado = seps.reduce((acc, s) => acc + Number(s.valor_total || 0), 0);
+    const saldoAcumulado = seps.reduce((acc, s) => acc + Number(s.saldo || 0), 0);
 
-    propietarioActualData = { cliente: c, separacion: sep, progreso, vTotal, inicial, saldo };
+    propietarioActualData = { cliente: c, separaciones: seps, vTotalAcumulado, saldoAcumulado };
+
+    if (seps.length === 0) {
+      cont.innerHTML = `
+        <div class="card" style="border-left:5px solid var(--gold);">
+          <h4 style="margin:0; font-size:15px; color:var(--navy);">${escapeHtml(c.nombre)}</h4>
+          <p class="card-sub" style="margin-top:2px;">Documento: ${escapeHtml(c.dni || doc)} · 📱 WhatsApp: ${escapeHtml(c.celular || '—')}</p>
+          <p class="card-sub" style="margin-top:10px;">Este cliente no tiene lotes ni separaciones registradas.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const lotesHtml = seps.map(sep => {
+      const loteCod = sep.propiedades?.codigo || `${sep.manzana || ''}${sep.manzana && sep.lote ? '-' : ''}${sep.lote || ''}`;
+      const vTotal = Number(sep.valor_total || 0);
+      const inicial = Number(sep.valor_inicial || 0);
+      const saldo = Number(sep.saldo || 0);
+      const cuotaMensual = sep.cuota_mensual != null ? Number(sep.cuota_mensual).toLocaleString('es-PE', {minimumFractionDigits:2}) : null;
+      const progreso = vTotal > 0 ? Math.min(100, Math.round(((vTotal - saldo) / vTotal) * 100)) : 0;
+
+      let badgeEstado;
+      if (sep.meses_atraso > 0) badgeEstado = `<span class="badge" style="background:#FFEAEA; color:#D32F2F; border:1px solid #FFCDD2;">🔴 ${sep.meses_atraso} ${sep.meses_atraso === 1 ? 'mes' : 'meses'} de atraso</span>`;
+      else if (sep.cuotas_pendientes === 0 && sep.cuotas_totales) badgeEstado = `<span class="badge" style="background:#E8F5E9; color:#2E7D32; border:1px solid #C8E6C9;">✅ Plan completado</span>`;
+      else badgeEstado = `<span class="badge badge-completada">Al día</span>`;
+
+      return `
+        <div class="card" style="border-left:5px solid var(--gold); margin-bottom:14px; cursor:pointer;" onclick="abrirDetalleCuotas('${sep.id}')">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+              <span style="font-size:11px; color:var(--ink-dim); font-weight:700;">LOTE</span>
+              <div style="font-size:14px; font-weight:800; color:var(--navy);">${escapeHtml(loteCod)}</div>
+            </div>
+            ${badgeEstado}
+          </div>
+
+          <div style="background:#F7F4EC; border-radius:10px; padding:10px 12px; margin:12px 0; display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+            <div><span style="font-size:11px; color:var(--ink-dim); font-weight:700;">VALOR TOTAL</span><div style="font-size:14px; font-weight:800; color:var(--gold);">S/ ${vTotal.toLocaleString('es-PE', {minimumFractionDigits:2})}</div></div>
+            <div><span style="font-size:11px; color:var(--ink-dim); font-weight:700;">INICIAL</span><div style="font-size:14px; font-weight:800;">S/ ${inicial.toLocaleString('es-PE', {minimumFractionDigits:2})}</div></div>
+            <div><span style="font-size:11px; color:var(--ink-dim); font-weight:700;">SALDO PENDIENTE</span><div style="font-size:14px; font-weight:800; color:var(--danger);">S/ ${saldo.toLocaleString('es-PE', {minimumFractionDigits:2})}</div></div>
+            ${cuotaMensual ? `<div><span style="font-size:11px; color:var(--ink-dim); font-weight:700;">CUOTA MENSUAL</span><div style="font-size:14px; font-weight:800;">S/ ${cuotaMensual}</div></div>` : ''}
+          </div>
+
+          <div style="margin-bottom:4px;">
+            <div style="display:flex; justify-content:space-between; font-size:11.5px; margin-bottom:4px;">
+              <span style="font-weight:700; color:var(--navy);">Avance de pago:</span>
+              <span style="font-weight:800; color:var(--ok);">${progreso}% pagado${sep.cuotas_totales ? ` · ${sep.cuotas_pagadas ?? 0}/${sep.cuotas_totales} cuotas` : ''}</span>
+            </div>
+            <div style="background:#E5DFCF; border-radius:100px; height:8px; overflow:hidden;">
+              <div style="background:linear-gradient(90deg, var(--gold) 0%, var(--ok) 100%); height:100%; width:${progreso}%;"></div>
+            </div>
+          </div>
+          <p class="card-sub" style="margin:6px 0 0;">👆 Toca para ver el historial de cuotas pagadas</p>
+        </div>
+      `;
+    }).join('');
 
     cont.innerHTML = `
-      <div class="card" style="border-left:5px solid var(--gold); margin-bottom:14px;">
-        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-          <div>
-            <h4 style="margin:0; font-size:15px; color:var(--navy);">${escapeHtml(c.nombre)}</h4>
-            <p class="card-sub" style="margin-top:2px;">Documento: ${escapeHtml(c.dni || doc)} · 📱 WhatsApp: ${escapeHtml(c.celular || '—')}</p>
-          </div>
-          <span class="badge badge-completada">Propietario Activo</span>
-        </div>
-
-        <div style="background:#F7F4EC; border-radius:10px; padding:10px 12px; margin:12px 0; display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-          <div>
-            <span style="font-size:11px; color:var(--ink-dim); font-weight:700;">LOTE ASIGNADO</span>
-            <div style="font-size:14px; font-weight:800; color:var(--navy);">Manzana ${sep?.manzana || 'B'} - Lote ${sep?.lote || '12'}</div>
-          </div>
-          <div>
-            <span style="font-size:11px; color:var(--ink-dim); font-weight:700;">VALOR TOTAL PATRIMONIAL</span>
-            <div style="font-size:14px; font-weight:800; color:var(--gold);">S/ ${vTotal.toLocaleString('es-PE')}</div>
-          </div>
-        </div>
-
-        <!-- BARRA DE AMORTIZACIÓN Y PROGRESO -->
-        <div style="margin-bottom:12px;">
-          <div style="display:flex; justify-content:space-between; font-size:11.5px; margin-bottom:4px;">
-            <span style="font-weight:700; color:var(--navy);">Avance de Amortización:</span>
-            <span style="font-weight:800; color:var(--ok);">${progreso}% completado</span>
-          </div>
-          <div style="background:#E5DFCF; border-radius:100px; height:8px; overflow:hidden;">
-            <div style="background:linear-gradient(90deg, var(--gold) 0%, var(--ok) 100%); height:100%; width:${progreso}%;"></div>
-          </div>
-        </div>
-
-        <!-- HITOS DE AVANCE DEL PROYECTO (CLUB COSTA DORADA) -->
-        <div style="background:#fff; border:1px solid #E5DFCF; border-radius:10px; padding:10px 12px; margin-top:12px;">
-          <p style="font-size:11.5px; font-weight:800; color:var(--navy); margin:0 0 8px;">🏗️ Avance Técnico en Terreno (La Yarada Los Palos):</p>
-          <div style="display:flex; flex-direction:column; gap:6px; font-size:11px;">
-            <div style="display:flex; justify-content:space-between;"><span>🏛️ Pórtico Monumental de Entrada</span><b style="color:var(--ok);">✓ 100% Concluido</b></div>
-            <div style="display:flex; justify-content:space-between;"><span>🚜 Trazado y Afirmado de Vías</span><b style="color:var(--ok);">✓ 85% Concluido</b></div>
-            <div style="display:flex; justify-content:space-between;"><span>🌴 Áreas Verdes y Parque Principal</span><b style="color:var(--gold);">▶ 60% En Ejecución</b></div>
-            <div style="display:flex; justify-content:space-between;"><span>📑 Habilitación Urbana & Sunarp</span><b style="color:var(--gold);">▶ En trámite formal</b></div>
-          </div>
-        </div>
-
-        <div class="card-actions" style="margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;">
+      <div class="card" style="border-left:5px solid var(--navy); margin-bottom:14px;">
+        <h4 style="margin:0; font-size:15px; color:var(--navy);">${escapeHtml(c.nombre)}</h4>
+        <p class="card-sub" style="margin-top:2px;">Documento: ${escapeHtml(c.dni || doc)} · 📱 WhatsApp: ${escapeHtml(c.celular || '—')}</p>
+        <p class="card-sub" style="margin-top:8px;">${seps.length} ${seps.length === 1 ? 'lote' : 'lotes'} · Patrimonio total: S/ ${vTotalAcumulado.toLocaleString('es-PE', {minimumFractionDigits:2})} · Saldo total: S/ ${saldoAcumulado.toLocaleString('es-PE', {minimumFractionDigits:2})}</p>
+        <div class="card-actions" style="margin-top:12px;">
           <button type="button" class="chip-btn gold" onclick="emitirEstadoCuentaWhatsApp()" style="flex:1; justify-content:center; padding:8px 12px; font-weight:700;">📲 Enviar Estado de Cuenta WhatsApp</button>
-          <button type="button" class="chip-btn" onclick="abrirModalPlusvalia(${vTotal}, '${sep?.manzana||'B'}', '${sep?.lote||'12'}', 160)" style="padding:8px 12px; border-color:var(--gold); color:var(--navy); font-weight:700;">📈 Plusvalía</button>
         </div>
       </div>
+      ${lotesHtml}
     `;
   } catch(err) {
     console.error('Error en portal de propietario:', err);
@@ -13484,25 +13613,25 @@ async function buscarPropietarioPorDocumento(){
 
 function emitirEstadoCuentaWhatsApp(){
   if (!propietarioActualData) return;
-  const { cliente, separacion, progreso, vTotal, inicial, saldo } = propietarioActualData;
+  const { cliente, separaciones, vTotalAcumulado, saldoAcumulado } = propietarioActualData;
   const cel = (cliente.celular || '').replace(/\D/g, '');
+
+  const lotesTexto = (separaciones || []).map(sep => {
+    const loteCod = sep.propiedades?.codigo || `Manzana ${sep.manzana || '-'} - Lote ${sep.lote || '-'}`;
+    const vTotal = Number(sep.valor_total || 0);
+    const saldo = Number(sep.saldo || 0);
+    const atraso = sep.meses_atraso > 0 ? ` ⚠️ ${sep.meses_atraso} ${sep.meses_atraso === 1 ? 'mes' : 'meses'} de atraso` : '';
+    return `🏡 *${loteCod}*\n   Valor: S/ ${vTotal.toLocaleString('es-PE', {minimumFractionDigits:2})} · Saldo: S/ ${saldo.toLocaleString('es-PE', {minimumFractionDigits:2})}${atraso}`;
+  }).join('\n\n');
+
   const texto = `Hola ${cliente.nombre}, te saludamos de *Constructora e Inmobiliaria Casa Dorada*.
 
 Adjuntamos tu *ESTADO DE CUENTA PATRIMONIAL · CLUB COSTA DORADA*:
 ━━━━━━━━━━━━━━━━━━━
-🏡 *Lote:* Manzana ${separacion?.manzana || 'B'} - Lote ${separacion?.lote || '12'}
-📐 *Proyecto:* Costa Dorada · La Yarada Los Palos, Tacna
-💰 *Valor Total:* S/ ${vTotal.toLocaleString('es-PE')}
-🏷️ *Inicial Abonada:* S/ ${inicial.toLocaleString('es-PE')}
-📉 *Saldo Pendiente:* S/ ${saldo.toLocaleString('es-PE')}
-📊 *Amortización:* ${progreso}% completado
-Estado: *AL DÍA Y CONFORME* ✓
-
+${lotesTexto}
 ━━━━━━━━━━━━━━━━━━━
-🏗️ *Avance de Obras en Terreno:*
-✓ Pórtico monumental: 100%
-✓ Trazado de vías: 85%
-✓ Parque central: 60%
+💰 *Valor total patrimonial:* S/ ${vTotalAcumulado.toLocaleString('es-PE', {minimumFractionDigits:2})}
+📉 *Saldo pendiente total:* S/ ${saldoAcumulado.toLocaleString('es-PE', {minimumFractionDigits:2})}
 
 ¡Gracias por consolidar el patrimonio de tu familia junto a Casa Dorada!`;
 
