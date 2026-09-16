@@ -3565,24 +3565,22 @@ main.app-content {
     <div class="modal-sheet" style="max-height:88vh; overflow-y:auto;">
       <button class="modal-x-close" data-close="modalInventarioLotes">✕</button>
       <h3 style="margin-top:0;">📦 Control de Inventario y Lotes ERP</h3>
-      <p style="font-size:12px; color:var(--ink-dim); margin-top:-6px; margin-bottom:12px;">Disponibilidad de manzanas y lotes en tiempo real · Costa Dorada</p>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:-6px; margin-bottom:12px;">
+        <p style="font-size:12px; color:var(--ink-dim); margin:0;" id="inv_actualizado">Manzanas, etapas y lotes en vivo desde el lotizador · Costa Dorada</p>
+        <button type="button" class="chip-btn" onclick="cargarInventarioLotes()" style="font-size:11px; padding:4px 10px; white-space:nowrap;">🔄 Actualizar</button>
+      </div>
 
       <div id="inv_metricas_strip"></div>
 
-      <!-- FILTROS DE INVENTARIO -->
-      <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">
-        <button type="button" class="chip-btn active" id="btnInvTodos" onclick="filtrarInventarioEstado('todos')">Todos</button>
-        <button type="button" class="chip-btn" id="btnInvDisp" onclick="filtrarInventarioEstado('disponible')" style="color:var(--ok); border-color:var(--ok);">🟢 Disponibles</button>
-        <button type="button" class="chip-btn" id="btnInvSep" onclick="filtrarInventarioEstado('separado')" style="color:#E65100; border-color:#E65100;">🟡 Separados</button>
-        <button type="button" class="chip-btn" id="btnInvVen" onclick="filtrarInventarioEstado('vendido')" style="color:#1565C0; border-color:#1565C0;">🔵 Vendidos</button>
+      <div style="display:flex; gap:6px; margin-bottom:10px;">
+        <button type="button" class="chip-btn active" id="btnInvVistaEstructura" onclick="cambiarVistaInventario('estructura')" style="flex:1;">📦 Estructura</button>
+        <button type="button" class="chip-btn" id="btnInvVistaVentas" onclick="cambiarVistaInventario('ventas')" style="flex:1;">📊 Ventas</button>
       </div>
 
-      <div class="field" style="margin-bottom:12px;">
-        <select id="inv_filtro_mz" onchange="filtrarInventarioManzana(this.value)"></select>
-      </div>
+      <div id="inv_etapa_tabs" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;"></div>
 
-      <!-- LISTADO DE LOTES -->
-      <div id="inv_lista_lotes" style="display:flex; flex-direction:column; gap:6px;"></div>
+      <!-- Resumen por manzana / listado de lotes / reporte de ventas, segun la vista activa -->
+      <div id="inv_contenido"></div>
 
       <div class="modal-actions" style="margin-top:14px;">
         <button class="btn-secondary" data-close="modalInventarioLotes" style="width:100%;">Cerrar</button>
@@ -13545,9 +13543,25 @@ function actualizarVistaGemeloDigital(){
 /* =========================================================================
    ERP: CONTROL DE INVENTARIO Y DISPONIBILIDAD DE LOTES EN TIEMPO REAL
    ========================================================================= */
-let inventarioLotesCache = [];
-let filtroEstadoInventario = 'todos';
-let filtroManzanaInventario = 'todas';
+// Reporte en vivo (manzanas/lotes/estado) leido directo del lotizador de
+// Costa Dorada via la funcion "inventario-lotes-sire" -- ya no se genera
+// una matriz sintetica ni se cruza con la tabla "separaciones": el
+// lotizador ES la fuente de verdad de libre/separado/vendido.
+let inventarioReporteCache = null;
+let inventarioEtapaActiva = 'todas';
+let inventarioManzanaActiva = null;
+let inventarioEstadoFiltroLotes = 'todos';
+let inventarioVistaActiva = 'estructura'; // 'estructura' | 'ventas'
+
+// Mismos colores que usa el lotizador en su propia leyenda pública (verde
+// libre / amarillo separado / rojo vendido), para que el asesor vea el
+// mismo semáforo en ambos lados.
+const INV_ESTADO_CFG = {
+  libre:       { lbl: 'Disponible',            icono: '🟢', tone: '#1B8A3E', bg: '#EAF7EE', border: '#B7E4C4' },
+  separado:    { lbl: 'Separado (Reserva)',     icono: '🟡', tone: '#B8860B', bg: '#FFF8E1', border: '#FFE082' },
+  vendido:     { lbl: 'Vendido / Financiado',   icono: '🔴', tone: '#C62828', bg: '#FDECEA', border: '#F5C6C2' },
+  sinPublicar: { lbl: 'No publicado',           icono: '⚪', tone: '#616161', bg: '#F2F2F2', border: '#DADADA' },
+};
 
 async function abrirModalInventarioLotes(){
   if (!tienePermiso('ver_inventario_lotes')) {
@@ -13559,160 +13573,278 @@ async function abrirModalInventarioLotes(){
 }
 
 async function cargarInventarioLotes(){
-  const cont = document.getElementById('inv_lista_lotes');
+  const cont = document.getElementById('inv_contenido');
   if (!cont) return;
   cont.innerHTML = `<div class="spinner"></div>`;
+  document.getElementById('inv_metricas_strip').innerHTML = '';
+  document.getElementById('inv_etapa_tabs').innerHTML = '';
 
   try {
-    // Consultar separaciones activas y vendidas para mapear disponibilidad
-    const { data: seps, error: sepsError } = await sb.from('separaciones')
-      .select('manzana, lote, estado, cliente_id, clientes(nombre), valor_total, created_at')
-      .order('created_at', { ascending: false });
+    const { data, error } = await sb.functions.invoke('inventario-lotes-sire', { body: {} });
+    if (error) throw error;
+    if (!data || data.ok === false) throw new Error(data?.error || 'La función no devolvió datos.');
 
-    if (sepsError) throw sepsError;
+    inventarioReporteCache = data;
+    inventarioEtapaActiva = 'todas';
+    inventarioManzanaActiva = null;
+    inventarioEstadoFiltroLotes = 'todos';
+    inventarioVistaActiva = 'estructura';
+    document.getElementById('btnInvVistaEstructura')?.classList.add('active');
+    document.getElementById('btnInvVistaVentas')?.classList.remove('active');
 
-    const mapaOcupados = {};
-    (seps || []).forEach(s => {
-      const key = `${(s.manzana||'').trim().toUpperCase()}-${(s.lote||'').trim()}`;
-      // La consulta viene ordenada de más reciente a más antigua: el primer
-      // registro de cada lote representa su estado vigente/histórico más reciente.
-      if (mapaOcupados[key]) return;
+    const actEl = document.getElementById('inv_actualizado');
+    if (actEl) {
+      const f = new Date(data.actualizado);
+      actEl.textContent = `Actualizado ${f.toLocaleString('es-PE', { timeZone: 'America/Lima', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })} · en vivo desde el lotizador`;
+    }
 
-      const estado = String(s.estado || '').toLowerCase();
-      mapaOcupados[key] = {
-        estado: estado === 'convertida_venta' ? 'vendido' : (estado === 'activa' ? 'separado' : 'disponible'),
-        cliente: s.clientes?.nombre || 'Cliente Registrado',
-        valor: Number(s.valor_total) || 38000
-      };
-    });
-
-    // Generar matriz de manzanas A a G con 20 lotes cada una (Costa Dorada)
-    const manzanas = ['A','B','C','D','E','F','G'];
-    const lotesGenerados = [];
-    manzanas.forEach(mz => {
-      for (let lt = 1; lt <= 20; lt++) {
-        const k = `${mz}-${lt}`;
-        const ocup = mapaOcupados[k];
-        const esEsquina = (lt === 1 || lt === 10 || lt === 11 || lt === 20);
-        lotesGenerados.push({
-          manzana: mz,
-          lote: lt,
-          area: esEsquina ? 180 : 160,
-          tipo: esEsquina ? 'Esquina Panorámica' : 'Estándar Residencial',
-          precioM2: esEsquina ? 250 : 237.5,
-          valorTotal: esEsquina ? 45000 : 38000,
-          estado: ocup ? ocup.estado : 'disponible',
-          cliente: ocup ? ocup.cliente : null
-        });
-      }
-    });
-
-    inventarioLotesCache = lotesGenerados;
-    poblarSelectorManzanasInventario(manzanas);
     renderizarInventarioLotes();
   } catch(err) {
     console.error('Error cargando inventario:', err);
-    cont.innerHTML = emptyState('⚠️', 'Error al cargar el inventario de lotes.');
+    cont.innerHTML = emptyState('⚠️', 'No se pudo consultar el lotizador en este momento. Intenta actualizar en unos segundos.');
   }
 }
 
-function poblarSelectorManzanasInventario(manzanas){
-  const sel = document.getElementById('inv_filtro_mz');
-  if (!sel || sel.options.length > 1) return;
-  sel.innerHTML = `<option value="todas">Todas las Manzanas (${manzanas.join(', ')})</option>` +
-    manzanas.map(m => `<option value="${m}">Manzana ${m}</option>`).join('');
+function inventarioEtapaLabel(etapa){
+  return (etapa === null || etapa === undefined) ? 'Sin etapa asignada' : `Etapa ${etapa}`;
 }
 
-function filtrarInventarioEstado(est){
-  filtroEstadoInventario = est;
-  ['btnInvTodos','btnInvDisp','btnInvSep','btnInvVen'].forEach(id => document.getElementById(id)?.classList.remove('active'));
-  if (est === 'todos') document.getElementById('btnInvTodos')?.classList.add('active');
-  if (est === 'disponible') document.getElementById('btnInvDisp')?.classList.add('active');
-  if (est === 'separado') document.getElementById('btnInvSep')?.classList.add('active');
-  if (est === 'vendido') document.getElementById('btnInvVen')?.classList.add('active');
+function filtrarInventarioEtapa(etapa){
+  inventarioEtapaActiva = etapa;
+  inventarioManzanaActiva = null;
   renderizarInventarioLotes();
 }
 
-function filtrarInventarioManzana(mz){
-  filtroManzanaInventario = mz;
+function verManzanaInventario(manzana){
+  inventarioManzanaActiva = manzana;
+  inventarioEstadoFiltroLotes = 'todos';
+  renderizarInventarioLotes();
+}
+
+function volverResumenInventarioLotes(){
+  inventarioManzanaActiva = null;
+  renderizarInventarioLotes();
+}
+
+function filtrarInventarioEstadoLotes(est){
+  inventarioEstadoFiltroLotes = est;
+  renderizarInventarioLotes();
+}
+
+function cambiarVistaInventario(vista){
+  inventarioVistaActiva = vista;
+  inventarioManzanaActiva = null;
+  document.getElementById('btnInvVistaEstructura')?.classList.toggle('active', vista === 'estructura');
+  document.getElementById('btnInvVistaVentas')?.classList.toggle('active', vista === 'ventas');
   renderizarInventarioLotes();
 }
 
 function renderizarInventarioLotes(){
-  const cont = document.getElementById('inv_lista_lotes');
-  if (!cont) return;
+  const r = inventarioReporteCache;
+  const contMetricas = document.getElementById('inv_metricas_strip');
+  const contTabs = document.getElementById('inv_etapa_tabs');
+  const cont = document.getElementById('inv_contenido');
+  if (!r || !contMetricas || !contTabs || !cont) return;
 
-  let filtrados = inventarioLotesCache.filter(l => {
-    if (filtroEstadoInventario !== 'todos' && l.estado !== filtroEstadoInventario) return false;
-    if (filtroManzanaInventario !== 'todas' && l.manzana !== filtroManzanaInventario) return false;
-    return true;
-  });
-
-  // Métricas de cabecera
-  const total = inventarioLotesCache.length;
-  const disp = inventarioLotesCache.filter(l => l.estado === 'disponible').length;
-  const sep = inventarioLotesCache.filter(l => l.estado === 'separado').length;
-  const ven = inventarioLotesCache.filter(l => l.estado === 'vendido').length;
-  const absorcion = total > 0 ? Math.round(((sep + ven) / total) * 100) : 0;
-
-  document.getElementById('inv_metricas_strip').innerHTML = `
-    <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; margin-bottom:12px; text-align:center;">
+  const t = r.totales;
+  const hayNoPublicados = t.sinPublicar > 0;
+  contMetricas.innerHTML = `
+    <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:6px; margin-bottom:6px; text-align:center;">
       <div style="background:#fff; border:1px solid #E5DFCF; border-radius:10px; padding:8px 4px;">
-        <span style="font-size:10px; color:var(--ink-dim); font-weight:700;">TOTAL</span>
-        <div style="font-size:15px; font-weight:800; color:var(--navy);">${total}</div>
+        <span style="font-size:10px; color:var(--ink-dim); font-weight:700;">MANZANAS</span>
+        <div style="font-size:15px; font-weight:800; color:var(--navy);">${t.totalManzanas}</div>
       </div>
-      <div style="background:#EBF7EE; border:1px solid #A5D6A7; border-radius:10px; padding:8px 4px;">
-        <span style="font-size:10px; color:var(--ok); font-weight:700;">DISP.</span>
-        <div style="font-size:15px; font-weight:800; color:var(--ok);">${disp}</div>
+      <div style="background:#fff; border:1px solid #E5DFCF; border-radius:10px; padding:8px 4px;">
+        <span style="font-size:10px; color:var(--ink-dim); font-weight:700;">LOTES</span>
+        <div style="font-size:15px; font-weight:800; color:var(--navy);">${t.totalLotes}</div>
       </div>
-      <div style="background:#FFF9EE; border:1px solid #FFE082; border-radius:10px; padding:8px 4px;">
-        <span style="font-size:10px; color:var(--gold); font-weight:700;">SEPARADOS</span>
-        <div style="font-size:15px; font-weight:800; color:var(--gold);">${sep}</div>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(${hayNoPublicados ? 4 : 3}, 1fr); gap:6px; margin-bottom:12px; text-align:center;">
+      <div style="background:${INV_ESTADO_CFG.libre.bg}; border:1px solid ${INV_ESTADO_CFG.libre.border}; border-radius:10px; padding:8px 4px;">
+        <span style="font-size:10px; color:${INV_ESTADO_CFG.libre.tone}; font-weight:700;">${INV_ESTADO_CFG.libre.icono} DISP.</span>
+        <div style="font-size:15px; font-weight:800; color:${INV_ESTADO_CFG.libre.tone};">${t.libre}</div>
       </div>
-      <div style="background:#F0F4F9; border:1px solid #CFE2F9; border-radius:10px; padding:8px 4px;">
-        <span style="font-size:10px; color:#1E4B82; font-weight:700;">ABSORCIÓN</span>
-        <div style="font-size:15px; font-weight:800; color:#1E4B82;">${absorcion}%</div>
+      <div style="background:${INV_ESTADO_CFG.separado.bg}; border:1px solid ${INV_ESTADO_CFG.separado.border}; border-radius:10px; padding:8px 4px;">
+        <span style="font-size:10px; color:${INV_ESTADO_CFG.separado.tone}; font-weight:700;">${INV_ESTADO_CFG.separado.icono} SEPARADOS</span>
+        <div style="font-size:15px; font-weight:800; color:${INV_ESTADO_CFG.separado.tone};">${t.separado}</div>
       </div>
+      <div style="background:${INV_ESTADO_CFG.vendido.bg}; border:1px solid ${INV_ESTADO_CFG.vendido.border}; border-radius:10px; padding:8px 4px;">
+        <span style="font-size:10px; color:${INV_ESTADO_CFG.vendido.tone}; font-weight:700;">${INV_ESTADO_CFG.vendido.icono} VENDIDOS</span>
+        <div style="font-size:15px; font-weight:800; color:${INV_ESTADO_CFG.vendido.tone};">${t.vendido}</div>
+      </div>
+      ${hayNoPublicados ? `
+      <div style="background:${INV_ESTADO_CFG.sinPublicar.bg}; border:1px solid ${INV_ESTADO_CFG.sinPublicar.border}; border-radius:10px; padding:8px 4px;">
+        <span style="font-size:10px; color:${INV_ESTADO_CFG.sinPublicar.tone}; font-weight:700;">${INV_ESTADO_CFG.sinPublicar.icono} NO PUBLIC.</span>
+        <div style="font-size:15px; font-weight:800; color:${INV_ESTADO_CFG.sinPublicar.tone};">${t.sinPublicar}</div>
+      </div>` : ''}
     </div>
   `;
 
-  if (filtrados.length === 0) {
-    cont.innerHTML = emptyState('📦', 'No hay lotes con estos filtros seleccionados.');
+  if (inventarioVistaActiva === 'ventas') {
+    contTabs.innerHTML = '';
+    renderizarReporteVentas(cont);
     return;
   }
 
-  const badgeConfig = {
-    disponible: { lbl: 'Disponible', tone: 'var(--ok)', bg: '#EBF7EE', border: '#C8E6C9' },
-    separado: { lbl: 'Separado (Reserva)', tone: '#E65100', bg: '#FFF3E0', border: '#FFE0B2' },
-    vendido: { lbl: 'Vendido / Financiado', tone: '#1565C0', bg: '#E3F2FD', border: '#BBDEFB' }
-  };
+  contTabs.innerHTML = `
+    <button type="button" class="chip-btn ${inventarioEtapaActiva === 'todas' ? 'active' : ''}" onclick="filtrarInventarioEtapa('todas')">Todas las etapas</button>
+    ${r.etapas.map(e => `<button type="button" class="chip-btn ${inventarioEtapaActiva === e.etapa ? 'active' : ''}" onclick="filtrarInventarioEtapa(${e.etapa === null ? 'null' : e.etapa})">${inventarioEtapaLabel(e.etapa)} <span style="opacity:.7;">(${e.totalManzanas} mz. · ${e.totalLotes} lotes)</span></button>`).join('')}
+  `;
 
-  cont.innerHTML = filtrados.map(l => {
-    const b = badgeConfig[l.estado] || badgeConfig.disponible;
-    return `
-      <div class="card" style="border-left:4px solid ${b.tone}; margin-bottom:8px; padding:10px 12px;">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <div>
-            <span style="font-size:13.5px; font-weight:800; color:var(--navy);">Mz. ${l.manzana} · Lote ${l.lote}</span>
-            <span style="font-size:11px; color:var(--ink-dim); margin-left:6px;">(${l.area} m² · ${escapeHtml(l.tipo)})</span>
+  if (inventarioManzanaActiva) {
+    renderizarInventarioListaLotes(cont);
+  } else {
+    renderizarInventarioResumenManzanas(cont);
+  }
+}
+
+function renderizarSeccionVentas(titulo, filas){
+  if (!filas || !filas.length) return '';
+  const maxCantidad = Math.max(...filas.map(f => f.cantidad));
+  return `
+    <div style="margin-bottom:14px;">
+      <p class="card-title" style="margin:0 0 6px; font-size:12.5px;">${escapeHtml(titulo)}</p>
+      <div style="max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:5px; padding-right:2px;">
+        ${filas.map(f => `
+          <div style="display:flex; align-items:center; gap:8px; font-size:11.5px;">
+            <span style="flex:1.4; color:var(--navy); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${escapeHtml(f.clave)}">${escapeHtml(f.clave)}</span>
+            <div style="flex:1; background:#eee; border-radius:4px; height:6px; overflow:hidden;">
+              <div style="width:${Math.round((f.cantidad / maxCantidad) * 100)}%; height:100%; background:var(--gold);"></div>
+            </div>
+            <span style="width:28px; text-align:right; font-weight:700; color:var(--navy);">${f.cantidad}</span>
+            <span style="width:88px; text-align:right; color:var(--ink-dim); white-space:nowrap;">S/ ${Math.round(f.montoVenta).toLocaleString('es-PE')}</span>
           </div>
-          <span style="font-size:10px; font-weight:800; color:${b.tone}; background:${b.bg}; border:1px solid ${b.border}; border-radius:100px; padding:2px 8px;">${b.lbl}</span>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderizarReporteVentas(cont){
+  const v = inventarioReporteCache?.ventas;
+  if (!v) { cont.innerHTML = emptyState('📊', 'No hay datos de ventas disponibles.'); return; }
+
+  const faltantes = v.totalVendidos - v.conDatosReales;
+
+  cont.innerHTML = `
+    <div style="display:flex; gap:8px; margin-bottom:10px;">
+      <div style="flex:1; background:#fff; border:1px solid #E5DFCF; border-radius:10px; padding:10px; text-align:center;">
+        <span style="font-size:10px; color:var(--ink-dim); font-weight:700;">TOTAL VENDIDOS</span>
+        <div style="font-size:18px; font-weight:800; color:var(--navy);">${v.totalVendidos}</div>
+      </div>
+      <div style="flex:1; background:#fff; border:1px solid #E5DFCF; border-radius:10px; padding:10px; text-align:center;">
+        <span style="font-size:10px; color:var(--ink-dim); font-weight:700;">MONTO VENTA TOTAL</span>
+        <div style="font-size:14px; font-weight:800; color:var(--gold);">S/ ${Math.round(v.montoVentaTotal).toLocaleString('es-PE')}</div>
+      </div>
+    </div>
+    <p style="font-size:10.5px; color:var(--ink-dim); margin:0 0 4px; line-height:1.4;">ℹ️ Asesor, accionista, año y mes vienen de la hoja "Control de Cobros" importada manualmente -- no se sincroniza sola si la hoja cambia. No incluye desglose "por procedencia" (campaña/fuente del lead): ese dato no existe en la hoja y requeriría cruzar cada cliente con los leads de GHL por teléfono.</p>
+    ${faltantes > 0 ? `<p style="font-size:10.5px; color:var(--ink-dim); margin:0 0 12px;">⚠️ ${faltantes} de ${v.totalVendidos} lotes vendidos no tienen asesor/accionista/fecha registrados en esa hoja (aparecen como "Sin dato").</p>` : ''}
+    ${renderizarSeccionVentas('Por etapa', v.porEtapa)}
+    ${renderizarSeccionVentas('Por manzana', v.porManzana)}
+    ${renderizarSeccionVentas('Por accionista / empresa', v.porAccionista)}
+    ${renderizarSeccionVentas('Por asesor', v.porAsesor)}
+    ${renderizarSeccionVentas('Por año', v.porAnio)}
+    ${renderizarSeccionVentas('Por mes', v.porMes)}
+  `;
+}
+
+function renderizarInventarioResumenManzanas(cont){
+  const r = inventarioReporteCache;
+  const etapas = inventarioEtapaActiva === 'todas' ? r.etapas : r.etapas.filter(e => e.etapa === inventarioEtapaActiva);
+
+  if (!etapas.length) {
+    cont.innerHTML = emptyState('📦', 'No hay manzanas para esta etapa.');
+    return;
+  }
+
+  cont.innerHTML = etapas.map(et => `
+    <div style="margin-bottom:16px;">
+      <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:6px;">
+        <p class="card-title" style="margin:0; font-size:13.5px;">${inventarioEtapaLabel(et.etapa)}</p>
+        <span style="font-size:11px; color:var(--ink-dim);">${et.totalManzanas} manzanas · ${et.totalLotes} lotes</span>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:8px;">
+        ${et.manzanas.map(mz => renderizarTarjetaManzanaInventario(mz)).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderizarTarjetaManzanaInventario(mz){
+  const total = mz.totalLotes || 1;
+  const pctLibre = Math.round((mz.libre / total) * 100);
+  const pctSep = Math.round((mz.separado / total) * 100);
+  const pctVen = Math.round((mz.vendido / total) * 100);
+  const metrajesTxt = mz.porMetraje.length
+    ? mz.porMetraje.map(m => `${m.cantidad}×${m.m2 != null ? m.m2 + 'm²' : 's/dato'}`).join(' · ')
+    : 'Sin datos de metraje';
+
+  return `
+    <button type="button" onclick="verManzanaInventario('${mz.manzana}')" class="card" style="text-align:left; border:1px solid #E5DFCF; padding:10px; cursor:pointer;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-weight:800; color:var(--navy); font-size:13px;">Mz. ${escapeHtml(mz.manzana)}</span>
+        <span style="font-size:11px; color:var(--ink-dim);">${mz.totalLotes} lotes</span>
+      </div>
+      <div style="display:flex; height:6px; border-radius:4px; overflow:hidden; margin:6px 0; background:#eee;">
+        ${pctLibre > 0 ? `<div style="width:${pctLibre}%; background:${INV_ESTADO_CFG.libre.tone};"></div>` : ''}
+        ${pctSep > 0 ? `<div style="width:${pctSep}%; background:${INV_ESTADO_CFG.separado.tone};"></div>` : ''}
+        ${pctVen > 0 ? `<div style="width:${pctVen}%; background:${INV_ESTADO_CFG.vendido.tone};"></div>` : ''}
+      </div>
+      <div style="font-size:10px; color:var(--ink-dim);">🟢${mz.libre} 🟡${mz.separado} 🔴${mz.vendido}${mz.sinPublicar ? ' ⚪' + mz.sinPublicar : ''}</div>
+      <div style="font-size:9.5px; color:var(--ink-dim); margin-top:4px; line-height:1.3;">${escapeHtml(metrajesTxt)}</div>
+    </button>
+  `;
+}
+
+function renderizarInventarioListaLotes(cont){
+  const r = inventarioReporteCache;
+  const manzana = inventarioManzanaActiva;
+  let lotes = (r.lotes || []).filter(l => l.manzana === manzana);
+  if (inventarioEstadoFiltroLotes !== 'todos') lotes = lotes.filter(l => l.estado === inventarioEstadoFiltroLotes);
+
+  const chipEstado = (est, lbl) => `<button type="button" class="chip-btn ${inventarioEstadoFiltroLotes === est ? 'active' : ''}" onclick="filtrarInventarioEstadoLotes('${est}')" style="color:${INV_ESTADO_CFG[est].tone}; border-color:${INV_ESTADO_CFG[est].tone};">${INV_ESTADO_CFG[est].icono} ${lbl}</button>`;
+
+  const header = `
+    <button type="button" class="chip-btn" onclick="volverResumenInventarioLotes()" style="margin-bottom:10px;">← Volver a manzanas</button>
+    <p class="card-title" style="margin:0 0 8px;">Manzana ${escapeHtml(manzana)}</p>
+    <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">
+      <button type="button" class="chip-btn ${inventarioEstadoFiltroLotes === 'todos' ? 'active' : ''}" onclick="filtrarInventarioEstadoLotes('todos')">Todos</button>
+      ${chipEstado('libre', 'Disponibles')}
+      ${chipEstado('separado', 'Separados')}
+      ${chipEstado('vendido', 'Vendidos')}
+    </div>
+  `;
+
+  if (!lotes.length) {
+    cont.innerHTML = header + emptyState('📦', 'No hay lotes con estos filtros en esta manzana.');
+    return;
+  }
+
+  cont.innerHTML = header + `<div style="display:flex; flex-direction:column; gap:6px;">` + lotes.map(l => {
+    const cfg = INV_ESTADO_CFG[l.estado] || INV_ESTADO_CFG.sinPublicar;
+    const numLote = (l.nombreLote || '').replace(/^Lote\s*/i, '') || l.nombreLote;
+    const areaTxt = l.areaM2 != null ? `${l.areaM2} m²${l.areaEsEstimada ? ' (estimado)' : ''}` : 'm² no disponible';
+    return `
+      <div class="card" style="border-left:4px solid ${cfg.tone}; margin-bottom:0; padding:10px 12px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:13.5px; font-weight:800; color:var(--navy);">Mz. ${escapeHtml(manzana)} · ${escapeHtml(l.nombreLote)}</span>
+          <span style="font-size:10px; font-weight:800; color:${cfg.tone}; background:${cfg.bg}; border:1px solid ${cfg.border}; border-radius:100px; padding:2px 8px;">${cfg.icono} ${cfg.lbl}</span>
         </div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
           <div>
-            <div style="font-size:13px; font-weight:800; color:var(--gold);">S/ ${l.valorTotal.toLocaleString('es-PE')}</div>
-            <div style="font-size:10px; color:var(--ink-dim);">~${fmtMoneda(convertirSolesADolares(l.valorTotal), 'USD')} · ~${fmtMoneda(convertirSolesAPesos(l.valorTotal), 'CLP')}</div>
+            <div style="font-size:13px; font-weight:800; color:var(--gold);">${l.precio ? 'S/ ' + l.precio.toLocaleString('es-PE') : 'Precio no publicado'}</div>
+            <div style="font-size:10px; color:var(--ink-dim);">${areaTxt}</div>
           </div>
           <div style="display:flex; gap:6px;">
-            ${l.estado === 'disponible' ? `
-              <button type="button" class="chip-btn gold" onclick="cotizarDesdeInventario('${l.manzana}', ${l.lote}, ${l.area}, ${l.valorTotal})" style="font-size:11px; padding:5px 10px; font-weight:700;">🧮 Cotizar Lote</button>
+            ${l.estado === 'libre' ? `
+              <button type="button" class="chip-btn gold" onclick="cotizarDesdeInventario('${manzana}', '${numLote}', ${l.areaM2 || 0}, ${l.precio || 0})" style="font-size:11px; padding:5px 10px; font-weight:700;">🧮 Cotizar Lote</button>
             ` : ''}
-            <button type="button" class="chip-btn" onclick="abrirModalGemeloDigital('${l.manzana}', '${l.lote}', ${l.area})" style="font-size:11px; padding:5px 8px;" title="Ver orientación y gemelo 3D">🗺️ 3D</button>
+            <button type="button" class="chip-btn" onclick="abrirModalGemeloDigital('${manzana}', '${numLote}', ${l.areaM2 || 160})" style="font-size:11px; padding:5px 8px;" title="Ver orientación y gemelo 3D">🗺️ 3D</button>
           </div>
         </div>
       </div>
     `;
-  }).join('');
+  }).join('') + `</div>`;
 }
 
 function cotizarDesdeInventario(mz, lt, area, valorTotal){
