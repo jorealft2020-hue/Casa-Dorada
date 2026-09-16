@@ -10208,7 +10208,7 @@ function ghlRenderLeadsList(containerEl, leads, vacioTexto){
   containerEl.innerHTML = (leads || []).length ? leads.map(l => {
     let respBadge;
     if (l.responded) respBadge = `<span class="badge badge-completada">🧑 Asesor: ${ghlFmtDuracion(l.responseMs)}</span>`;
-    else if (l.unassigned) respBadge = `<span class="badge" style="background:var(--cream-dim); color:var(--ink-dim);">Sin asesor</span>`;
+    else if (l.unassigned) respBadge = `<span class="badge badge-vencida">⚠️ Asignar asesor</span>`;
     else respBadge = `<span class="badge badge-vencida">🧑 Asesor: esperando ${ghlFmtDuracion(l.waitingMs)}</span>`;
 
     const iaBadge = l.iaResponded
@@ -10228,7 +10228,7 @@ function ghlRenderLeadsList(containerEl, leads, vacioTexto){
       : '';
 
     return `
-      <div class="card" style="margin-bottom:10px;">
+      <div class="card" style="margin-bottom:10px;${l.unassigned ? ' border:1.5px solid var(--danger); background:var(--danger-bg);' : ''}">
         <div class="card-row">
           <div>
             <p class="card-title">${escapeHtml(l.name)}</p>
@@ -10271,8 +10271,11 @@ function renderGhlHoy(t, opciones){
   const leadsEl = document.getElementById('ghlDiaLeads');
   const leadsTituloEl = document.getElementById('ghlDiaLeadsTitulo');
 
+  const sinAsignarLeads = (t.leads || []).filter(l => l.unassigned);
+
   kpisEl.innerHTML = [
-    { num: t.totals.leads, lbl: 'Leads asignados ' + cuando, ic: '📥', tone: 'info' },
+    { num: t.totals.leads, lbl: 'Leads ingresados ' + cuando, ic: '📥', tone: 'info' },
+    { num: t.totals.asignados, lbl: 'Leads asignados ' + cuando, ic: '👤', tone: sinAsignarLeads.length > 0 ? 'warn' : 'ok' },
     { num: t.totals.opp, lbl: 'Oportunidades ' + cuando, ic: '🆕', tone: 'info' },
     { num: t.totals.advisorsPending, lbl: 'Asesores con pendientes', ic: '🔴', tone: t.totals.advisorsPending > 0 ? 'warn' : 'ok' },
     { num: t.totals.noTipificacion, lbl: 'Leads sin tipificar', ic: '🏷️', tone: t.totals.noTipificacion > 0 ? 'warn' : 'ok' }
@@ -10283,21 +10286,35 @@ function renderGhlHoy(t, opciones){
       <div class="lbl">${i.lbl}</div>
     </div>`).join('');
 
-  asesoresEl.innerHTML = (t.advisors || []).length ? t.advisors.map((a, i) => `
+  // Los leads sin asesor no tienen "asesor" propio, asi que no salen en
+  // t.advisors -- se agrega una tarjeta aparte, bien visible, para que no
+  // queden escondidos y se pueda filtrar la lista de abajo igual que con
+  // un asesor real (el campo l.advisor ya vale exactamente "Sin asignar").
+  const sinAsignarCard = sinAsignarLeads.length ? `
+    <div class="card ghl-advisor-card ghl-sin-asignar${ghlFiltroAsesorHoy === 'Sin asignar' ? ' activo' : ''}" data-asesor-nombre="Sin asignar" style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; gap:10px; cursor:pointer; border:1.5px solid var(--danger); background:var(--danger-bg);">
+      <div>
+        <p class="card-title" style="margin:0; color:var(--danger);">⚠️ Sin asignar</p>
+        <p class="card-sub" style="margin:2px 0 0;">${sinAsignarLeads.length} lead${sinAsignarLeads.length === 1 ? '' : 's'} ${cuando} sin asesor</p>
+      </div>
+      <span class="badge badge-vencida">Asignar</span>
+    </div>` : '';
+
+  asesoresEl.innerHTML = sinAsignarCard + ((t.advisors || []).length ? t.advisors.map((a, i) => `
     <div class="card ghl-advisor-card${ghlFiltroAsesorHoy === a.name ? ' activo' : ''}" data-asesor-idx="${i}" style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; gap:10px; cursor:pointer;">
       <div>
         <p class="card-title" style="margin:0;">${escapeHtml(a.name)}</p>
         <p class="card-sub" style="margin:2px 0 0;">${a.leads} lead${a.leads === 1 ? '' : 's'} ${cuando} · ${a.opp} oportunidad${a.opp === 1 ? '' : 'es'} · último mensaje ${ghlFmtHora(a.lastMsg)}</p>
       </div>
       <span class="badge ${a.pending > 0 ? 'badge-vencida' : 'badge-completada'}">${a.pending > 0 ? a.pending + (a.pending === 1 ? ' mensaje' : ' mensajes') : 'Al día'}</span>
-    </div>`).join('') : `<div class="card"><p class="card-sub" style="margin:0;">Sin asesores con actividad ${esHoy ? 'todavía' : 'ese día'}.</p></div>`;
+    </div>`).join('') : (sinAsignarCard ? '' : `<div class="card"><p class="card-sub" style="margin:0;">Sin asesores con actividad ${esHoy ? 'todavía' : 'ese día'}.</p></div>`));
 
-  asesoresEl.querySelectorAll('.ghl-advisor-card').forEach(el => {
+  asesoresEl.querySelectorAll('.ghl-advisor-card[data-asesor-idx]').forEach(el => {
     el.addEventListener('click', () => {
       const nombre = t.advisors[Number(el.dataset.asesorIdx)]?.name;
       if (nombre) ghlFiltrarPorAsesor(nombre);
     });
   });
+  asesoresEl.querySelector('.ghl-sin-asignar')?.addEventListener('click', () => ghlFiltrarPorAsesor('Sin asignar'));
 
   const leadsFiltrados = ghlFiltroAsesorHoy ? (t.leads || []).filter(l => l.advisor === ghlFiltroAsesorHoy) : (t.leads || []);
   if (leadsTituloEl) {
