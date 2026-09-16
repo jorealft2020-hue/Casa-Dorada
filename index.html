@@ -10130,6 +10130,16 @@ function ghlFmtDuracion(ms){
 function ghlPuntoContacto(label, lleno){
   return `<span class="ghl-dot ${lleno ? 'lleno' : ''}" title="${label}${lleno ? ': lleno' : ': vacío'}">${label}</span>`;
 }
+const GHL_INTERES_IA = {
+  alto: { icono: '🟢', texto: 'Alto interés', color: 'ok' },
+  medio: { icono: '🟡', texto: 'Interés medio', color: 'warning' },
+  bajo: { icono: '🔴', texto: 'Bajo interés', color: 'danger' },
+};
+function ghlInteresBadge(nivel){
+  const m = GHL_INTERES_IA[nivel];
+  if (!m) return '';
+  return `<span class="badge" style="background:var(--${m.color}-bg); color:var(--${m.color});">${m.icono} ${m.texto} (IA)</span>`;
+}
 function ghlBarra(label, valor, max){
   const pct = max > 0 ? Math.round((valor / max) * 100) : 0;
   return `
@@ -10248,6 +10258,8 @@ function ghlRenderLeadsList(containerEl, leads, vacioTexto){
       ? `<span class="badge badge-vencida">⚠️ Sin oportunidad creada</span>`
       : '';
 
+    const interesBadge = ghlInteresBadge(l.interesIA);
+
     return `
       <div class="card" style="margin-bottom:10px;${l.unassigned ? ' border:1.5px solid var(--danger); background:var(--danger-bg);' : ''}">
         <div class="card-row">
@@ -10258,6 +10270,7 @@ function ghlRenderLeadsList(containerEl, leads, vacioTexto){
           ${respBadge}
         </div>
         <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;">
+          ${interesBadge}
           ${iaBadge}
           ${convBadge}
           ${citaBadge}
@@ -10268,6 +10281,8 @@ function ghlRenderLeadsList(containerEl, leads, vacioTexto){
           <span class="ghl-dots">${ghlPuntoContacto('1°', l.c1)}${ghlPuntoContacto('2°', l.c2)}${ghlPuntoContacto('3°', l.c3)}</span>
         </div>
         ${l.acuerdo ? `<p class="card-sub" style="margin:8px 0 0; font-style:italic; border-top:1px dashed var(--border); padding-top:6px;">💭 "${escapeHtml(l.acuerdo)}"</p>` : ''}
+        ${l.resumenIA ? `<p class="card-sub" style="margin:6px 0 0; border-top:1px dashed var(--border); padding-top:6px;">🧠 ${escapeHtml(l.resumenIA)}</p>` : ''}
+        ${l.alertaIA ? `<p class="card-sub" style="margin:6px 0 0; color:var(--warning); font-weight:700;">⚠️ ${escapeHtml(l.alertaIA)}</p>` : ''}
         <button class="chip-btn ghl-ver-conv" data-contact-id="${escapeHtml(l.contactId || '')}" data-nombre="${escapeHtml(l.name || '')}" style="margin-top:8px; width:100%; justify-content:center;">💬 Ver conversación completa</button>
       </div>`;
   }).join('') : `<div class="card"><p class="card-sub" style="margin:0;">${vacioTexto}</p></div>`;
@@ -10502,6 +10517,7 @@ async function generarYCompartirPdfGhl(scopeData, tituloPeriodo, subtituloFecha,
   const cBorder = [229, 223, 207];
   const cOk = [61, 139, 95];
   const cDanger = [200, 60, 60];
+  const cWarning = [181, 105, 31];
 
   function saltoDePagina(alturaNecesaria){
     if (y + alturaNecesaria > pageHeight - 40) { doc.addPage(); y = 40; }
@@ -10570,7 +10586,8 @@ async function generarYCompartirPdfGhl(scopeData, tituloPeriodo, subtituloFecha,
 
   leads.forEach((l) => {
     saltoDePagina(70);
-    const alturaCaja = l.acuerdo ? 70 : 54;
+    const lineasExtraGhl = (l.interesIA ? 1 : 0) + (l.acuerdo ? 1 : 0) + (l.resumenIA ? 1 : 0);
+    const alturaCaja = 54 + lineasExtraGhl * 16;
     doc.setFillColor(255, 255, 255);
     doc.setDrawColor(...cBorder);
     doc.setLineWidth(0.6);
@@ -10602,11 +10619,32 @@ async function generarYCompartirPdfGhl(scopeData, tituloPeriodo, subtituloFecha,
     const seguim = `1°${l.c1 ? '✓' : '✗'} 2°${l.c2 ? '✓' : '✗'} 3°${l.c3 ? '✓' : '✗'}`;
     doc.text(`${l.condicion || 'Sin tipificar'}  ·  ${seguim}`, marginX + 8, yy + 35);
 
+    let cursorYGhl = yy + 35;
+
+    if (l.interesIA) {
+      cursorYGhl += 12;
+      const colorInteres = l.interesIA === 'alto' ? cOk : (l.interesIA === 'bajo' ? cDanger : cWarning);
+      const textoInteres = l.interesIA === 'alto' ? 'Alto interés (IA)' : (l.interesIA === 'bajo' ? 'Bajo interés (IA)' : 'Interés medio (IA)');
+      doc.setTextColor(...colorInteres);
+      doc.setFontSize(7.2);
+      doc.setFont(undefined, 'bold');
+      doc.text(textoInteres, marginX + 8, cursorYGhl);
+    }
+
     if (l.acuerdo) {
+      cursorYGhl += 12;
       doc.setTextColor(...cDim);
       doc.setFontSize(7.2);
       doc.setFont(undefined, 'italic');
-      doc.text(`"${l.acuerdo}"`, marginX + 8, yy + 47, { maxWidth: anchoUtil - 16 });
+      doc.text(`"${l.acuerdo}"`, marginX + 8, cursorYGhl, { maxWidth: anchoUtil - 16 });
+    }
+
+    if (l.resumenIA) {
+      cursorYGhl += 12;
+      doc.setTextColor(...cDim);
+      doc.setFontSize(7.2);
+      doc.setFont(undefined, 'normal');
+      doc.text(`IA: ${l.resumenIA}`, marginX + 8, cursorYGhl, { maxWidth: anchoUtil - 16 });
     }
 
     y += alturaCaja + 8;
