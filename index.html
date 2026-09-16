@@ -10364,6 +10364,22 @@ function ghlRenderLeadsList(containerEl, leads, vacioTexto){
   });
 }
 
+// Invoca ghl-reporte-dia con reintento automático de sesión: cuando dos
+// pestañas/dispositivos comparten el mismo login, o el celular suspende el
+// timer de auto-refresh mientras la app está en segundo plano, el token
+// guardado puede quedar invalido ("session_not_found" en Supabase Auth) y
+// la función responde 401 aunque el usuario siga con la sesión iniciada.
+// Un simple "reintentar" no lo arregla porque se reenvia el mismo token
+// vencido -- primero hay que refrescar la sesión.
+async function invocarGhlReporte(body){
+  let { data, error } = await sb.functions.invoke('ghl-reporte-dia', { body });
+  if (error && error.context?.status === 401) {
+    await sb.auth.refreshSession();
+    ({ data, error } = await sb.functions.invoke('ghl-reporte-dia', { body }));
+  }
+  return { data, error };
+}
+
 async function verConversacionGhl(contactId, nombreLead){
   if (!contactId) { toast('Este lead no tiene contacto asociado.'); return; }
   document.getElementById('ghlConvTitulo').textContent = nombreLead || 'Conversación';
@@ -10373,7 +10389,7 @@ async function verConversacionGhl(contactId, nombreLead){
   openModal('modalGhlConversacion');
 
   try {
-    const { data, error } = await sb.functions.invoke('ghl-reporte-dia', { body: { verConversacion: contactId } });
+    const { data, error } = await invocarGhlReporte({ verConversacion: contactId });
     if (error) throw error;
     if (!data || data.ok === false) throw new Error(data?.error || 'La función no devolvió datos.');
 
@@ -10523,7 +10539,7 @@ async function cargarGhlDiaFecha(fecha){
       scopeData = ghlUltimoReporte.today;
       asOf = ghlUltimoReporte.asOf;
     } else {
-      const { data, error } = await sb.functions.invoke('ghl-reporte-dia', { body: { desde: fecha, hasta: fecha } });
+      const { data, error } = await invocarGhlReporte({ desde: fecha, hasta: fecha });
       if (error) throw error;
       if (!data || data.ok === false) throw new Error(data?.error || 'La función no devolvió datos.');
       if (!data.rango) throw new Error('No se pudo calcular ese día.');
@@ -10558,7 +10574,7 @@ async function cargarGhlDia(){
   ghlFiltroAsesorHoy = null;
 
   try {
-    const { data, error } = await sb.functions.invoke('ghl-reporte-dia', { body: {} });
+    const { data, error } = await invocarGhlReporte({});
     if (error) throw error;
     if (!data || data.ok === false) throw new Error(data?.error || 'La función no devolvió datos.');
 
@@ -10919,7 +10935,7 @@ document.getElementById('btnGenerarReporteGhlRango').addEventListener('click', a
   toast('Generando reporte…');
 
   try {
-    const { data, error } = await sb.functions.invoke('ghl-reporte-dia', { body: { desde, hasta } });
+    const { data, error } = await invocarGhlReporte({ desde, hasta });
     if (error) throw error;
     if (!data || data.ok === false) throw new Error(data?.error || 'La función no devolvió datos.');
     if (!data.rango) throw new Error('No se pudo calcular el rango.');
