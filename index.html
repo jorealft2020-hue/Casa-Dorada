@@ -374,6 +374,15 @@
   .ghl-bar-label{ display:flex; justify-content:space-between; font-size:12px; color:var(--ink-dim); margin-bottom:3px; }
   .ghl-bar-track{ height:8px; border-radius:100px; background: var(--cream-dim); overflow:hidden; }
   .ghl-bar-fill{ height:100%; border-radius:100px; background: var(--gold); }
+  .majo-burbuja-ia{
+    align-self: flex-start;
+    background: linear-gradient(160deg, #EAF2FB 0%, #DCE9F7 100%);
+    color: var(--ink);
+    border: 1px solid #C9DDF2;
+    border-radius: 16px 16px 16px 4px;
+  }
+  .ghl-conv-autor{ font-size:10.5px; font-weight:700; opacity:0.7; margin-bottom:3px; display:block; }
+  .ghl-conv-hora{ font-size:10px; opacity:0.55; margin-top:4px; display:block; }
   .card-actions{ display:flex; gap:8px; margin-top:10px; }
   .chip-btn{
     font-size:12px; font-weight:600; border:1px solid var(--border); background:#fff;
@@ -2269,6 +2278,18 @@ main.app-content {
       <div class="modal-actions">
         <button class="btn-secondary" data-close="modalReporteGhlRango">Cancelar</button>
         <button class="btn-primary" id="btnGenerarReporteGhlRango">Generar y compartir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ver conversación completa de un lead (Seguimiento GHL) -->
+  <div class="modal-backdrop" id="modalGhlConversacion">
+    <div class="modal-sheet" style="display:flex; flex-direction:column; max-height:85vh;">
+      <h3 id="ghlConvTitulo" style="margin-bottom:2px;">Conversación</h3>
+      <p class="card-sub" id="ghlConvSubtitulo" style="margin:0 0 10px;"></p>
+      <div id="ghlConvMensajes" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:6px; padding:4px 2px;"></div>
+      <div class="modal-actions">
+        <button class="btn-secondary" data-close="modalGhlConversacion">Cerrar</button>
       </div>
     </div>
   </div>
@@ -10207,12 +10228,12 @@ let ghlFiltroAsesorHoy = null;
 function ghlRenderLeadsList(containerEl, leads, vacioTexto){
   containerEl.innerHTML = (leads || []).length ? leads.map(l => {
     let respBadge;
-    if (l.responded) respBadge = `<span class="badge badge-completada">🧑 Asesor: ${ghlFmtDuracion(l.responseMs)}</span>`;
+    if (l.responded) respBadge = `<span class="badge badge-completada">🧑 Asesor: ${ghlFmtHora(l.asesorRespondioEn)} (${ghlFmtDuracion(l.responseMs)})</span>`;
     else if (l.unassigned) respBadge = `<span class="badge badge-vencida">⚠️ Asignar asesor</span>`;
     else respBadge = `<span class="badge badge-vencida">🧑 Asesor: esperando ${ghlFmtDuracion(l.waitingMs)}</span>`;
 
     const iaBadge = l.iaResponded
-      ? `<span class="badge badge-en_proceso">🤖 IA: ${ghlFmtDuracion(l.iaResponseMs)}</span>`
+      ? `<span class="badge badge-en_proceso">🤖 IA: ${ghlFmtHora(l.iaRespondioEn)} (${ghlFmtDuracion(l.iaResponseMs)})</span>`
       : `<span class="badge" style="background:var(--cream-dim); color:var(--ink-dim);">🤖 IA: sin respuesta</span>`;
 
     const convBadge = l.conversacionMantenida
@@ -10247,8 +10268,57 @@ function ghlRenderLeadsList(containerEl, leads, vacioTexto){
           <span class="ghl-dots">${ghlPuntoContacto('1°', l.c1)}${ghlPuntoContacto('2°', l.c2)}${ghlPuntoContacto('3°', l.c3)}</span>
         </div>
         ${l.acuerdo ? `<p class="card-sub" style="margin:8px 0 0; font-style:italic; border-top:1px dashed var(--border); padding-top:6px;">💭 "${escapeHtml(l.acuerdo)}"</p>` : ''}
+        <button class="chip-btn ghl-ver-conv" data-contact-id="${escapeHtml(l.contactId || '')}" data-nombre="${escapeHtml(l.name || '')}" style="margin-top:8px; width:100%; justify-content:center;">💬 Ver conversación completa</button>
       </div>`;
   }).join('') : `<div class="card"><p class="card-sub" style="margin:0;">${vacioTexto}</p></div>`;
+
+  containerEl.querySelectorAll('.ghl-ver-conv').forEach(btn => {
+    btn.addEventListener('click', () => verConversacionGhl(btn.dataset.contactId, btn.dataset.nombre));
+  });
+}
+
+async function verConversacionGhl(contactId, nombreLead){
+  if (!contactId) { toast('Este lead no tiene contacto asociado.'); return; }
+  document.getElementById('ghlConvTitulo').textContent = nombreLead || 'Conversación';
+  document.getElementById('ghlConvSubtitulo').textContent = 'Cargando…';
+  const mensajesEl = document.getElementById('ghlConvMensajes');
+  mensajesEl.innerHTML = '';
+  openModal('modalGhlConversacion');
+
+  try {
+    const { data, error } = await sb.functions.invoke('ghl-reporte-dia', { body: { verConversacion: contactId } });
+    if (error) throw error;
+    if (!data || data.ok === false) throw new Error(data?.error || 'La función no devolvió datos.');
+
+    const mensajes = data.mensajes || [];
+    if (!mensajes.length) {
+      document.getElementById('ghlConvSubtitulo').textContent = data.sinConversacion ? 'Sin conversación registrada en GHL.' : 'Sin mensajes.';
+      mensajesEl.innerHTML = `<div class="card"><p class="card-sub" style="margin:0;">No hay mensajes para mostrar.</p></div>`;
+      return;
+    }
+
+    document.getElementById('ghlConvSubtitulo').textContent = mensajes.length + ' mensaje' + (mensajes.length === 1 ? '' : 's');
+
+    mensajesEl.innerHTML = mensajes.map(m => {
+      const esCliente = m.autor === 'cliente';
+      const esAsesor = m.autor === 'asesor';
+      const claseBurbuja = esCliente ? 'majo-burbuja-asistente' : (esAsesor ? 'majo-burbuja-usuario' : 'majo-burbuja-ia');
+      const etiqueta = esCliente ? 'Cliente' : (esAsesor ? (m.autorNombre || 'Asesor') : '🤖 IA / Bot');
+      return `
+        <div class="majo-burbuja-fila" style="justify-content:${esAsesor ? 'flex-end' : 'flex-start'};">
+          <div class="majo-burbuja ${claseBurbuja}">
+            <span class="ghl-conv-autor">${escapeHtml(etiqueta)}</span>
+            ${escapeHtml(m.body || '(sin texto)')}
+            <span class="ghl-conv-hora">${ghlFmtHora(m.dateAdded)}</span>
+          </div>
+        </div>`;
+    }).join('');
+    mensajesEl.scrollTop = mensajesEl.scrollHeight;
+  } catch (e) {
+    console.error(e);
+    document.getElementById('ghlConvSubtitulo').textContent = 'Error al cargar.';
+    mensajesEl.innerHTML = `<div class="card" style="border-color:var(--danger);"><p class="card-sub" style="margin:0; color:var(--danger);">⚠️ ${escapeHtml(e.message || 'Error al conectar con GoHighLevel')}</p></div>`;
+  }
 }
 
 let ghlVistaHoyActual = null; // los datos del día que se está mostrando ahora mismo (hoy u otro día elegido)
@@ -10565,13 +10635,15 @@ async function generarYCompartirPdfGhl(scopeData, tituloPeriodo, subtituloFecha,
   const blobUrl = URL.createObjectURL(blob);
   window.open(blobUrl, '_blank');
   doc.save(nombreArchivo);
-  toast('Reporte generado y abriendo WhatsApp… ✓');
+  toast('PDF descargado a tu carpeta de Descargas. En WhatsApp, adjúntalo con el clip 📎 → Documento.');
 
   const wspMsg = `📞 *SEGUIMIENTO DE LEADS · ${tituloPeriodo.toUpperCase()} · CASA DORADA*\n` +
-    `• *Leads asignados:* ${t.totals.leads}\n` +
+    `• *Leads ingresados:* ${t.totals.leads}\n` +
+    `• *Leads asignados:* ${t.totals.asignados}\n` +
     `• *Oportunidades:* ${t.totals.opp}\n` +
     `• *Asesores con pendientes:* ${t.totals.advisorsPending}\n` +
     `• *Sin tipificar:* ${t.totals.noTipificacion}\n\n` +
+    `_📎 Adjunta el PDF que se descargó a tu carpeta de Descargas._\n\n` +
     `_Reporte generado desde CRM Majo, vía GoHighLevel._`;
   window.open(`https://wa.me/?text=${encodeURIComponent(wspMsg)}`, '_blank');
 }
