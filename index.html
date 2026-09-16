@@ -10142,6 +10142,20 @@ function ghlInteresBadge(nivel){
   if (!m) return '';
   return `<span class="badge" style="background:var(--${m.color}-bg); color:var(--${m.color});">${m.icono} ${m.texto} (IA)</span>`;
 }
+// Numero de telefono del lead (ya viene en el contacto de GHL, sin llamada
+// extra) -- mismo patron que el resto de la app para enlaces de WhatsApp:
+// se limpia todo lo que no sea digito y se toman los ultimos 9 (numero
+// peruano sin el 51), prefijados con 51 para el enlace de wa.me.
+function ghlTelefonoLink(telefono){
+  const limpio = (telefono || '').replace(/\D/g, '');
+  if (!limpio) return '';
+  const ultimos9 = limpio.slice(-9);
+  return `<a href="https://wa.me/51${ultimos9}" target="_blank" rel="noopener" style="color:#25D366; text-decoration:none; font-weight:600;">📱 +51 ${ultimos9}</a>`;
+}
+function ghlFmtTelefonoPdf(telefono){
+  const limpio = (telefono || '').replace(/\D/g, '');
+  return limpio ? '+51 ' + limpio.slice(-9) : null;
+}
 const GHL_NIVEL_CUMPLIMIENTO = {
   cumple: { icono: '🟢', texto: 'Cumple', color: 'ok' },
   refuerzo: { icono: '🟡', texto: 'Refuerzo', color: 'warning' },
@@ -10325,6 +10339,7 @@ function ghlRenderLeadsList(containerEl, leads, vacioTexto){
           <div>
             <p class="card-title">${escapeHtml(l.name)}</p>
             <p class="card-sub">${escapeHtml(l.advisor)}${l.advisorVia ? ' <span style="color:var(--ink-dim);">(' + l.advisorVia + ')</span>' : ''} · llegó ${ghlFmtHora(l.createdAt)}${l.stage ? ' · ' + escapeHtml(l.stage) : ''}</p>
+            ${l.telefono ? `<p class="card-sub" style="margin:2px 0 0;">${ghlTelefonoLink(l.telefono)}</p>` : ''}
           </div>
           ${respBadge}
         </div>
@@ -10573,6 +10588,22 @@ async function cargarGhlDia(){
 // ambos con la misma forma {advisors, leads, totals}) y lo comparte por
 // WhatsApp (share nativo con el archivo si el dispositivo lo soporta, o
 // abre WhatsApp con el resumen en texto como respaldo).
+// jsPDF con las fuentes estandar (Helvetica) no puede dibujar emojis -- salen
+// como recuadros o letras/simbolos sueltos y raros. Los nombres de contacto
+// de WhatsApp casi siempre traen emojis (ej. "mery🚗🚕", "mg lab dental 🖌️"),
+// asi que se limpian antes de imprimirlos en el PDF. No se usa en pantalla
+// (ahi el navegador si renderiza emojis normalmente).
+function quitarEmojis(str){
+  if (!str) return '';
+  return String(str)
+    .replace(/\p{Extended_Pictographic}/gu, '')
+    .replace(/\p{Emoji_Presentation}/gu, '')
+    .replace(/[\u{1F3FB}-\u{1F3FF}]/gu, '')
+    .replace(/‍/gu, '')
+    .replace(/️/gu, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
 async function generarYCompartirPdfGhl(scopeData, tituloPeriodo, subtituloFecha, nombreArchivo){
   const t = scopeData;
   const { jsPDF } = window.jspdf;
@@ -10654,7 +10685,7 @@ async function generarYCompartirPdfGhl(scopeData, tituloPeriodo, subtituloFecha,
     doc.setFont(undefined, 'normal');
     doc.setTextColor(...cDim);
     recomendacionesPdf.forEach((r) => {
-      const lineas = doc.splitTextToSize('• ' + r, anchoUtil - 8);
+      const lineas = doc.splitTextToSize('• ' + quitarEmojis(r), anchoUtil - 8);
       saltoDePagina(lineas.length * 11 + 4);
       doc.text(lineas, marginX + 4, y);
       y += lineas.length * 11 + 4;
@@ -10675,7 +10706,7 @@ async function generarYCompartirPdfGhl(scopeData, tituloPeriodo, subtituloFecha,
       doc.setFontSize(8);
       doc.setFont(undefined, 'bold');
       doc.setTextColor(...cNavy);
-      doc.text(c.campana, marginX, y);
+      doc.text(quitarEmojis(c.campana), marginX, y);
       doc.setFont(undefined, 'normal');
       doc.setTextColor(...cDim);
       doc.text(`${c.leads} leads  ·  ${c.altoInteresPct}% alto interés  ·  ${c.citasPct}% con cita  ·  ${c.conversaronPct}% conversó`, marginX, y + 10);
@@ -10698,7 +10729,7 @@ async function generarYCompartirPdfGhl(scopeData, tituloPeriodo, subtituloFecha,
       doc.setFontSize(8);
       doc.setFont(undefined, 'bold');
       doc.setTextColor(...cNavy);
-      doc.text(c.advisor, marginX, y);
+      doc.text(quitarEmojis(c.advisor), marginX, y);
       doc.setTextColor(...colorNivel);
       doc.text(`${c.score}/100 · ${c.nivel}`, marginX + anchoUtil, y, { align: 'right' });
       doc.setFont(undefined, 'normal');
@@ -10738,12 +10769,13 @@ async function generarYCompartirPdfGhl(scopeData, tituloPeriodo, subtituloFecha,
     doc.setTextColor(...cNavy);
     doc.setFontSize(9.5);
     doc.setFont(undefined, 'bold');
-    doc.text(l.name || '(sin nombre)', marginX + 8, yy);
+    doc.text(quitarEmojis(l.name) || '(sin nombre)', marginX + 8, yy);
 
     doc.setFontSize(7.5);
     doc.setTextColor(...cDim);
     doc.setFont(undefined, 'normal');
-    doc.text(`${l.advisor}${l.stage ? ' · ' + l.stage : ''} · llegó ${ghlFmtHora(l.createdAt)}`, marginX + 8, yy + 11);
+    const telPdf = ghlFmtTelefonoPdf(l.telefono);
+    doc.text(`${quitarEmojis(l.advisor)}${l.stage ? ' · ' + quitarEmojis(l.stage) : ''} · llegó ${ghlFmtHora(l.createdAt)}${telPdf ? ' · ' + telPdf : ''}`, marginX + 8, yy + 11);
 
     const asesorTxt = l.responded ? `Asesor: ${ghlFmtDuracion(l.responseMs)}` : (l.unassigned ? 'Sin asesor' : `Asesor: esperando ${ghlFmtDuracion(l.waitingMs)}`);
     const iaTxt = l.iaResponded ? `IA: ${ghlFmtDuracion(l.iaResponseMs)}` : 'IA: sin respuesta';
@@ -10758,7 +10790,7 @@ async function generarYCompartirPdfGhl(scopeData, tituloPeriodo, subtituloFecha,
     doc.setFontSize(7.5);
     doc.setFont(undefined, 'normal');
     const seguim = `1°${l.c1 ? '✓' : '✗'} 2°${l.c2 ? '✓' : '✗'} 3°${l.c3 ? '✓' : '✗'}`;
-    doc.text(`${l.condicion || 'Sin tipificar'}  ·  ${seguim}`, marginX + 8, yy + 35);
+    doc.text(`${quitarEmojis(l.condicion) || 'Sin tipificar'}  ·  ${seguim}`, marginX + 8, yy + 35);
 
     let cursorYGhl = yy + 35;
 
@@ -10777,7 +10809,7 @@ async function generarYCompartirPdfGhl(scopeData, tituloPeriodo, subtituloFecha,
       doc.setTextColor(...cDim);
       doc.setFontSize(7.2);
       doc.setFont(undefined, 'italic');
-      doc.text(`"${l.acuerdo}"`, marginX + 8, cursorYGhl, { maxWidth: anchoUtil - 16 });
+      doc.text(`"${quitarEmojis(l.acuerdo)}"`, marginX + 8, cursorYGhl, { maxWidth: anchoUtil - 16 });
     }
 
     if (l.resumenIA) {
@@ -10785,7 +10817,7 @@ async function generarYCompartirPdfGhl(scopeData, tituloPeriodo, subtituloFecha,
       doc.setTextColor(...cDim);
       doc.setFontSize(7.2);
       doc.setFont(undefined, 'normal');
-      doc.text(`IA: ${l.resumenIA}`, marginX + 8, cursorYGhl, { maxWidth: anchoUtil - 16 });
+      doc.text(`IA: ${quitarEmojis(l.resumenIA)}`, marginX + 8, cursorYGhl, { maxWidth: anchoUtil - 16 });
     }
 
     y += alturaCaja + 8;
