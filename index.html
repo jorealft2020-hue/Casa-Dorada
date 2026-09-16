@@ -1865,7 +1865,8 @@ main.app-content {
         <div class="card" style="margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
           <p class="card-sub" id="ghlDiaEstado" style="margin:0;">Cargando…</p>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <button class="chip-btn" id="btnPdfGhlDia" onclick="descargarReporteGhlDia()" style="background:#25D366; color:#fff; border-color:#25D366;">📲 PDF / WhatsApp</button>
+            <button class="chip-btn" onclick="window.open('https://claude.ai/artifact/TpGks16QF61jYfPHgQZnHL','_blank')" style="background:#fff; color:var(--navy);">🎨 Ver prototipo</button>
+            <button class="chip-btn" id="btnPdfGhlDia" onclick="abrirModalReporteGhlRango()" style="background:#25D366; color:#fff; border-color:#25D366;">📲 PDF / WhatsApp</button>
             <button class="chip-btn gold" id="btnActualizarGhlDia" onclick="cargarGhlDia()">🔄 Actualizar</button>
           </div>
         </div>
@@ -1880,10 +1881,10 @@ main.app-content {
         <div id="ghlPanelHoy">
           <div id="ghlDiaKpis" class="kpi-row" style="display:flex; gap:10px; overflow-x:auto; padding-bottom:4px;"></div>
 
-          <div class="section-title">Por asesor</div>
+          <div class="section-title">Por asesor <span style="font-weight:400; font-size:11px; color:var(--ink-dim);">(toca un asesor para filtrar)</span></div>
           <div id="ghlDiaAsesores"></div>
 
-          <div class="section-title">Cada lead de hoy</div>
+          <div class="section-title" id="ghlDiaLeadsTitulo">Cada lead de hoy</div>
           <div id="ghlDiaLeads"></div>
         </div>
 
@@ -2235,6 +2236,32 @@ main.app-content {
       <div class="modal-actions">
         <button class="btn-secondary" data-close="modalFechaReporte">Cancelar</button>
         <button class="btn-primary" id="btnConfirmarDescargaReporte">Descargar PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: elegir día/rango para el reporte de Seguimiento GHL -->
+  <div class="modal-backdrop" id="modalReporteGhlRango">
+    <div class="modal-sheet">
+      <h3>Reporte de Seguimiento GHL</h3>
+      <div class="field">
+        <label>Periodo</label>
+        <select id="ghlRangoTipo" onchange="ghlActualizarCamposRango()">
+          <option value="hoy">Hoy</option>
+          <option value="ayer">Ayer</option>
+          <option value="semana">Esta semana (lunes a hoy)</option>
+          <option value="mes">Este mes (día 1 a hoy)</option>
+          <option value="personalizado">Rango personalizado</option>
+        </select>
+      </div>
+      <div id="ghlRangoPersonalizadoWrap" class="hidden" style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+        <div class="field"><label>Desde</label><input type="date" id="ghlRangoDesde"></div>
+        <div class="field"><label>Hasta</label><input type="date" id="ghlRangoHasta"></div>
+      </div>
+      <p class="card-sub" style="margin:6px 0 0;">Se genera el PDF de ese periodo y se abre para compartirlo por WhatsApp.</p>
+      <div class="modal-actions">
+        <button class="btn-secondary" data-close="modalReporteGhlRango">Cancelar</button>
+        <button class="btn-primary" id="btnGenerarReporteGhlRango">Generar y compartir</button>
       </div>
     </div>
   </div>
@@ -10168,13 +10195,109 @@ function renderGhlMes(m){
   }
 }
 
+let ghlFiltroAsesorHoy = null;
+
+function ghlRenderLeadsList(containerEl, leads, vacioTexto){
+  containerEl.innerHTML = (leads || []).length ? leads.map(l => {
+    let respBadge;
+    if (l.responded) respBadge = `<span class="badge badge-completada">🧑 Asesor: ${ghlFmtDuracion(l.responseMs)}</span>`;
+    else if (l.unassigned) respBadge = `<span class="badge" style="background:var(--cream-dim); color:var(--ink-dim);">Sin asesor</span>`;
+    else respBadge = `<span class="badge badge-vencida">🧑 Asesor: esperando ${ghlFmtDuracion(l.waitingMs)}</span>`;
+
+    const iaBadge = l.iaResponded
+      ? `<span class="badge badge-en_proceso">🤖 IA: ${ghlFmtDuracion(l.iaResponseMs)}</span>`
+      : `<span class="badge" style="background:var(--cream-dim); color:var(--ink-dim);">🤖 IA: sin respuesta</span>`;
+
+    const convBadge = l.conversacionMantenida
+      ? `<span class="badge badge-completada">💬 Conversó</span>`
+      : `<span class="badge" style="background:var(--cream-dim); color:var(--ink-dim);">💬 Sin ida y vuelta</span>`;
+
+    const citaBadge = l.citaCreada
+      ? `<span class="badge badge-completada">📅 Cita: ${ghlFmtHora(l.citaFecha)}</span>`
+      : '';
+
+    const oppBadge = l.hasOpportunity === false
+      ? `<span class="badge badge-vencida">⚠️ Sin oportunidad creada</span>`
+      : '';
+
+    return `
+      <div class="card" style="margin-bottom:10px;">
+        <div class="card-row">
+          <div>
+            <p class="card-title">${escapeHtml(l.name)}</p>
+            <p class="card-sub">${escapeHtml(l.advisor)}${l.advisorVia ? ' <span style="color:var(--ink-dim);">(' + l.advisorVia + ')</span>' : ''} · llegó ${ghlFmtHora(l.createdAt)}${l.stage ? ' · ' + escapeHtml(l.stage) : ''}</p>
+          </div>
+          ${respBadge}
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;">
+          ${iaBadge}
+          ${convBadge}
+          ${citaBadge}
+          ${oppBadge}
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; flex-wrap:wrap; gap:8px;">
+          <span style="font-size:12.5px; ${l.condicion ? 'color:var(--ink);' : 'color:var(--danger); font-weight:700;'}">${l.condicion ? escapeHtml(l.condicion) : 'Sin tipificar'}</span>
+          <span class="ghl-dots">${ghlPuntoContacto('1°', l.c1)}${ghlPuntoContacto('2°', l.c2)}${ghlPuntoContacto('3°', l.c3)}</span>
+        </div>
+        ${l.acuerdo ? `<p class="card-sub" style="margin:8px 0 0; font-style:italic; border-top:1px dashed var(--border); padding-top:6px;">💭 "${escapeHtml(l.acuerdo)}"</p>` : ''}
+      </div>`;
+  }).join('') : `<div class="card"><p class="card-sub" style="margin:0;">${vacioTexto}</p></div>`;
+}
+
+function ghlFiltrarPorAsesor(nombre){
+  ghlFiltroAsesorHoy = (ghlFiltroAsesorHoy === nombre) ? null : nombre;
+  renderGhlHoy(ghlUltimoReporte?.today);
+  document.getElementById('ghlDiaLeads')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderGhlHoy(t){
+  if (!t) return;
+  const kpisEl = document.getElementById('ghlDiaKpis');
+  const asesoresEl = document.getElementById('ghlDiaAsesores');
+  const leadsEl = document.getElementById('ghlDiaLeads');
+  const leadsTituloEl = document.getElementById('ghlDiaLeadsTitulo');
+
+  kpisEl.innerHTML = [
+    { num: t.totals.leads, lbl: 'Leads asignados hoy', ic: '📥', tone: 'info' },
+    { num: t.totals.opp, lbl: 'Oportunidades hoy', ic: '🆕', tone: 'info' },
+    { num: t.totals.advisorsPending, lbl: 'Asesores con pendientes', ic: '🔴', tone: t.totals.advisorsPending > 0 ? 'warn' : 'ok' },
+    { num: t.totals.noTipificacion, lbl: 'Leads sin tipificar', ic: '🏷️', tone: t.totals.noTipificacion > 0 ? 'warn' : 'ok' }
+  ].map(i => `
+    <div class="kpi-card kpi-${i.tone}">
+      <div class="kpi-ic">${i.ic}</div>
+      <div class="num">${i.num}</div>
+      <div class="lbl">${i.lbl}</div>
+    </div>`).join('');
+
+  asesoresEl.innerHTML = (t.advisors || []).length ? t.advisors.map((a, i) => `
+    <div class="card ghl-advisor-card${ghlFiltroAsesorHoy === a.name ? ' activo' : ''}" data-asesor-idx="${i}" style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; gap:10px; cursor:pointer;">
+      <div>
+        <p class="card-title" style="margin:0;">${escapeHtml(a.name)}</p>
+        <p class="card-sub" style="margin:2px 0 0;">${a.leads} lead${a.leads === 1 ? '' : 's'} hoy · ${a.opp} oportunidad${a.opp === 1 ? '' : 'es'} · último mensaje ${ghlFmtHora(a.lastMsg)}</p>
+      </div>
+      <span class="badge ${a.pending > 0 ? 'badge-vencida' : 'badge-completada'}">${a.pending > 0 ? a.pending + (a.pending === 1 ? ' mensaje' : ' mensajes') : 'Al día'}</span>
+    </div>`).join('') : `<div class="card"><p class="card-sub" style="margin:0;">Sin asesores con actividad todavía.</p></div>`;
+
+  asesoresEl.querySelectorAll('.ghl-advisor-card').forEach(el => {
+    el.addEventListener('click', () => {
+      const nombre = t.advisors[Number(el.dataset.asesorIdx)]?.name;
+      if (nombre) ghlFiltrarPorAsesor(nombre);
+    });
+  });
+
+  const leadsFiltrados = ghlFiltroAsesorHoy ? (t.leads || []).filter(l => l.advisor === ghlFiltroAsesorHoy) : (t.leads || []);
+  if (leadsTituloEl) {
+    leadsTituloEl.innerHTML = ghlFiltroAsesorHoy
+      ? `Leads de ${escapeHtml(ghlFiltroAsesorHoy)} · hoy <button class="chip-btn" style="margin-left:8px; padding:3px 10px; font-size:11px;" onclick="ghlFiltrarPorAsesor('${escapeHtml(ghlFiltroAsesorHoy).replace(/'/g,"\\'")}')">✕ Ver todos</button>`
+      : 'Cada lead de hoy';
+  }
+  ghlRenderLeadsList(leadsEl, leadsFiltrados, ghlFiltroAsesorHoy ? 'Este asesor no tiene leads hoy.' : 'Ningún lead ha llegado hoy todavía.');
+}
+
 async function cargarGhlDia(){
   const btn = document.getElementById('btnActualizarGhlDia');
   const estadoEl = document.getElementById('ghlDiaEstado');
   const avisoEl = document.getElementById('ghlDiaAviso');
-  const kpisEl = document.getElementById('ghlDiaKpis');
-  const asesoresEl = document.getElementById('ghlDiaAsesores');
-  const leadsEl = document.getElementById('ghlDiaLeads');
   if (!estadoEl) return;
 
   btn.disabled = true;
@@ -10187,69 +10310,9 @@ async function cargarGhlDia(){
     if (!data || data.ok === false) throw new Error(data?.error || 'La función no devolvió datos.');
 
     ghlUltimoReporte = data;
-    const t = data.today;
     estadoEl.textContent = 'Corte de hoy: ' + ghlFmtHora(data.asOf) + ' · vía GoHighLevel';
 
-    kpisEl.innerHTML = [
-      { num: t.totals.leads, lbl: 'Leads asignados hoy', ic: '📥', tone: 'info' },
-      { num: t.totals.opp, lbl: 'Oportunidades hoy', ic: '🆕', tone: 'info' },
-      { num: t.totals.advisorsPending, lbl: 'Asesores con pendientes', ic: '🔴', tone: t.totals.advisorsPending > 0 ? 'warn' : 'ok' },
-      { num: t.totals.noTipificacion, lbl: 'Leads sin tipificar', ic: '🏷️', tone: t.totals.noTipificacion > 0 ? 'warn' : 'ok' }
-    ].map(i => `
-      <div class="kpi-card kpi-${i.tone}">
-        <div class="kpi-ic">${i.ic}</div>
-        <div class="num">${i.num}</div>
-        <div class="lbl">${i.lbl}</div>
-      </div>`).join('');
-
-    asesoresEl.innerHTML = (t.advisors || []).length ? t.advisors.map(a => `
-      <div class="card" style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; gap:10px;">
-        <div>
-          <p class="card-title" style="margin:0;">${escapeHtml(a.name)}</p>
-          <p class="card-sub" style="margin:2px 0 0;">${a.leads} lead${a.leads === 1 ? '' : 's'} hoy · ${a.opp} oportunidad${a.opp === 1 ? '' : 'es'} · último mensaje ${ghlFmtHora(a.lastMsg)}</p>
-        </div>
-        <span class="badge ${a.pending > 0 ? 'badge-vencida' : 'badge-completada'}">${a.pending > 0 ? a.pending + (a.pending === 1 ? ' mensaje' : ' mensajes') : 'Al día'}</span>
-      </div>`).join('') : `<div class="card"><p class="card-sub" style="margin:0;">Sin asesores con actividad todavía.</p></div>`;
-
-    leadsEl.innerHTML = (t.leads || []).length ? t.leads.map(l => {
-      let respBadge;
-      if (l.responded) respBadge = `<span class="badge badge-completada">🧑 Asesor: ${ghlFmtDuracion(l.responseMs)}</span>`;
-      else if (l.unassigned) respBadge = `<span class="badge" style="background:var(--cream-dim); color:var(--ink-dim);">Sin asesor</span>`;
-      else respBadge = `<span class="badge badge-vencida">🧑 Asesor: esperando ${ghlFmtDuracion(l.waitingMs)}</span>`;
-
-      const iaBadge = l.iaResponded
-        ? `<span class="badge badge-en_proceso">🤖 IA: ${ghlFmtDuracion(l.iaResponseMs)}</span>`
-        : `<span class="badge" style="background:var(--cream-dim); color:var(--ink-dim);">🤖 IA: sin respuesta</span>`;
-
-      const convBadge = l.conversacionMantenida
-        ? `<span class="badge badge-completada">💬 Conversó</span>`
-        : `<span class="badge" style="background:var(--cream-dim); color:var(--ink-dim);">💬 Sin ida y vuelta</span>`;
-
-      const citaBadge = l.citaCreada
-        ? `<span class="badge badge-completada">📅 Cita: ${ghlFmtHora(l.citaFecha)}</span>`
-        : '';
-
-      return `
-        <div class="card" style="margin-bottom:10px;">
-          <div class="card-row">
-            <div>
-              <p class="card-title">${escapeHtml(l.name)}</p>
-              <p class="card-sub">${escapeHtml(l.advisor)}${l.advisorVia ? ' <span style="color:var(--ink-dim);">(' + l.advisorVia + ')</span>' : ''} · llegó ${ghlFmtHora(l.createdAt)}${l.stage ? ' · ' + escapeHtml(l.stage) : ''}</p>
-            </div>
-            ${respBadge}
-          </div>
-          <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;">
-            ${iaBadge}
-            ${convBadge}
-            ${citaBadge}
-          </div>
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; flex-wrap:wrap; gap:8px;">
-            <span style="font-size:12.5px; ${l.condicion ? 'color:var(--ink);' : 'color:var(--danger); font-weight:700;'}">${l.condicion ? escapeHtml(l.condicion) : 'Sin tipificar'}</span>
-            <span class="ghl-dots">${ghlPuntoContacto('1°', l.c1)}${ghlPuntoContacto('2°', l.c2)}${ghlPuntoContacto('3°', l.c3)}</span>
-          </div>
-          ${l.acuerdo ? `<p class="card-sub" style="margin:8px 0 0; font-style:italic; border-top:1px dashed var(--border); padding-top:6px;">💭 "${escapeHtml(l.acuerdo)}"</p>` : ''}
-        </div>`;
-    }).join('') : `<div class="card"><p class="card-sub" style="margin:0;">Ningún lead ha llegado hoy todavía.</p></div>`;
+    renderGhlHoy(data.today);
 
     if (data.month && !document.getElementById('ghlPanelMes').classList.contains('hidden')) {
       renderGhlMes(data.month);
@@ -10264,174 +10327,248 @@ async function cargarGhlDia(){
   }
 }
 
-async function descargarReporteGhlDia(){
-  const t = ghlUltimoReporte?.today;
-  if (!t) { toast('Primero pulsa Actualizar para cargar el reporte de hoy.'); return; }
+// Genera el PDF de un periodo de Seguimiento GHL (scopeData = today o rango,
+// ambos con la misma forma {advisors, leads, totals}) y lo comparte por
+// WhatsApp (share nativo con el archivo si el dispositivo lo soporta, o
+// abre WhatsApp con el resumen en texto como respaldo).
+async function generarYCompartirPdfGhl(scopeData, tituloPeriodo, subtituloFecha, nombreArchivo){
+  const t = scopeData;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const marginX = 40;
+  const anchoUtil = pageWidth - (marginX * 2);
+  let y = 40;
 
-  try {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const marginX = 40;
-    const anchoUtil = pageWidth - (marginX * 2);
-    let y = 40;
+  const cNavy = [20, 42, 77];
+  const cGold = [200, 155, 60];
+  const cDim = [107, 114, 128];
+  const cBgCard = [251, 250, 246];
+  const cBorder = [229, 223, 207];
+  const cOk = [61, 139, 95];
+  const cDanger = [200, 60, 60];
 
-    const cNavy = [20, 42, 77];
-    const cGold = [200, 155, 60];
-    const cDim = [107, 114, 128];
-    const cBgCard = [251, 250, 246];
-    const cBorder = [229, 223, 207];
-    const cOk = [61, 139, 95];
-    const cDanger = [200, 60, 60];
+  function saltoDePagina(alturaNecesaria){
+    if (y + alturaNecesaria > pageHeight - 40) { doc.addPage(); y = 40; }
+  }
 
-    function saltoDePagina(alturaNecesaria){
-      if (y + alturaNecesaria > pageHeight - 40) { doc.addPage(); y = 40; }
-    }
+  doc.setTextColor(...cNavy);
+  doc.setFontSize(14);
+  doc.setFont(undefined, 'bold');
+  doc.text('SEGUIMIENTO DE LEADS · ' + tituloPeriodo.toUpperCase(), marginX, y, { maxWidth: anchoUtil });
+  y += 14;
+  doc.setTextColor(...cGold);
+  doc.setFontSize(8.5);
+  doc.setFont(undefined, 'bold');
+  doc.text('CASA DORADA · GoHighLevel', marginX, y);
+  y += 10;
+  doc.setDrawColor(...cBorder);
+  doc.setLineWidth(0.8);
+  doc.line(marginX, y, pageWidth - marginX, y);
+  y += 16;
 
-    doc.setTextColor(...cNavy);
-    doc.setFontSize(14);
-    doc.setFont(undefined, 'bold');
-    doc.text('SEGUIMIENTO DE LEADS · HOY', marginX, y);
-    y += 14;
-    doc.setTextColor(...cGold);
-    doc.setFontSize(8.5);
-    doc.setFont(undefined, 'bold');
-    doc.text('CASA DORADA · GoHighLevel', marginX, y);
-    y += 10;
+  doc.setFontSize(8.5);
+  doc.setTextColor(...cDim);
+  doc.setFont(undefined, 'normal');
+  doc.text(subtituloFecha, marginX, y);
+  y += 20;
+
+  // KPIs
+  const kpis = [
+    ['Leads asignados', String(t.totals.leads)],
+    ['Oportunidades', String(t.totals.opp)],
+    ['Asesores con pendientes', String(t.totals.advisorsPending)],
+    ['Sin tipificar', String(t.totals.noTipificacion)],
+  ];
+  const kpiW = anchoUtil / kpis.length;
+  kpis.forEach(([lbl, val], i) => {
+    const x = marginX + i * kpiW;
+    doc.setFillColor(...cBgCard);
     doc.setDrawColor(...cBorder);
-    doc.setLineWidth(0.8);
-    doc.line(marginX, y, pageWidth - marginX, y);
-    y += 16;
+    doc.roundedRect(x, y, kpiW - 8, 40, 4, 4, 'FD');
+    doc.setTextColor(...cNavy);
+    doc.setFontSize(13);
+    doc.setFont(undefined, 'bold');
+    doc.text(val, x + 10, y + 20);
+    doc.setTextColor(...cDim);
+    doc.setFontSize(7);
+    doc.setFont(undefined, 'normal');
+    doc.text(lbl, x + 10, y + 32, { maxWidth: kpiW - 20 });
+  });
+  y += 56;
 
-    doc.setFontSize(8.5);
+  // Leads
+  doc.setTextColor(...cNavy);
+  doc.setFontSize(10.5);
+  doc.setFont(undefined, 'bold');
+  doc.text('Cada lead del periodo', marginX, y);
+  y += 14;
+
+  const leads = t.leads || [];
+  if (!leads.length) {
+    doc.setFontSize(9);
     doc.setTextColor(...cDim);
     doc.setFont(undefined, 'normal');
-    doc.text(`Corte: ${ghlFmtHora(ghlUltimoReporte.asOf)} · ${new Date().toLocaleDateString('es-PE', { timeZone: 'America/Lima', day: '2-digit', month: 'long', year: 'numeric' })}`, marginX, y);
-    y += 20;
-
-    // KPIs
-    const kpis = [
-      ['Leads asignados', String(t.totals.leads)],
-      ['Oportunidades', String(t.totals.opp)],
-      ['Asesores con pendientes', String(t.totals.advisorsPending)],
-      ['Sin tipificar', String(t.totals.noTipificacion)],
-    ];
-    const kpiW = anchoUtil / kpis.length;
-    kpis.forEach(([lbl, val], i) => {
-      const x = marginX + i * kpiW;
-      doc.setFillColor(...cBgCard);
-      doc.setDrawColor(...cBorder);
-      doc.roundedRect(x, y, kpiW - 8, 40, 4, 4, 'FD');
-      doc.setTextColor(...cNavy);
-      doc.setFontSize(13);
-      doc.setFont(undefined, 'bold');
-      doc.text(val, x + 10, y + 20);
-      doc.setTextColor(...cDim);
-      doc.setFontSize(7);
-      doc.setFont(undefined, 'normal');
-      doc.text(lbl, x + 10, y + 32, { maxWidth: kpiW - 20 });
-    });
-    y += 56;
-
-    // Leads
-    doc.setTextColor(...cNavy);
-    doc.setFontSize(10.5);
-    doc.setFont(undefined, 'bold');
-    doc.text('Cada lead de hoy', marginX, y);
+    doc.text('Ningún lead llegó en este periodo.', marginX, y);
     y += 14;
+  }
 
-    const leads = t.leads || [];
-    if (!leads.length) {
-      doc.setFontSize(9);
+  leads.forEach((l) => {
+    saltoDePagina(70);
+    const alturaCaja = l.acuerdo ? 70 : 54;
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(...cBorder);
+    doc.setLineWidth(0.6);
+    doc.roundedRect(marginX, y, anchoUtil, alturaCaja, 3, 3, 'FD');
+
+    let yy = y + 13;
+    doc.setTextColor(...cNavy);
+    doc.setFontSize(9.5);
+    doc.setFont(undefined, 'bold');
+    doc.text(l.name || '(sin nombre)', marginX + 8, yy);
+
+    doc.setFontSize(7.5);
+    doc.setTextColor(...cDim);
+    doc.setFont(undefined, 'normal');
+    doc.text(`${l.advisor}${l.stage ? ' · ' + l.stage : ''} · llegó ${ghlFmtHora(l.createdAt)}`, marginX + 8, yy + 11);
+
+    const asesorTxt = l.responded ? `Asesor: ${ghlFmtDuracion(l.responseMs)}` : (l.unassigned ? 'Sin asesor' : `Asesor: esperando ${ghlFmtDuracion(l.waitingMs)}`);
+    const iaTxt = l.iaResponded ? `IA: ${ghlFmtDuracion(l.iaResponseMs)}` : 'IA: sin respuesta';
+    const convTxt = l.conversacionMantenida ? 'Conversó' : 'Sin ida y vuelta';
+    const citaTxt = l.citaCreada ? `Cita: ${ghlFmtHora(l.citaFecha)}` : null;
+    doc.setTextColor(...(l.responded ? cOk : cDanger));
+    doc.setFontSize(7.5);
+    doc.setFont(undefined, 'bold');
+    doc.text([asesorTxt, iaTxt, convTxt, citaTxt].filter(Boolean).join('  ·  '), marginX + 8, yy + 23, { maxWidth: anchoUtil - 16 });
+
+    doc.setTextColor(...(l.condicion ? cNavy : cDanger));
+    doc.setFontSize(7.5);
+    doc.setFont(undefined, 'normal');
+    const seguim = `1°${l.c1 ? '✓' : '✗'} 2°${l.c2 ? '✓' : '✗'} 3°${l.c3 ? '✓' : '✗'}`;
+    doc.text(`${l.condicion || 'Sin tipificar'}  ·  ${seguim}`, marginX + 8, yy + 35);
+
+    if (l.acuerdo) {
       doc.setTextColor(...cDim);
-      doc.setFont(undefined, 'normal');
-      doc.text('Ningún lead ha llegado hoy todavía.', marginX, y);
-      y += 14;
+      doc.setFontSize(7.2);
+      doc.setFont(undefined, 'italic');
+      doc.text(`"${l.acuerdo}"`, marginX + 8, yy + 47, { maxWidth: anchoUtil - 16 });
     }
 
-    leads.forEach((l) => {
-      saltoDePagina(70);
-      const alturaCaja = l.acuerdo ? 70 : 54;
-      doc.setFillColor(255, 255, 255);
-      doc.setDrawColor(...cBorder);
-      doc.setLineWidth(0.6);
-      doc.roundedRect(marginX, y, anchoUtil, alturaCaja, 3, 3, 'FD');
+    y += alturaCaja + 8;
+  });
 
-      let yy = y + 13;
-      doc.setTextColor(...cNavy);
-      doc.setFontSize(9.5);
-      doc.setFont(undefined, 'bold');
-      doc.text(l.name || '(sin nombre)', marginX + 8, yy);
+  const totalPaginas = doc.internal.getNumberOfPages();
+  for (let p = 1; p <= totalPaginas; p++) {
+    doc.setPage(p);
+    doc.setFontSize(6.5);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(...cDim);
+    doc.text(`© ${new Date().getFullYear()} CRM MAJO · Jorge Luque — Todos los derechos reservados`, pageWidth / 2, pageHeight - 14, { align: 'center' });
+  }
 
-      doc.setFontSize(7.5);
-      doc.setTextColor(...cDim);
-      doc.setFont(undefined, 'normal');
-      doc.text(`${l.advisor}${l.stage ? ' · ' + l.stage : ''} · llegó ${ghlFmtHora(l.createdAt)}`, marginX + 8, yy + 11);
+  const blob = doc.output('blob');
+  const archivoPDF = new File([blob], nombreArchivo, { type: 'application/pdf' });
 
-      const asesorTxt = l.responded ? `Asesor: ${ghlFmtDuracion(l.responseMs)}` : (l.unassigned ? 'Sin asesor' : `Asesor: esperando ${ghlFmtDuracion(l.waitingMs)}`);
-      const iaTxt = l.iaResponded ? `IA: ${ghlFmtDuracion(l.iaResponseMs)}` : 'IA: sin respuesta';
-      const convTxt = l.conversacionMantenida ? 'Conversó' : 'Sin ida y vuelta';
-      const citaTxt = l.citaCreada ? `Cita: ${ghlFmtHora(l.citaFecha)}` : null;
-      doc.setTextColor(...(l.responded ? cOk : cDanger));
-      doc.setFontSize(7.5);
-      doc.setFont(undefined, 'bold');
-      doc.text([asesorTxt, iaTxt, convTxt, citaTxt].filter(Boolean).join('  ·  '), marginX + 8, yy + 23, { maxWidth: anchoUtil - 16 });
+  if (navigator.canShare && navigator.canShare({ files: [archivoPDF] })) {
+    try {
+      await navigator.share({ files: [archivoPDF], title: 'Seguimiento de Leads · ' + tituloPeriodo });
+      toast('Reporte generado ✓');
+      return;
+    } catch (e) {}
+  }
 
-      doc.setTextColor(...(l.condicion ? cNavy : cDanger));
-      doc.setFontSize(7.5);
-      doc.setFont(undefined, 'normal');
-      const seguim = `1°${l.c1 ? '✓' : '✗'} 2°${l.c2 ? '✓' : '✗'} 3°${l.c3 ? '✓' : '✗'}`;
-      doc.text(`${l.condicion || 'Sin tipificar'}  ·  ${seguim}`, marginX + 8, yy + 35);
+  const blobUrl = URL.createObjectURL(blob);
+  window.open(blobUrl, '_blank');
+  doc.save(nombreArchivo);
+  toast('Reporte generado y abriendo WhatsApp… ✓');
 
-      if (l.acuerdo) {
-        doc.setTextColor(...cDim);
-        doc.setFontSize(7.2);
-        doc.setFont(undefined, 'italic');
-        doc.text(`"${l.acuerdo}"`, marginX + 8, yy + 47, { maxWidth: anchoUtil - 16 });
-      }
+  const wspMsg = `📞 *SEGUIMIENTO DE LEADS · ${tituloPeriodo.toUpperCase()} · CASA DORADA*\n` +
+    `• *Leads asignados:* ${t.totals.leads}\n` +
+    `• *Oportunidades:* ${t.totals.opp}\n` +
+    `• *Asesores con pendientes:* ${t.totals.advisorsPending}\n` +
+    `• *Sin tipificar:* ${t.totals.noTipificacion}\n\n` +
+    `_Reporte generado desde CRM Majo, vía GoHighLevel._`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(wspMsg)}`, '_blank');
+}
 
-      y += alturaCaja + 8;
-    });
+/* ============ SELECTOR DE DÍA/RANGO PARA EL REPORTE ============ */
+function ghlYmdPeruHoy(offsetDias){
+  const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Lima', year: 'numeric', month: '2-digit', day: '2-digit' });
+  const [y, m, d] = fmt.format(new Date()).split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() + (offsetDias || 0));
+  return dt.toISOString().slice(0, 10);
+}
 
-    const totalPaginas = doc.internal.getNumberOfPages();
-    for (let p = 1; p <= totalPaginas; p++) {
-      doc.setPage(p);
-      doc.setFontSize(6.5);
-      doc.setFont(undefined, 'normal');
-      doc.setTextColor(...cDim);
-      doc.text(`© ${new Date().getFullYear()} CRM MAJO · Jorge Luque — Todos los derechos reservados`, pageWidth / 2, pageHeight - 14, { align: 'center' });
+function ghlCalcularRangoPreset(tipo){
+  const hoy = ghlYmdPeruHoy(0);
+  if (tipo === 'hoy') return { desde: hoy, hasta: hoy };
+  if (tipo === 'ayer') { const ayer = ghlYmdPeruHoy(-1); return { desde: ayer, hasta: ayer }; }
+  if (tipo === 'semana') {
+    const [y, m, d] = hoy.split('-').map(Number);
+    const diaSemana = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); // 0=domingo..6=sábado
+    const offsetALunes = diaSemana === 0 ? 6 : diaSemana - 1;
+    return { desde: ghlYmdPeruHoy(-offsetALunes), hasta: hoy };
+  }
+  if (tipo === 'mes') return { desde: hoy.slice(0, 8) + '01', hasta: hoy };
+  return null;
+}
+
+function ghlActualizarCamposRango(){
+  const tipo = document.getElementById('ghlRangoTipo').value;
+  document.getElementById('ghlRangoPersonalizadoWrap').classList.toggle('hidden', tipo !== 'personalizado');
+}
+
+function abrirModalReporteGhlRango(){
+  openModal('modalReporteGhlRango');
+}
+
+function ghlFmtFechaLarga(ymd){
+  const [y, m, d] = ymd.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('es-PE', { timeZone: 'UTC', day: '2-digit', month: 'long', year: 'numeric' });
+}
+
+document.getElementById('btnGenerarReporteGhlRango').addEventListener('click', async () => {
+  const tipo = document.getElementById('ghlRangoTipo').value;
+  let desde, hasta, tituloPeriodo;
+
+  if (tipo === 'personalizado') {
+    desde = document.getElementById('ghlRangoDesde').value;
+    hasta = document.getElementById('ghlRangoHasta').value;
+    if (!desde || !hasta) { toast('Selecciona ambas fechas'); return; }
+    if (desde > hasta) { toast('La fecha "Desde" no puede ser mayor que "Hasta"'); return; }
+    tituloPeriodo = desde === hasta ? ghlFmtFechaLarga(desde) : `${ghlFmtFechaLarga(desde)} – ${ghlFmtFechaLarga(hasta)}`;
+  } else {
+    const r = ghlCalcularRangoPreset(tipo);
+    desde = r.desde; hasta = r.hasta;
+    tituloPeriodo = { hoy: 'Hoy', ayer: 'Ayer', semana: 'Esta semana', mes: 'Este mes' }[tipo] || 'Periodo';
+  }
+
+  closeModal('modalReporteGhlRango');
+  toast('Generando reporte…');
+
+  try {
+    const { data, error } = await sb.functions.invoke('ghl-reporte-dia', { body: { desde, hasta } });
+    if (error) throw error;
+    if (!data || data.ok === false) throw new Error(data?.error || 'La función no devolvió datos.');
+    if (!data.rango) throw new Error('No se pudo calcular el rango.');
+
+    if (data.rango.posibleDatosIncompletos) {
+      toast('Aviso: este rango puede tener datos incompletos (fuera de las 500 filas más recientes).');
     }
 
-    const nombreArchivo = `seguimiento-ghl-hoy-${obtenerHoyLocal()}.pdf`;
-    const blob = doc.output('blob');
-    const archivoPDF = new File([blob], nombreArchivo, { type: 'application/pdf' });
+    const subtitulo = desde === hasta
+      ? `Corte: ${ghlFmtHora(data.asOf)} · ${ghlFmtFechaLarga(desde)}`
+      : `Corte: ${ghlFmtHora(data.asOf)} · ${ghlFmtFechaLarga(desde)} – ${ghlFmtFechaLarga(hasta)}${!data.rango.detalleCompleto ? ' · (detalle por lead resumido, rango grande)' : ''}`;
+    const nombreArchivo = `seguimiento-ghl-${desde}${desde !== hasta ? '_a_' + hasta : ''}.pdf`;
 
-    if (navigator.canShare && navigator.canShare({ files: [archivoPDF] })) {
-      try {
-        await navigator.share({ files: [archivoPDF], title: 'Seguimiento de Leads · Hoy' });
-        toast('Reporte generado ✓');
-        return;
-      } catch (e) {}
-    }
-
-    const blobUrl = URL.createObjectURL(blob);
-    window.open(blobUrl, '_blank');
-    doc.save(nombreArchivo);
-    toast('Reporte generado y abriendo WhatsApp… ✓');
-
-    const wspMsg = `📞 *SEGUIMIENTO DE LEADS · HOY · CASA DORADA*\n` +
-      `• *Leads asignados:* ${t.totals.leads}\n` +
-      `• *Oportunidades:* ${t.totals.opp}\n` +
-      `• *Asesores con pendientes:* ${t.totals.advisorsPending}\n` +
-      `• *Sin tipificar:* ${t.totals.noTipificacion}\n\n` +
-      `_Reporte generado desde CRM Majo, vía GoHighLevel._`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(wspMsg)}`, '_blank');
+    await generarYCompartirPdfGhl(data.rango, tituloPeriodo, subtitulo, nombreArchivo);
   } catch (e) {
     console.error(e);
-    toast('Error al generar el reporte');
+    toast('Error al generar el reporte: ' + (e.message || ''));
   }
-}
+});
 
 /* ============ MAJO ASSISTANT ============ */
 let majoConversacionActual = null;
