@@ -367,6 +367,13 @@
   .ghl-dots{ display:inline-flex; gap:3px; }
   .ghl-dot{ display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; font-size:10px; font-weight:700; border:1.5px solid var(--border); color: var(--ink-dim); }
   .ghl-dot.lleno{ border-color: var(--ok); color: var(--ok); background: var(--ok-bg); }
+  .ghl-tabs{ display:flex; gap:6px; margin-bottom:12px; }
+  .ghl-tab{ font-size:12.5px; font-weight:700; padding:7px 14px; border-radius:100px; border:1px solid var(--border); background:#fff; color:var(--ink-dim); cursor:pointer; }
+  .ghl-tab.activo{ background: var(--navy); color:#fff; border-color: var(--navy); }
+  .ghl-bar-row{ margin-bottom:8px; }
+  .ghl-bar-label{ display:flex; justify-content:space-between; font-size:12px; color:var(--ink-dim); margin-bottom:3px; }
+  .ghl-bar-track{ height:8px; border-radius:100px; background: var(--cream-dim); overflow:hidden; }
+  .ghl-bar-fill{ height:100%; border-radius:100px; background: var(--gold); }
   .card-actions{ display:flex; gap:8px; margin-top:10px; }
   .chip-btn{
     font-size:12px; font-weight:600; border:1px solid var(--border); background:#fff;
@@ -1860,13 +1867,39 @@ main.app-content {
           <button class="chip-btn gold" id="btnActualizarGhlDia" onclick="cargarGhlDia()">🔄 Actualizar</button>
         </div>
         <div id="ghlDiaAviso"></div>
-        <div id="ghlDiaKpis" class="kpi-row" style="display:flex; gap:10px; overflow-x:auto; padding-bottom:4px;"></div>
 
-        <div class="section-title">Por asesor</div>
-        <div id="ghlDiaAsesores"></div>
+        <div class="ghl-tabs">
+          <button class="ghl-tab activo" id="ghlTabHoy" onclick="ghlCambiarTab('hoy')">Hoy</button>
+          <button class="ghl-tab" id="ghlTabMes" onclick="ghlCambiarTab('mes')">Resumen del mes</button>
+        </div>
 
-        <div class="section-title">Cada lead de hoy</div>
-        <div id="ghlDiaLeads"></div>
+        <!-- Pestaña: HOY -->
+        <div id="ghlPanelHoy">
+          <div id="ghlDiaKpis" class="kpi-row" style="display:flex; gap:10px; overflow-x:auto; padding-bottom:4px;"></div>
+
+          <div class="section-title">Por asesor</div>
+          <div id="ghlDiaAsesores"></div>
+
+          <div class="section-title">Cada lead de hoy</div>
+          <div id="ghlDiaLeads"></div>
+        </div>
+
+        <!-- Pestaña: RESUMEN DEL MES -->
+        <div id="ghlPanelMes" class="hidden">
+          <p class="card-sub" id="ghlMesPeriodo" style="margin:0 0 10px;"></p>
+          <div id="ghlMesKpis" class="kpi-row" style="display:flex; gap:10px; overflow-x:auto; padding-bottom:4px;"></div>
+
+          <div class="section-title">Todo por asesor · este mes</div>
+          <div id="ghlMesAsesores"></div>
+
+          <div class="section-title">Mensajes sin leer por asesor</div>
+          <div id="ghlMesSinLeer" class="card"></div>
+
+          <div id="ghlMesDiagnosticoWrap">
+            <div class="section-title" id="ghlMesDiagTitulo">Oportunidades sin asignar</div>
+            <div class="card" id="ghlMesDiagnostico"></div>
+          </div>
+        </div>
       </div>
 
       <!-- VISTA: MAJO ASSISTANT -->
@@ -10039,6 +10072,98 @@ function ghlFmtDuracion(ms){
 function ghlPuntoContacto(label, lleno){
   return `<span class="ghl-dot ${lleno ? 'lleno' : ''}" title="${label}${lleno ? ': lleno' : ': vacío'}">${label}</span>`;
 }
+function ghlBarra(label, valor, max){
+  const pct = max > 0 ? Math.round((valor / max) * 100) : 0;
+  return `
+    <div class="ghl-bar-row">
+      <div class="ghl-bar-label"><span>${escapeHtml(label)}</span><span>${valor}</span></div>
+      <div class="ghl-bar-track"><div class="ghl-bar-fill" style="width:${pct}%;"></div></div>
+    </div>`;
+}
+
+let ghlUltimoReporte = null;
+
+function ghlCambiarTab(tab){
+  document.getElementById('ghlTabHoy').classList.toggle('activo', tab === 'hoy');
+  document.getElementById('ghlTabMes').classList.toggle('activo', tab === 'mes');
+  document.getElementById('ghlPanelHoy').classList.toggle('hidden', tab !== 'hoy');
+  document.getElementById('ghlPanelMes').classList.toggle('hidden', tab !== 'mes');
+  if (tab === 'mes' && ghlUltimoReporte?.month) renderGhlMes(ghlUltimoReporte.month);
+}
+
+function renderGhlMes(m){
+  document.getElementById('ghlMesPeriodo').textContent = m.periodLabel || '';
+
+  const kpisEl = document.getElementById('ghlMesKpis');
+  kpisEl.innerHTML = [
+    { num: m.totals.opp, lbl: 'Oportunidades', ic: '🆕', tone: 'info' },
+    { num: m.totals.contacts, lbl: 'Contactos nuevos', ic: '📥', tone: 'info' },
+    { num: m.totals.conv, lbl: 'Conversaciones', ic: '💬', tone: 'info' },
+    { num: m.totals.unread, lbl: 'Mensajes sin leer', ic: '🔴', tone: m.totals.unread > 0 ? 'warn' : 'ok' },
+    { num: m.totals.unassignedPct + '%', lbl: m.totals.unassigned + ' sin asignar', ic: '⚠️', tone: m.totals.unassignedPct >= 20 ? 'warn' : 'ok' }
+  ].map(i => `
+    <div class="kpi-card kpi-${i.tone}">
+      <div class="kpi-ic">${i.ic}</div>
+      <div class="num">${i.num}</div>
+      <div class="lbl">${i.lbl}</div>
+    </div>`).join('');
+
+  const asesoresEl = document.getElementById('ghlMesAsesores');
+  const maxOpp = Math.max(1, ...m.advisors.map(a => a.opp));
+  const maxContacts = Math.max(1, ...m.advisors.map(a => a.contacts));
+  const maxConv = Math.max(1, ...m.advisors.map(a => a.conv));
+  asesoresEl.innerHTML = m.advisors.length ? m.advisors.map(a => `
+    <div class="card" style="margin-bottom:10px;">
+      <p class="card-title" style="margin:0 0 8px;">${escapeHtml(a.name)}</p>
+      ${ghlBarra('Oportunidades', a.opp, maxOpp)}
+      ${ghlBarra('Contactos', a.contacts, maxContacts)}
+      ${ghlBarra('Conversaciones', a.conv, maxConv)}
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
+        <span class="card-sub" style="margin:0;">Sin leer</span>
+        <span class="badge ${a.unread > 0 ? 'badge-vencida' : 'badge-completada'}">${a.unread}</span>
+      </div>
+    </div>`).join('') : `<div class="card"><p class="card-sub" style="margin:0;">Sin asesores con actividad este mes.</p></div>`;
+
+  const sinLeerEl = document.getElementById('ghlMesSinLeer');
+  const rankingSinLeer = m.advisors.slice().sort((a, b) => b.unread - a.unread);
+  const maxUnread = Math.max(1, ...rankingSinLeer.map(a => a.unread));
+  sinLeerEl.innerHTML = rankingSinLeer.length
+    ? rankingSinLeer.map(a => ghlBarra(a.name, a.unread, maxUnread)).join('')
+    : `<p class="card-sub" style="margin:0;">Sin datos este mes.</p>`;
+
+  const diagWrap = document.getElementById('ghlMesDiagnosticoWrap');
+  const diagTitulo = document.getElementById('ghlMesDiagTitulo');
+  const diagEl = document.getElementById('ghlMesDiagnostico');
+  const hayNoAsignadas = m.totals.unassigned > 0;
+  diagWrap.classList.toggle('hidden', !hayNoAsignadas);
+  if (hayNoAsignadas) {
+    diagTitulo.textContent = `Por qué ${m.totals.unassignedPct}% de las oportunidades quedan sin asignar`;
+    const propagacion = m.composition.find(c => c.name.includes('propagación'));
+    const topEtapa = m.stages[0];
+    let diagnostico = '';
+    if (propagacion) {
+      const pct = Math.round((propagacion.value / m.totals.unassigned) * 100);
+      diagnostico = `<b>${propagacion.value} de ${m.totals.unassigned} oportunidades (${pct}%)</b> pertenecen a un contacto que <b>sí</b> tiene asesor asignado — la asignación no se propagó al crear la oportunidad.`;
+      if (topEtapa) {
+        const stagePct = Math.round((topEtapa.value / m.totals.unassigned) * 100);
+        diagnostico += ` <b>${stagePct}%</b> están atoradas en "${escapeHtml(topEtapa.name)}".`;
+      }
+    } else {
+      diagnostico = `De las ${m.totals.unassigned} oportunidades sin asignar, el contacto tampoco tiene asesor propio.`;
+    }
+    const compHtml = m.composition.map(c => ghlBarra(c.name, c.value, m.totals.unassigned)).join('');
+    const stagesHtml = m.stages.map(s => ghlBarra(s.name, s.value, m.stages[0]?.value || 1)).join('');
+    diagEl.innerHTML = `
+      <p class="card-sub" style="margin:0 0 12px;">${m.totals.unassigned} de ${m.totals.opp} oportunidades (${m.totals.unassignedPct}%) no tienen asesor — cruzando cada una con el asesor de su contacto.</p>
+      <p class="card-title" style="font-size:13px;">Composición</p>
+      ${compHtml}
+      <p class="card-title" style="font-size:13px; margin-top:12px;">Por etapa</p>
+      ${stagesHtml}
+      <div class="card" style="margin-top:12px; background:var(--cream-dim); border:none;">
+        <p class="card-sub" style="margin:0; color:var(--ink);">${diagnostico}</p>
+      </div>`;
+  }
+}
 
 async function cargarGhlDia(){
   const btn = document.getElementById('btnActualizarGhlDia');
@@ -10058,6 +10183,7 @@ async function cargarGhlDia(){
     if (error) throw error;
     if (!data || data.ok === false) throw new Error(data?.error || 'La función no devolvió datos.');
 
+    ghlUltimoReporte = data;
     const t = data.today;
     estadoEl.textContent = 'Corte de hoy: ' + ghlFmtHora(data.asOf) + ' · vía GoHighLevel';
 
@@ -10103,6 +10229,10 @@ async function cargarGhlDia(){
           </div>
         </div>`;
     }).join('') : `<div class="card"><p class="card-sub" style="margin:0;">Ningún lead ha llegado hoy todavía.</p></div>`;
+
+    if (data.month && !document.getElementById('ghlPanelMes').classList.contains('hidden')) {
+      renderGhlMes(data.month);
+    }
 
   } catch (e) {
     console.error(e);
