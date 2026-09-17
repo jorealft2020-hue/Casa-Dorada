@@ -66,10 +66,25 @@
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    background: var(--cream);
+    /* Fondo corporativo con acentos azul marino / dorado en las esquinas
+       (en vez de un crema plano) para que las tarjetas blancas resalten
+       en vez de fundirse con el fondo. */
+    background:
+      radial-gradient(circle at 100% 0%, rgba(200,155,60,0.14) 0%, rgba(200,155,60,0) 42%),
+      radial-gradient(circle at 0% 100%, rgba(20,42,77,0.10) 0%, rgba(20,42,77,0) 42%),
+      var(--cream);
     position: relative;
     z-index: 1;
     transition: max-width 0.2s ease;
+  }
+  /* Textura tipo "plano arquitectónico" (grilla de puntos muy tenue) --
+     guiño a tecnología/inmobiliaria sin competir con el contenido. */
+  #app::after{
+    content:'';
+    position: absolute; inset:0;
+    background-image: radial-gradient(circle, rgba(20,42,77,0.07) 1px, transparent 1px);
+    background-size: 24px 24px;
+    pointer-events:none; z-index:0;
   }
 
   /* ADAPTACIÓN INMEDIATA A ROTACIÓN HORIZONTAL DEL CELULAR (LANDSCAPE) */
@@ -118,12 +133,14 @@
   @media (min-width: 680px){
     html, body{
       background: #F7F5EF !important;
-      background-image: none !important;
     }
     #app{
       max-width: 100% !important;
       margin: 0 !important;
-      background: #F7F5EF !important;
+      background:
+        radial-gradient(circle at 100% 0%, rgba(200,155,60,0.12) 0%, rgba(200,155,60,0) 30%),
+        radial-gradient(circle at 0% 100%, rgba(20,42,77,0.08) 0%, rgba(20,42,77,0) 30%),
+        #F7F5EF !important;
       box-shadow: none !important;
       border: none !important;
       min-height: 100vh;
@@ -206,7 +223,7 @@
   .btn-google{ display:flex; align-items:center; gap:12px; background: var(--cream); color: var(--navy); border:none; border-radius: 12px; padding: 14px 24px; font-size: 15px; font-weight:600; cursor:pointer; width:100%; max-width: 320px; justify-content:center; box-shadow: 0 8px 24px rgba(0,0,0,0.25); }
   .btn-google:active{ transform: scale(0.98); }
 
-  .topbar{ display:flex; align-items:center; justify-content:space-between; padding: 18px 20px 14px; background: var(--cream); position:sticky; top:0; z-index:10; }
+  .topbar{ display:flex; align-items:center; justify-content:space-between; padding: 18px 20px 14px; background: linear-gradient(180deg, var(--cream) 0%, var(--cream) 85%, rgba(200,155,60,0.06) 100%); border-bottom: 1px solid rgba(200,155,60,0.35); position:sticky; top:0; z-index:10; }
   .topbar .greet{ font-family: var(--font-display); font-size: 20px; font-weight: 600; letter-spacing:-0.01em; }
   .topbar .role{ font-size: 12.5px; color: var(--ink-dim); margin-top:2px; }
   .topbar-actions{ display:flex; gap:8px; align-items:center; }
@@ -348,10 +365,11 @@
   .card{
     background: linear-gradient(160deg, #ffffff 0%, #FDFCF9 100%);
     border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px;
-    border: 1px solid #EFEAE0;
-    box-shadow: 0 1px 2px rgba(26,35,50,0.03), 0 4px 14px rgba(26,35,50,0.05);
+    border: 1px solid rgba(20,42,77,0.09);
+    box-shadow: 0 1px 2px rgba(20,42,77,0.04), 0 8px 22px rgba(20,42,77,0.09);
     transition: transform 0.18s ease, box-shadow 0.18s ease;
     animation: tarjetaAparecer 0.25s ease-out;
+    position: relative;
   }
   .card:active{ transform: scale(0.99); }
   .card-row{ display:flex; justify-content:space-between; align-items:flex-start; gap: 10px; }
