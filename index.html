@@ -1471,6 +1471,39 @@ main.app-content {
           <p class="quote-author" id="qd_autor">— Jim Rohn</p>
         </div>
 
+        <!-- PLAYLIST CORPORATIVA COSTA DORADA -->
+        <div class="card" id="cardPlaylistCostaDorada" style="margin-bottom:14px; border:1.5px solid #E8D9B5;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:18px;">🎵</span>
+              <h4 style="margin:0; font-size:13px;">Playlist Costa Dorada</h4>
+            </div>
+            <button class="chip-btn hidden" id="btnPlaylistSubirMp3" onclick="togglePlaylistSubida()" style="font-size:11px; padding:3px 9px; border-color:var(--gold); color:var(--navy); background:#fff;" title="Subir nueva pista (SuperAdmin)">⬆️ Subir pista</button>
+          </div>
+          <p id="playlist_estado" style="font-size:11.5px; color:var(--ink-dim); margin:0 0 8px;">Cargando playlist…</p>
+          <div id="playlist_reproductor" class="hidden">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+              <button class="chip-btn" onclick="playlistAnterior()" style="padding:6px 10px; flex-shrink:0;">⏮️</button>
+              <div style="flex:1; min-width:0;">
+                <p id="playlist_titulo_actual" style="margin:0; font-size:12px; font-weight:700; color:var(--navy); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">—</p>
+                <p id="playlist_tipo_actual" style="margin:0; font-size:10px; color:var(--ink-dim);"></p>
+              </div>
+              <button class="chip-btn" onclick="playlistSiguiente()" style="padding:6px 10px; flex-shrink:0;">⏭️</button>
+            </div>
+            <audio id="playlist_audio" controls style="width:100%;"></audio>
+            <video id="playlist_video_oculto" style="display:none;" playsinline></video>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px; gap:8px; flex-wrap:wrap;">
+              <p style="margin:0; font-size:10px; color:var(--ink-dim); flex:1; min-width:180px;">🔊 Se reproduce por el altavoz o el Bluetooth que tengas conectado en tu celular.</p>
+              <button class="chip-btn hidden" id="btnPlaylistTransmitir" onclick="playlistTransmitirAPantalla()" style="font-size:10.5px; padding:4px 10px; border-color:var(--gold); color:var(--navy); background:#fff; flex-shrink:0;">📺 Transmitir a pantalla</button>
+            </div>
+          </div>
+          <div id="playlist_subida" class="hidden" style="margin-top:10px; padding-top:10px; border-top:1px dashed #E8D9B5;">
+            <label style="font-size:11px; font-weight:700; color:var(--navy);">Subir nueva pista (audio o video)</label>
+            <input type="file" id="playlist_input_archivo" accept="audio/*,video/mp4,video/quicktime,video/webm" style="width:100%; font-size:12px; margin-top:4px;">
+            <p id="playlist_subida_estado" style="font-size:10.5px; color:var(--ink-dim); margin:4px 0 0;"></p>
+          </div>
+        </div>
+
         <div class="video-card">
           <div class="video-header" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
             <div style="display:flex; align-items:center; gap:8px; min-width:0;">
@@ -2723,6 +2756,7 @@ main.app-content {
       </div>
       <div class="modal-actions">
         <button class="btn-secondary" data-close="modalSeparacion">Cancelar</button>
+        <button type="button" class="btn-primary" id="btnDescargarReciboAdelanto" onclick="generarReciboAdelantoInicialPDF()" style="background:#0F766E; border-color:#0F766E;">📄 Descargar Recibo de Adelanto (PDF)</button>
         <button class="btn-primary" id="btnGuardarSeparacion">Guardar separación</button>
       </div>
     </div>
@@ -3996,6 +4030,10 @@ main.app-content {
             <label style="font-size:11px; font-weight:700; color:var(--navy);">Celular WhatsApp *</label>
             <input type="tel" id="min_comprador_tel" placeholder="9XXXXXXXX" style="width:100%; font-size:12px; padding:7px 9px;">
           </div>
+          <div>
+            <label style="font-size:11px; font-weight:700; color:var(--navy);">Correo electrónico</label>
+            <input type="email" id="min_comprador_correo" placeholder="correo@ejemplo.com" style="width:100%; font-size:12px; padding:7px 9px;">
+          </div>
           <div style="grid-column: 1 / -1;">
             <label style="font-size:11px; font-weight:700; color:var(--navy);">Domicilio / Ciudad *</label>
             <input type="text" id="min_comprador_domicilio" placeholder="Dirección completa y ciudad" style="width:100%; font-size:12px; padding:7px 9px;">
@@ -4569,6 +4607,141 @@ function esUsuarioSuperAdmin(){
   return currentProfile?.rol === 'superadmin';
 }
 
+/* ============ PLAYLIST COSTA DORADA (portada) ============ */
+// Bucket publico dedicado (no documentos sensibles) -- lectura abierta para
+// cualquiera con sesion, subida/borrado restringidos a SuperAdmin por RLS
+// de storage.objects (policies playlist_storage_insert_superadmin /
+// playlist_storage_delete_superadmin). No hay tabla en la base de datos: la
+// playlist ES el contenido del bucket, listado en vivo -- asi subir una
+// pista nueva es simplemente arrastrar un archivo, sin un formulario de
+// metadata aparte que mantener sincronizado.
+const PLAYLIST_BUCKET = 'playlist-costa-dorada';
+const PLAYLIST_EXT_VIDEO = ['mp4', 'mov', 'webm', 'm4v'];
+let playlistPistas = [];
+let playlistIndiceActual = 0;
+
+function playlistTituloDesdeArchivo(nombreArchivo){
+  return nombreArchivo
+    .replace(/\.[^.]+$/, '')
+    .replace(/[-_]+/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+async function cargarPlaylistCostaDorada(){
+  const elEstado = document.getElementById('playlist_estado');
+  const elReproductor = document.getElementById('playlist_reproductor');
+  const btnSubir = document.getElementById('btnPlaylistSubirMp3');
+  if (btnSubir) btnSubir.classList.toggle('hidden', !esUsuarioSuperAdmin());
+
+  try {
+    const { data, error } = await sb.storage.from(PLAYLIST_BUCKET).list('', { sortBy: { column: 'name', order: 'asc' } });
+    if (error) throw error;
+
+    playlistPistas = (data || [])
+      .filter((f) => f.name && !f.name.startsWith('.'))
+      .map((f) => {
+        const ext = (f.name.split('.').pop() || '').toLowerCase();
+        const { data: pub } = sb.storage.from(PLAYLIST_BUCKET).getPublicUrl(f.name);
+        return { path: f.name, url: pub.publicUrl, titulo: playlistTituloDesdeArchivo(f.name), tipo: PLAYLIST_EXT_VIDEO.includes(ext) ? 'video' : 'audio' };
+      });
+
+    if (!playlistPistas.length) {
+      if (elEstado) elEstado.textContent = esUsuarioSuperAdmin() ? 'Aún no hay pistas — sube la primera con "Subir pista".' : 'Aún no hay pistas cargadas.';
+      if (elReproductor) elReproductor.classList.add('hidden');
+      return;
+    }
+
+    if (elEstado) elEstado.textContent = '';
+    if (elReproductor) elReproductor.classList.remove('hidden');
+    playlistIndiceActual = 0;
+    playlistCargarPista(0);
+  } catch (e) {
+    console.error('No se pudo cargar la playlist de Costa Dorada:', e);
+    if (elEstado) elEstado.textContent = 'No se pudo cargar la playlist en este momento.';
+  }
+}
+
+function playlistCargarPista(i){
+  if (!playlistPistas.length) return;
+  playlistIndiceActual = ((i % playlistPistas.length) + playlistPistas.length) % playlistPistas.length;
+  const pista = playlistPistas[playlistIndiceActual];
+
+  const elTitulo = document.getElementById('playlist_titulo_actual');
+  const elTipo = document.getElementById('playlist_tipo_actual');
+  const audio = document.getElementById('playlist_audio');
+  const video = document.getElementById('playlist_video_oculto');
+  const btnTransmitir = document.getElementById('btnPlaylistTransmitir');
+
+  if (elTitulo) elTitulo.textContent = pista.titulo;
+
+  // Si el archivo es un video, SOLO se reproduce su audio localmente (el
+  // <audio> puede decodificar la pista de sonido de un mp4/webm sin
+  // mostrar el video) -- ver la imagen requiere transmitir a una pantalla,
+  // nunca se muestra el video dentro del celular.
+  if (audio) { audio.pause(); audio.src = pista.url; }
+  if (video) { video.pause(); video.src = pista.url; }
+
+  if (pista.tipo === 'video') {
+    if (elTipo) elTipo.textContent = '🎥 Video · reproduciendo solo el audio aquí — usa "Transmitir a pantalla" para verlo';
+    if (btnTransmitir) btnTransmitir.classList.remove('hidden');
+  } else {
+    if (elTipo) elTipo.textContent = '🎧 Audio';
+    if (btnTransmitir) btnTransmitir.classList.toggle('hidden', !('remote' in HTMLMediaElement.prototype));
+  }
+}
+
+function playlistAnterior(){ playlistCargarPista(playlistIndiceActual - 1); }
+function playlistSiguiente(){ playlistCargarPista(playlistIndiceActual + 1); }
+
+// Transmitir a pantalla: la Remote Playback API (Chrome/Android, Chromecast)
+// es la unica forma real de "enviar" un elemento de audio/video a otra
+// pantalla desde una pagina web -- no existe una API web para "conectar por
+// Bluetooth" (eso lo maneja el sistema operativo del celular de forma
+// transparente, por eso el audio ya sale por el Bluetooth que tengas
+// emparejado sin código adicional). Si el navegador no soporta la API
+// (ej. iPhone/Safari fuera de AirPlay nativo del reproductor), se avisa en
+// vez de fingir que se transmitió.
+async function playlistTransmitirAPantalla(){
+  const pista = playlistPistas[playlistIndiceActual];
+  if (!pista) return;
+  const el = pista.tipo === 'video' ? document.getElementById('playlist_video_oculto') : document.getElementById('playlist_audio');
+  if (!el || !('remote' in el)) {
+    toast('Tu navegador no soporta transmitir directamente. Usa el "Screen Mirroring" / Cast de tu celular para reflejar la pantalla.');
+    return;
+  }
+  try {
+    await el.remote.prompt();
+    if (pista.tipo === 'video') { document.getElementById('playlist_audio')?.pause(); el.play().catch(() => {}); }
+  } catch (e) {
+    if (e?.name !== 'NotFoundError' && e?.name !== 'AbortError') console.warn('Error al transmitir a pantalla:', e);
+  }
+}
+
+function togglePlaylistSubida(){
+  document.getElementById('playlist_subida')?.classList.toggle('hidden');
+}
+
+document.getElementById('playlist_input_archivo')?.addEventListener('change', async (e) => {
+  const archivo = e.target.files?.[0];
+  if (!archivo) return;
+  const elEstadoSubida = document.getElementById('playlist_subida_estado');
+  const nombreLimpio = archivo.name.trim().replace(/[^a-zA-Z0-9.\-_ ]/g, '').replace(/\s+/g, '-');
+
+  if (elEstadoSubida) elEstadoSubida.textContent = 'Subiendo…';
+  try {
+    const { error } = await sb.storage.from(PLAYLIST_BUCKET).upload(nombreLimpio, archivo, { upsert: true, contentType: archivo.type || undefined });
+    if (error) throw error;
+    if (elEstadoSubida) elEstadoSubida.textContent = '✓ Pista subida.';
+    toast('Pista subida a la playlist ✓');
+    e.target.value = '';
+    await cargarPlaylistCostaDorada();
+  } catch (err) {
+    console.error('Error subiendo pista a la playlist:', err);
+    if (elEstadoSubida) elEstadoSubida.textContent = 'Error al subir. Intenta de nuevo.';
+    toast('No se pudo subir la pista');
+  }
+});
+
 function tienePermiso(key){
   if (esUsuarioSuperAdmin()) return true;
   const perm = fusionarPermisosConCatalogo(currentProfile?.permisos);
@@ -5059,6 +5232,7 @@ async function mostrarApp(){
   cargarModuloDepartamentoOverrides();
 
   cargarPortadaInicio();
+  cargarPlaylistCostaDorada();
   cargarPendientesInicio();
   procesarParametrosEnlaceDirecto();
   await Promise.all([cargarKPIs(), cargarActividadesHoy(), cargarSeparacionesPorVencer(), cargarNotificacionesBadge()]);
@@ -9686,14 +9860,260 @@ document.getElementById('sp_meses_financiar').addEventListener('change', (e) => 
 function calcularFinanciamiento(){
   const valorTotal = parseFloat(document.getElementById('sp_valor_total').value) || 0;
   const inicial = parseFloat(document.getElementById('sp_valor_inicial').value) || 0;
-  const separacion = parseFloat(document.getElementById('sp_monto_separacion').value) || 0;
-  const saldo = Math.max(valorTotal - (inicial + separacion), 0);
+  // El monto de separación es un adelanto A CUENTA de la inicial (no un
+  // monto aparte, ver "Recibo de Adelanto de Inicial") -- el saldo a
+  // financiar solo resta la inicial pactada, que ya lo incluye.
+  const saldo = Math.max(valorTotal - inicial, 0);
   document.getElementById('sp_saldo').value = saldo.toFixed(2);
 
   const mesesSel = document.getElementById('sp_meses_financiar').value;
   const meses = mesesSel === 'otro' ? (parseInt(document.getElementById('sp_meses_otro').value) || 0) : parseInt(mesesSel);
   const inversion = meses > 0 ? saldo / meses : 0;
   document.getElementById('sp_inversion_mensual').value = inversion.toFixed(2);
+}
+
+// Genera el "Recibo de Adelanto de Inicial" en el formato exacto que Jorge
+// entregó como referencia (docx RECIBO_DE_ADELANTO_DE_INICIAL...): mismo
+// título, mismos campos de cabecera y las mismas 10 cláusulas + condiciones
+// de contratación. Se llena con los datos ya cargados en el formulario de
+// Separación (modalSeparacion) -- no duplica un formulario nuevo, usa el que
+// ya existe y ya se prueba al guardar.
+function generarReciboAdelantoInicialPDF(){
+  const { jsPDF } = window.jspdf || {};
+  if (!jsPDF) { toast('Librería PDF no disponible'); return; }
+
+  const nombre = document.getElementById('sp_cliente_nombre')?.value.trim() || '';
+  const dni = document.getElementById('sp_cliente_dni')?.value.trim() || '';
+  const celular = document.getElementById('sp_cliente_celular')?.value.trim() || '';
+  const direccion = document.getElementById('sp_cliente_direccion')?.value.trim() || '';
+  const correo = document.getElementById('sp_cliente_correo')?.value.trim() || '';
+  const tieneConyuge = document.getElementById('sp_tiene_conyuge')?.checked;
+  const conyugeNombre = tieneConyuge ? (document.getElementById('sp_conyuge_nombre')?.value.trim() || '') : '';
+  const conyugeDni = tieneConyuge ? (document.getElementById('sp_conyuge_dni')?.value.trim() || '') : '';
+  const cotizacion = document.getElementById('sp_cotizacion')?.value.trim() || '';
+  const socio = document.getElementById('sp_socio')?.value.trim() || '';
+  const manzana = document.getElementById('sp_manzana')?.value || '';
+  const lote = document.getElementById('sp_lote')?.value.trim() || '';
+  const area = document.getElementById('sp_area')?.value || '';
+  const valorTotal = parseFloat(document.getElementById('sp_valor_total')?.value) || 0;
+  const fechaSeparacion = document.getElementById('sp_fecha_separacion')?.value || '';
+  const montoSeparacion = parseFloat(document.getElementById('sp_monto_separacion')?.value) || 0;
+  const medioPago = document.getElementById('sp_medio_pago')?.value.trim() || '';
+  const nOperacion = document.getElementById('sp_n_operacion')?.value.trim() || '';
+  const condicion = document.getElementById('sp_condicion')?.value || 'contado';
+  const fechaVencimiento = document.getElementById('sp_fecha_vencimiento')?.value || '';
+  const asesor = currentUser?.nombre || currentProfile?.nombre || 'Asesor Comercial';
+
+  if (!nombre) { toast('Falta el nombre del cliente'); return; }
+  if (!dni) { toast('Falta el DNI del cliente'); return; }
+  if (!manzana || !lote) { toast('Falta manzana y lote'); return; }
+  if (!montoSeparacion || montoSeparacion <= 0) { toast('Falta el monto de separación'); return; }
+
+  const inicial = condicion === 'financiado' ? (parseFloat(document.getElementById('sp_valor_inicial')?.value) || 0) : valorTotal;
+  const saldo = condicion === 'financiado' ? (parseFloat(document.getElementById('sp_saldo')?.value) || 0) : 0;
+  const inversionMensual = condicion === 'financiado' ? (parseFloat(document.getElementById('sp_inversion_mensual')?.value) || 0) : 0;
+
+  const fmtFecha = (iso) => {
+    if (!iso) return '—';
+    const [a, m, d] = iso.split('-');
+    return `${d}/${m}/${a}`;
+  };
+  const fmtMoneda = (n) => 'S/ ' + n.toLocaleString('es-PE', { minimumFractionDigits: 2 });
+
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const cNavy = [20, 42, 77], cDim = [107, 114, 128], cInk = [30, 41, 59];
+  let y = 18;
+
+  const encabezado = () => {
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(...cNavy);
+    doc.text('CONSTRUCTORA & INMOBILIARIA CASA DORADA S.A.C.', 105, 14, { align: 'center' });
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...cDim);
+    doc.text('RUC: 20611912634 · Proyecto Costa Dorada, La Yarada Los Palos, Tacna', 105, 18.5, { align: 'center' });
+    doc.setDrawColor(200, 155, 60); doc.setLineWidth(0.6); doc.line(16, 21, 194, 21);
+  };
+  encabezado();
+
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(...cNavy);
+  doc.text('RECIBO DE ADELANTO DE INICIAL', 105, 28, { align: 'center' });
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...cDim);
+  doc.text('Contrato de Separación de Lote', 105, 33, { align: 'center' });
+
+  y = 40;
+  doc.setFontSize(8.5);
+  const campo = (etiqueta, valor, x, yy, anchoEtiqueta = 24) => {
+    doc.setFont('helvetica', 'bold'); doc.setTextColor(...cNavy);
+    doc.text(etiqueta, x, yy);
+    doc.setFont('helvetica', 'normal'); doc.setTextColor(...cInk);
+    doc.text(String(valor || '—'), x + anchoEtiqueta, yy);
+  };
+  campo('FECHA:', fmtFecha(fechaSeparacion), 16, y);
+  campo('N° COTIZACIÓN:', cotizacion, 108, y, 30); y += 5.5;
+  campo('CLIENTE:', nombre.toUpperCase(), 16, y, 20);
+  campo('DNI:', dni, 130, y, 10); y += 5.5;
+  campo('CÓNYUGE:', conyugeNombre.toUpperCase(), 16, y, 20);
+  campo('DNI:', conyugeDni, 130, y, 10); y += 5.5;
+  campo('DIRECCIÓN:', direccion, 16, y, 20);
+  campo('CELULAR:', celular, 130, y, 18); y += 5.5;
+  campo('CORREO:', correo, 16, y, 20); y += 5.5;
+  campo('SOCIO:', socio, 16, y, 20);
+  campo('ASESOR:', asesor, 108, y, 18); y += 7;
+
+  doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.3); doc.line(16, y, 194, y); y += 5;
+
+  campo('Importe de separación:', fmtMoneda(montoSeparacion), 16, y, 38);
+  campo('Fecha de vencimiento:', fmtFecha(fechaVencimiento), 130, y, 32); y += 5.5;
+  campo('Medio:', medioPago, 16, y, 16);
+  campo('N° Op./Código:', nOperacion, 90, y, 24); y += 7;
+
+  // Tabla resumen del lote (igual estructura que el formato de referencia)
+  const columnas = [
+    ['Mz', manzana], ['Lte', lote], ['Área', area ? `${area} m²` : '—'],
+    ['Valor Total', fmtMoneda(valorTotal)], ['Inicial', fmtMoneda(inicial)],
+    ['Saldo Financ.', condicion === 'financiado' ? fmtMoneda(saldo) : 'Al contado'],
+    ['Inv. Mensual', condicion === 'financiado' ? fmtMoneda(inversionMensual) : '—'],
+  ];
+  const anchoCol = 178 / columnas.length;
+  doc.setFillColor(248, 250, 252);
+  doc.rect(16, y, 178, 12, 'F');
+  columnas.forEach(([etq, val], i) => {
+    const cx = 16 + (i * anchoCol) + (anchoCol / 2);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(...cNavy);
+    doc.text(etq, cx, y + 4, { align: 'center' });
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(...cInk);
+    doc.text(String(val), cx, y + 9, { align: 'center', maxWidth: anchoCol - 2 });
+  });
+  y += 17;
+
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...cInk);
+  const intro = `Mediante el presente documento, EL CLIENTE declara que, en caso de realizar cualquier depósito en las cuentas de CONSTRUCTORA & INMOBILIARIA CASA DORADA S.A.C., identificada con RUC N.° 20611912634, debidamente representada por su Gerente General, ambas partes se someten de manera expresa, obligatoria e irrevocable a las condiciones generales de contratación y cumplimiento que a continuación se establecen, reconociendo su carácter vinculante y exigible.`;
+  const lIntro = doc.splitTextToSize(intro, 178);
+  doc.text(lIntro, 16, y); y += (lIntro.length * 3.6) + 4;
+
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(...cNavy);
+  doc.text('CONTRATO DE SEPARACIÓN DE LOTE', 105, y, { align: 'center' }); y += 6;
+
+  // Cada cláusula se dibuja con el mismo patrón defensivo de salto de
+  // página que ya usan los demás generadores de PDF de la app (Minuta,
+  // reportes) -- un texto de cliente/dirección muy largo no debe empujar
+  // una cláusula fuera de la hoja sin que jsPDF avise.
+  const clausula = (titulo, texto) => {
+    if (y > pageHeight - 30) { doc.addPage(); encabezado(); y = 28; }
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(...cNavy);
+    const lTit = doc.splitTextToSize(titulo, 178);
+    doc.text(lTit, 16, y); y += (lTit.length * 3.8) + 1.5;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...cInk);
+    const lTxt = doc.splitTextToSize(texto, 178);
+    doc.text(lTxt, 16, y); y += (lTxt.length * 3.6) + 3.5;
+  };
+  const listaClausula = (titulo, items) => {
+    if (y > pageHeight - 30) { doc.addPage(); encabezado(); y = 28; }
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(...cNavy);
+    const lTit = doc.splitTextToSize(titulo, 178);
+    doc.text(lTit, 16, y); y += (lTit.length * 3.8) + 1.5;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...cInk);
+    for (const item of items) {
+      if (y > pageHeight - 20) { doc.addPage(); encabezado(); y = 28; }
+      const lItem = doc.splitTextToSize('• ' + item, 176);
+      doc.text(lItem, 18, y); y += (lItem.length * 3.6) + 1;
+    }
+    y += 2.5;
+  };
+
+  clausula('1. IDENTIFICACIÓN DEL LOTE Y MANZANA E INICIAL',
+    `El monto total a depositar se considerará como adelanto de la cuota inicial correspondiente al lote ubicado en la Mz ${manzana}, Lote ${lote}, suma de dinero que será imputada como parte de la inicial pactada entre las partes, cuya suma mínima (por este concepto) es de ${fmtMoneda(montoSeparacion)}, o su equivalente en dólares americanos, aplicándose el tipo de cambio vigente al momento de la operación.`);
+
+  clausula('2. NATURALEZA DE LAS ARRAS Y CONDICIÓN DE NO DEVOLUCIÓN',
+    `La suma entregada por EL CLIENTE tiene la calidad de arras penitenciales, conforme al artículo 1478 del Código Civil, constituyendo un mecanismo de garantía de la operación de compraventa. En caso de desistimiento, retractación o incumplimiento por parte del CLIENTE, incluyendo la falta de pago dentro del plazo establecido o la negativa de suscribir el contrato de compraventa, el monto entregado no será reembolsable, quedando definitivamente en favor de LA EMPRESA, sin necesidad de requerimiento previo, judicial o extrajudicial. No obstante, en caso de incumplimiento imputable a LA EMPRESA, debidamente acreditado, esta se obliga a devolver al CLIENTE el íntegro del monto recibido por concepto de arras, sin intereses ni penalidades adicionales. EL CLIENTE declara haber sido informado de manera clara, suficiente y previa sobre la naturaleza de las arras, sus efectos legales y las condiciones de no devolución, manifestando su aceptación expresa.`);
+
+  clausula('3. PLAZO DE VIGENCIA DE LA SEPARACIÓN',
+    `La separación tendrá una vigencia de 03 (TRES) DÍAS CALENDARIOS IMPRORROGABLES. Vencido dicho plazo sin que EL CLIENTE cumpla con completar la cuota inicial o formalizar la compraventa, se entenderá producido su desistimiento automático, quedando el lote liberado de manera inmediata y pudiendo LA EMPRESA disponer libremente del mismo. Asimismo, vencido el plazo antes señalado, el monto entregado por concepto de separación quedará sujeto a una retención administrativa progresiva equivalente a S/ 250.00 (DOSCIENTOS CINCUENTA Y 00/100 SOLES) por cada día calendario adicional de inactividad o incumplimiento, por concepto de gastos administrativos, comerciales y operativos generados por la inmovilización del lote y la gestión de separación efectuada por LA EMPRESA, hasta alcanzar el monto total entregado por concepto de arras. Una vez agotado dicho monto, EL CLIENTE declara expresamente no tener derecho a devolución, compensación, reclamo administrativo, judicial ni extrajudicial alguno contra LA EMPRESA.`);
+
+  listaClausula('4. LIBERACIÓN AUTOMÁTICA DEL LOTE', [
+    'El lote quedará automáticamente liberado.',
+    'LA EMPRESA podrá disponer libremente del mismo.',
+    'No será necesaria comunicación previa.',
+    'El CLIENTE no tendrá derecho a reclamo alguno.',
+  ]);
+
+  listaClausula('5. ALCANCE DEL DOCUMENTO', [
+    'Es válido únicamente para la separación de un lote determinado.',
+    'No es válido para más de un lote ni para elección alternativa.',
+    'No constituye transferencia de propiedad.',
+    'No genera posesión ni derecho real alguno.',
+    'No es inscribible en Registros Públicos.',
+  ]);
+
+  clausula('6. FORMALIZACIÓN Y OBLIGACIONES DEL CLIENTE',
+    `EL CLIENTE se obliga a: completar el pago de la cuota inicial, suscribir el contrato de compraventa, y cumplir con los requisitos documentarios. El incumplimiento genera resolución automática conforme al artículo 1430 del Código Civil.`);
+
+  clausula('7. VALIDACIÓN Y CONTROL INTERNO',
+    `La validez del presente documento está sujeta a validación por el Área Legal y verificación de pagos por el Área Administrativa. LA EMPRESA podrá observar, suspender o anular operaciones irregulares.`);
+
+  clausula('8. BANCARIZACIÓN DE PAGOS',
+    `Todo pago deberá realizarse exclusivamente mediante cuentas bancarias oficiales de LA EMPRESA o medios autorizados. EL CLIENTE es responsable de la verificación de sus depósitos y de la conservación de los comprobantes correspondientes.`);
+
+  clausula('9. LUGAR DE TRÁMITE',
+    `Todos los trámites relacionados deberán efectuarse en las oficinas de LA EMPRESA o mediante canales formales autorizados.`);
+
+  clausula('10. DECLARACIÓN DE INFORMACIÓN',
+    `EL CLIENTE declara haber recibido la información conforme a los artículos 76 y 77 del Código de Protección y Defensa del Consumidor, conocer el proyecto inmobiliario "COSTA DORADA", ubicado en La Yarada Los Palos, Tacna, y aceptar sus condiciones legales, técnicas y comerciales.`);
+
+  if (y > pageHeight - 30) { doc.addPage(); encabezado(); y = 28; }
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(...cNavy);
+  doc.text('CONDICIONES DE CONTRATACIÓN', 105, y, { align: 'center' }); y += 5.5;
+
+  listaClausula('', [
+    'EL CLIENTE manifiesta su intención de suscribir un contrato de compraventa respecto del lote indicado.',
+    'La suma entregada constituye arras penitenciales irrevocables, sujetas a las condiciones del presente documento.',
+    'La firma del contrato de compraventa deberá efectuarse dentro del plazo de 03 (tres) días calendarios posteriores a la cancelación de la cuota inicial. En caso de incumplimiento, se produce resolución automática, el CLIENTE pierde las arras y LA EMPRESA puede disponer del lote.',
+    'Si LA EMPRESA incumple injustificadamente, deberá devolver el monto recibido por concepto de arras.',
+    'Si EL CLIENTE incumple, las arras quedarán definitivamente en favor de LA EMPRESA, sin derecho a devolución parcial o total, ni reclamo administrativo, judicial o extrajudicial posterior.',
+    'En caso de concretarse la compraventa, las arras se imputarán a la cuota inicial.',
+  ]);
+
+  if (y > pageHeight - 45) { doc.addPage(); encabezado(); y = 28; }
+  y += 10;
+  doc.setDrawColor(180, 180, 180); doc.setLineWidth(0.4);
+  doc.line(22, y, 95, y);
+  doc.line(115, y, 188, y);
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(...cNavy);
+  doc.text('EL CLIENTE', 58, y + 5, { align: 'center' });
+  doc.text('LA EMPRESA', 151, y + 5, { align: 'center' });
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
+  doc.text(`NOMBRE: ${nombre.toUpperCase()}`, 58, y + 10, { align: 'center' });
+  doc.text(`DNI: ${dni}`, 58, y + 14, { align: 'center' });
+  doc.text('CONSTRUCTORA & INMOBILIARIA', 151, y + 10, { align: 'center' });
+  doc.text('CASA DORADA S.A.C.', 151, y + 14, { align: 'center' });
+
+  const nombreArchivo = `Recibo_Adelanto_Inicial_Mz${manzana}_Lote${lote}.pdf`;
+  const blob = doc.output('blob');
+  const archivoPDF = new File([blob], nombreArchivo, { type: 'application/pdf' });
+
+  const compartirOGuardar = async () => {
+    if (navigator.canShare && navigator.canShare({ files: [archivoPDF] })) {
+      try {
+        await navigator.share({ files: [archivoPDF], title: 'Recibo de Adelanto de Inicial' });
+        toast('Recibo generado ✓');
+        return;
+      } catch (e) {
+        if (e?.name === 'AbortError') return;
+        console.warn('navigator.share falló, usando respaldo de descarga:', e);
+      }
+    }
+    const blobUrl = URL.createObjectURL(blob);
+    window.open(blobUrl, '_blank');
+    doc.save(nombreArchivo);
+    toast('Recibo generado y abriendo WhatsApp… ✓');
+    const wspMsg = `📄 *RECIBO DE ADELANTO DE INICIAL · COSTA DORADA*\n\n` +
+      `• *Cliente:* ${nombre.toUpperCase()} · DNI: ${dni}\n` +
+      `• *Lote:* Manzana ${manzana} - Lote ${lote} (${area || '—'} m²)\n` +
+      `• *Importe de separación:* ${fmtMoneda(montoSeparacion)}\n` +
+      `• *Vencimiento:* ${fmtFecha(fechaVencimiento)}\n\n` +
+      `_Documento emitido desde el Planner Corporativo Casa Dorada._`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(wspMsg)}`, '_blank');
+  };
+  compartirOGuardar();
 }
 
 document.getElementById('btnGuardarSeparacion').addEventListener('click', async () => {
@@ -16747,6 +17167,7 @@ function formalizarSeparacionDesdeMinuta(){
   const meses = document.getElementById('min_lote_meses')?.value;
   const tel = document.getElementById('min_comprador_tel')?.value.trim();
   const dir = document.getElementById('min_comprador_domicilio')?.value.trim();
+  const correo = document.getElementById('min_comprador_correo')?.value.trim();
   const fechaVencimiento = document.getElementById('min_fecha_vencimiento')?.value;
 
   closeModal('modalMinutaCompraventa');
@@ -16756,6 +17177,7 @@ function formalizarSeparacionDesdeMinuta(){
   document.getElementById('sp_cliente_dni').value = dni;
   if (tel) document.getElementById('sp_cliente_celular').value = tel;
   if (dir) document.getElementById('sp_cliente_direccion').value = dir;
+  if (correo) document.getElementById('sp_cliente_correo').value = correo;
   document.getElementById('sp_manzana').value = mz;
   document.getElementById('sp_lote').value = lote;
   if (area) document.getElementById('sp_area').value = area;
