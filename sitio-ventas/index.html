@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="es-PE">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+<title>Costa Dorada Ciudad Smart · Lotes en La Yarada Los Palos, Tacna</title>
+<meta name="description" content="Lotes de 160 m² desde S/ 38,000 en Costa Dorada Ciudad Smart, La Yarada Los Palos, Tacna. Financiamiento directo hasta 60 meses sin evaluación bancaria, título inscrito en SUNARP. Separa tu lote con S/ 500.">
+<meta property="og:title" content="Costa Dorada Ciudad Smart · Tacna">
+<meta property="og:description" content="Lotes desde S/ 38,000. Financiamiento directo hasta 60 meses, sin evaluación bancaria. Título inscrito en SUNARP.">
+<meta property="og:type" content="website">
+<link rel="icon" href="../icon-192.png">
+<style>
+  :root{
+    --navy:#142A4D; --gold:#C89B3C; --gold-soft:#E8CE8F;
+    --cream:#F2EFE6; --cream-dim:#E8E2D2;
+    --ink:#142A4D; --ink-dim:#6B7280; --border:#DAD3BE;
+    --danger:#B4453C; --ok:#4C7A5E; --warning:#B5691F;
+    --wsp:#25D366;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink); background:var(--cream); line-height:1.55;
+  }
+  a{color:inherit;}
+  img{max-width:100%; display:block;}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 20px;}
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    padding:14px 26px; border-radius:100px; font-weight:700; font-size:15px;
+    text-decoration:none; cursor:pointer; border:none; transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .btn:active{transform:scale(0.96);}
+  .btn-gold{background:linear-gradient(135deg, var(--gold) 0%, var(--gold-soft) 100%); color:#fff; box-shadow:0 8px 20px rgba(201,151,62,0.35);}
+  .btn-wsp{background:var(--wsp); color:#fff; box-shadow:0 8px 20px rgba(37,211,102,0.35);}
+  .btn-outline{background:transparent; color:#fff; border:1.5px solid rgba(255,255,255,0.55);}
+
+  /* ===== Header ===== */
+  header{
+    position:sticky; top:0; z-index:30; background:rgba(20,42,77,0.96); backdrop-filter:blur(8px);
+    padding:12px 0;
+  }
+  header .wrap{display:flex; align-items:center; justify-content:space-between;}
+  .brand{display:flex; align-items:center; gap:10px; color:#fff; font-weight:800; font-size:15.5px; letter-spacing:0.2px;}
+  .brand img{height:34px; width:34px; border-radius:8px; object-fit:cover;}
+  header nav{display:none;}
+  @media (min-width:720px){
+    header nav{display:flex; gap:22px; color:rgba(255,255,255,0.85); font-size:13.5px; font-weight:600;}
+    header nav a{text-decoration:none;}
+    header nav a:hover{color:var(--gold-soft);}
+  }
+
+  /* ===== Hero ===== */
+  .hero{
+    background:linear-gradient(165deg, var(--navy) 0%, #1E3A63 55%, var(--navy) 100%);
+    color:#fff; padding:56px 0 64px; text-align:center; position:relative; overflow:hidden;
+  }
+  .hero::before{
+    content:''; position:absolute; inset:0; opacity:0.08;
+    background-image:radial-gradient(circle, #fff 1px, transparent 1px); background-size:22px 22px;
+  }
+  .hero-inner{position:relative;}
+  .eyebrow{
+    display:inline-block; background:rgba(255,255,255,0.12); color:var(--gold-soft);
+    font-size:12px; font-weight:700; letter-spacing:0.6px; text-transform:uppercase;
+    padding:6px 14px; border-radius:100px; margin-bottom:18px;
+  }
+  h1{font-size:clamp(28px,5.5vw,46px); font-weight:800; margin:0 0 14px; line-height:1.15;}
+  h1 span{color:var(--gold-soft);}
+  .hero p.lead{font-size:16.5px; color:rgba(255,255,255,0.85); max-width:560px; margin:0 auto 30px;}
+  .hero-price{
+    display:inline-flex; align-items:baseline; gap:8px; background:rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.18); border-radius:16px; padding:14px 22px; margin-bottom:30px;
+  }
+  .hero-price b{font-size:30px; color:var(--gold-soft); font-weight:800;}
+  .hero-price span{font-size:13px; color:rgba(255,255,255,0.75);}
+  .hero-ctas{display:flex; gap:12px; justify-content:center; flex-wrap:wrap;}
+  .hero-stats{display:flex; gap:28px; justify-content:center; margin-top:40px; flex-wrap:wrap;}
+  .hero-stats div{text-align:center;}
+  .hero-stats b{display:block; font-size:22px; color:var(--gold-soft); font-weight:800;}
+  .hero-stats span{font-size:12px; color:rgba(255,255,255,0.7);}
+
+  /* ===== Sections ===== */
+  section{padding:56px 0;}
+  .section-head{text-align:center; max-width:600px; margin:0 auto 36px;}
+  .section-head .tag{color:var(--gold); font-weight:700; font-size:12.5px; letter-spacing:0.6px; text-transform:uppercase;}
+  .section-head h2{font-size:clamp(22px,4vw,32px); margin:8px 0 10px; color:var(--navy); font-weight:800;}
+  .section-head p{color:var(--ink-dim); font-size:14.5px;}
+
+  .grid{display:grid; gap:18px;}
+  .grid-3{grid-template-columns:repeat(auto-fit,minmax(230px,1fr));}
+  .grid-2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr));}
+
+  .card{
+    background:#fff; border:1px solid var(--border); border-radius:16px; padding:24px;
+    box-shadow:0 2px 10px rgba(20,42,77,0.05);
+  }
+  .card .ic{font-size:28px; margin-bottom:12px; display:block;}
+  .card h3{margin:0 0 8px; font-size:16px; color:var(--navy); font-weight:800;}
+  .card p{margin:0; font-size:13.5px; color:var(--ink-dim);}
+
+  .band-navy{background:var(--navy); color:#fff;}
+  .band-navy .section-head h2{color:#fff;}
+  .band-navy .section-head p{color:rgba(255,255,255,0.7);}
+  .band-navy .card{background:rgba(255,255,255,0.06); border-color:rgba(255,255,255,0.14);}
+  .band-navy .card h3{color:#fff;}
+  .band-navy .card p{color:rgba(255,255,255,0.72);}
+
+  /* ===== Financing table ===== */
+  .fin-box{
+    background:#fff; border:1px solid var(--border); border-radius:20px; padding:32px;
+    max-width:640px; margin:0 auto; box-shadow:0 6px 24px rgba(20,42,77,0.08);
+  }
+  .fin-row{display:flex; justify-content:space-between; align-items:center; padding:13px 0; border-bottom:1px dashed var(--border); font-size:14.5px;}
+  .fin-row:last-child{border-bottom:none;}
+  .fin-row b{color:var(--navy);}
+  .fin-highlight{
+    background:linear-gradient(135deg, var(--gold) 0%, var(--gold-soft) 100%); color:#fff;
+    border-radius:14px; padding:16px 18px; text-align:center; font-weight:800; font-size:15px; margin-top:18px;
+  }
+
+  /* ===== Form ===== */
+  .form-box{
+    background:#fff; border:1px solid var(--border); border-radius:20px; padding:32px;
+    max-width:520px; margin:0 auto; box-shadow:0 6px 24px rgba(20,42,77,0.08);
+  }
+  .field{margin-bottom:16px;}
+  .field label{display:block; font-size:12.5px; font-weight:700; color:var(--navy); margin-bottom:6px;}
+  .field input, .field textarea{
+    width:100%; padding:12px 14px; border:1.5px solid var(--border); border-radius:10px;
+    font-size:14.5px; font-family:inherit; color:var(--ink); background:var(--cream);
+  }
+  .field input:focus, .field textarea:focus{outline:none; border-color:var(--gold);}
+  .field textarea{resize:vertical; min-height:80px;}
+  .hp{position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden;}
+  #formMsg{font-size:13.5px; font-weight:700; margin-top:12px; text-align:center; display:none; padding:10px; border-radius:10px;}
+  #formMsg.ok{display:block; background:#E7F3EC; color:var(--ok);}
+  #formMsg.err{display:block; background:#FBEAE8; color:var(--danger);}
+
+  /* ===== Footer ===== */
+  footer{background:var(--navy); color:rgba(255,255,255,0.65); padding:32px 0; text-align:center; font-size:12.5px;}
+  footer b{color:#fff;}
+
+  .fab-wsp{
+    position:fixed; bottom:20px; right:20px; z-index:40; width:58px; height:58px; border-radius:50%;
+    background:var(--wsp); color:#fff; display:flex; align-items:center; justify-content:center; font-size:28px;
+    text-decoration:none; box-shadow:0 10px 26px rgba(37,211,102,0.45);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="brand"><img src="../logo-costa-dorada.png" alt="Costa Dorada"> Costa Dorada Ciudad Smart</div>
+    <nav>
+      <a href="#proyecto">El proyecto</a>
+      <a href="#financiamiento">Financiamiento</a>
+      <a href="#garantias">Garantías</a>
+      <a href="#contacto">Contacto</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap hero-inner">
+    <span class="eyebrow">La Yarada Los Palos · Tacna</span>
+    <h1>Tu lote propio en <span>Costa Dorada Ciudad Smart</span></h1>
+    <p class="lead">Terreno independizado, inscrito en SUNARP, a 20 minutos del Óvalo Tarapacá. Sepáralo hoy con S/ 500 y fracciona el resto sin ir al banco.</p>
+    <div class="hero-price">
+      <b>Desde S/ 38,000</b>
+      <span>lote de 160 m² (8 x 20 m)</span>
+    </div>
+    <div class="hero-ctas">
+      <a href="#contacto" class="btn btn-gold">📩 Quiero más información</a>
+      <a id="heroWsp" href="#" target="_blank" rel="noopener" class="btn btn-wsp">💬 Escribir por WhatsApp</a>
+    </div>
+    <div class="hero-stats">
+      <div><b>160 m²</b><span>Lote estándar</span></div>
+      <div><b>60 meses</b><span>Financiamiento directo</span></div>
+      <div><b>10%</b><span>Inicial desde</span></div>
+      <div><b>S/ 500</b><span>Para separar</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="proyecto">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="tag">El proyecto</span>
+      <h2>Avance real en terreno, no solo en el plano</h2>
+      <p>Costa Dorada Ciudad Smart ya tiene obras físicas avanzando en La Yarada Los Palos.</p>
+    </div>
+    <div class="grid grid-3">
+      <div class="card">
+        <span class="ic">🏗️</span>
+        <h3>Pórtico de ingreso terminado</h3>
+        <p>Acceso principal consolidado y vías internas afirmadas y señalizadas.</p>
+      </div>
+      <div class="card">
+        <span class="ic">📐</span>
+        <h3>Manzaneo y lotización física</h3>
+        <p>Hitos de manzaneo ya marcados en terreno — puedes verificar tu lote in situ.</p>
+      </div>
+      <div class="card">
+        <span class="ic">🚐</span>
+        <h3>Visita guiada gratuita</h3>
+        <p>Agenda un recorrido en nuestra van directo desde Tacna y compruébalo tú mismo.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band-navy">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="tag">Ubicación</span>
+      <h2>Conectividad rápida desde Tacna</h2>
+      <p>A minutos de todo lo que ya usas todos los días.</p>
+    </div>
+    <div class="grid grid-3">
+      <div class="card">
+        <span class="ic">🚗</span>
+        <h3>20 min</h3>
+        <p>Desde el Óvalo Tarapacá por la autopista Costanera.</p>
+      </div>
+      <div class="card">
+        <span class="ic">🏖️</span>
+        <h3>15 min</h3>
+        <p>Desde la Playa Los Palos — sol todo el año.</p>
+      </div>
+      <div class="card">
+        <span class="ic">🌎</span>
+        <h3>35 min</h3>
+        <p>Desde el Complejo Fronterizo Santa Rosa (Arica, Chile).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="financiamiento">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="tag">Financiamiento</span>
+      <h2>Directo con la constructora, sin banco de por medio</h2>
+      <p>Sin evaluación crediticia, sin intereses bancarios ocultos.</p>
+    </div>
+    <div class="fin-box">
+      <div class="fin-row"><span>Valor del lote (160 m²)</span><b>Desde S/ 38,000</b></div>
+      <div class="fin-row"><span>Separación para congelar precio</span><b>S/ 500</b></div>
+      <div class="fin-row"><span>Inicial</span><b>Desde 10%</b></div>
+      <div class="fin-row"><span>Plazo de financiamiento</span><b>Hasta 60 meses</b></div>
+      <div class="fin-row"><span>Evaluación bancaria</span><b>No se requiere</b></div>
+      <div class="fin-row"><span>Modalidad</span><b>Al contado o en cuotas en soles</b></div>
+      <div class="fin-highlight">Sepáralo hoy con S/ 500 y arma tu plan de pago a tu medida →</div>
+    </div>
+  </div>
+</section>
+
+<section id="garantias" class="band-navy">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="tag">Garantías</span>
+      <h2>Inversión patrimonial 100% formal</h2>
+      <p>Todo lo que respalda legalmente tu compra.</p>
+    </div>
+    <div class="grid grid-3">
+      <div class="card">
+        <span class="ic">🏛️</span>
+        <h3>Inscrito en SUNARP</h3>
+        <p>Partida Matriz inscrita en la Zona Registral de Tacna.</p>
+      </div>
+      <div class="card">
+        <span class="ic">📄</span>
+        <h3>Terreno independizado</h3>
+        <p>Sin gravámenes ni cargas comunitarias sobre tu lote.</p>
+      </div>
+      <div class="card">
+        <span class="ic">✍️</span>
+        <h3>Escritura Pública</h3>
+        <p>Firma ante Notario de Tacna — título a tu nombre.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="contacto">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="tag">Contacto</span>
+      <h2>Solicita tu asesoría gratuita</h2>
+      <p>Un asesor te contacta por WhatsApp con disponibilidad de lotes y tu plan de financiamiento.</p>
+    </div>
+    <form id="formLead" class="form-box" novalidate>
+      <input type="text" name="sitioWeb" class="hp" tabindex="-1" autocomplete="off">
+      <div class="field">
+        <label for="f_nombre">Nombre completo</label>
+        <input type="text" id="f_nombre" name="nombre" required maxlength="120" placeholder="Tu nombre">
+      </div>
+      <div class="field">
+        <label for="f_telefono">Celular (WhatsApp)</label>
+        <input type="tel" id="f_telefono" name="telefono" required maxlength="20" placeholder="9XXXXXXXX">
+      </div>
+      <div class="field">
+        <label for="f_email">Correo (opcional)</label>
+        <input type="email" id="f_email" name="email" maxlength="160" placeholder="tucorreo@ejemplo.com">
+      </div>
+      <div class="field">
+        <label for="f_mensaje">Cuéntanos qué buscas (opcional)</label>
+        <textarea id="f_mensaje" name="mensaje" maxlength="500" placeholder="Ej. Quiero un lote esquinero, pago al contado, etc."></textarea>
+      </div>
+      <button type="submit" id="btnEnviarLead" class="btn btn-gold" style="width:100%;">📩 Quiero que me contacten</button>
+      <div id="formMsg"></div>
+    </form>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p><b>Constructora e Inmobiliaria Casa Dorada S.A.C.</b><br>Costa Dorada Ciudad Smart · La Yarada Los Palos, Tacna, Perú</p>
+    <p>© <span id="anioFooter"></span> Casa Dorada S.A.C. · Todos los derechos reservados</p>
+  </div>
+</footer>
+
+<a id="fabWsp" class="fab-wsp" href="#" target="_blank" rel="noopener" aria-label="WhatsApp">💬</a>
+
+<script>
+  document.getElementById('anioFooter').textContent = new Date().getFullYear();
+
+  const NUMERO_WSP = '51942236677';
+  const msgWsp = encodeURIComponent('¡Hola! Vi la web de Costa Dorada Ciudad Smart y quiero información sobre los lotes disponibles.');
+  const urlWsp = `https://wa.me/${NUMERO_WSP}?text=${msgWsp}`;
+  document.getElementById('heroWsp').href = urlWsp;
+  document.getElementById('fabWsp').href = urlWsp;
+
+  // Edge function pública (captura-lead-web) -- crea el contacto directo en
+  // GoHighLevel, el mismo pipeline que usa el equipo comercial en la app.
+  const ENDPOINT_LEAD = 'https://nboikojylmkujdxinztj.supabase.co/functions/v1/captura-lead-web';
+  const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ib2lrb2p5bG1rdWpkeGluenRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyOTU1NzksImV4cCI6MjEwMzg3MTU3OX0.O6yaQPFwjYmIhQD--smhX1IRY0D1KETHsX30kFOmU5s';
+
+  const form = document.getElementById('formLead');
+  const btnEnviar = document.getElementById('btnEnviarLead');
+  const msgEl = document.getElementById('formMsg');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    msgEl.className = ''; msgEl.style.display = 'none';
+
+    const nombre = document.getElementById('f_nombre').value.trim();
+    const telefono = document.getElementById('f_telefono').value.trim();
+    const email = document.getElementById('f_email').value.trim();
+    const mensaje = document.getElementById('f_mensaje').value.trim();
+    const sitioWeb = form.sitioWeb.value; // honeypot
+
+    if (!nombre || !telefono) {
+      msgEl.textContent = 'Por favor completa tu nombre y celular.';
+      msgEl.className = 'err'; msgEl.style.display = 'block';
+      return;
+    }
+
+    btnEnviar.disabled = true;
+    btnEnviar.textContent = 'Enviando…';
+
+    try {
+      const resp = await fetch(ENDPOINT_LEAD, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': ANON_KEY,
+          'Authorization': `Bearer ${ANON_KEY}`,
+        },
+        body: JSON.stringify({ nombre, telefono, email, mensaje, sitioWeb, origen: 'sitio-ventas-costa-dorada' }),
+      });
+      const data = await resp.json().catch(() => ({}));
+
+      if (resp.ok && data.ok) {
+        msgEl.textContent = '¡Listo! Un asesor te escribirá por WhatsApp muy pronto.';
+        msgEl.className = 'ok'; msgEl.style.display = 'block';
+        form.reset();
+      } else {
+        throw new Error(data.error || 'No se pudo enviar.');
+      }
+    } catch (err) {
+      msgEl.textContent = 'No se pudo enviar el formulario. Escríbenos directo por WhatsApp.';
+      msgEl.className = 'err'; msgEl.style.display = 'block';
+    } finally {
+      btnEnviar.disabled = false;
+      btnEnviar.textContent = '📩 Quiero que me contacten';
+    }
+  });
+</script>
+
+</body>
+</html>

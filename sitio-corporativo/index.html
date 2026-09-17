@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="es-PE">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+<title>MAJO · CRM/ERP Inmobiliario Inteligente</title>
+<meta name="description" content="MAJO es el CRM/ERP que conecta ventas, cobranzas, inventario, leads y equipo comercial en un solo lugar, con seguimiento de leads en vivo, IA integrada y reportes automáticos por WhatsApp.">
+<meta property="og:title" content="MAJO · CRM/ERP Inmobiliario Inteligente">
+<meta property="og:description" content="Ventas, cobranzas, inventario, leads y equipo comercial en un solo sistema, con IA y reportes automáticos.">
+<meta property="og:type" content="website">
+<link rel="icon" href="../icon-192.png">
+<style>
+  :root{
+    --navy:#142A4D; --gold:#C89B3C; --gold-soft:#E8CE8F;
+    --cream:#F2EFE6; --cream-dim:#E8E2D2;
+    --ink:#142A4D; --ink-dim:#6B7280; --border:#DAD3BE;
+    --danger:#B4453C; --ok:#4C7A5E; --warning:#B5691F;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink); background:var(--cream); line-height:1.55;
+  }
+  a{color:inherit;}
+  img{max-width:100%; display:block;}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 20px;}
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    padding:14px 26px; border-radius:100px; font-weight:700; font-size:15px;
+    text-decoration:none; cursor:pointer; border:none; transition:transform .12s ease;
+  }
+  .btn:active{transform:scale(0.96);}
+  .btn-gold{background:linear-gradient(135deg, var(--gold) 0%, var(--gold-soft) 100%); color:#fff; box-shadow:0 8px 20px rgba(201,151,62,0.35);}
+  .btn-outline{background:transparent; color:#fff; border:1.5px solid rgba(255,255,255,0.5);}
+
+  header{position:sticky; top:0; z-index:30; background:rgba(20,42,77,0.96); backdrop-filter:blur(8px); padding:12px 0;}
+  header .wrap{display:flex; align-items:center; justify-content:space-between;}
+  .brand{display:flex; align-items:center; gap:10px; color:#fff; font-weight:800; font-size:15.5px;}
+  .brand img{height:34px; width:34px; border-radius:8px; object-fit:cover;}
+  header nav{display:none;}
+  @media (min-width:720px){
+    header nav{display:flex; gap:22px; color:rgba(255,255,255,0.85); font-size:13.5px; font-weight:600;}
+    header nav a{text-decoration:none;}
+    header nav a:hover{color:var(--gold-soft);}
+  }
+
+  .hero{background:linear-gradient(165deg, var(--navy) 0%, #1E3A63 55%, var(--navy) 100%); color:#fff; padding:56px 0 40px; text-align:center; position:relative; overflow:hidden;}
+  .hero::before{content:''; position:absolute; inset:0; opacity:0.08; background-image:radial-gradient(circle, #fff 1px, transparent 1px); background-size:22px 22px;}
+  .hero-inner{position:relative;}
+  .eyebrow{display:inline-block; background:rgba(255,255,255,0.12); color:var(--gold-soft); font-size:12px; font-weight:700; letter-spacing:0.6px; text-transform:uppercase; padding:6px 14px; border-radius:100px; margin-bottom:18px;}
+  h1{font-size:clamp(28px,5.5vw,44px); font-weight:800; margin:0 0 14px; line-height:1.15;}
+  h1 span{color:var(--gold-soft);}
+  .hero p.lead{font-size:16.5px; color:rgba(255,255,255,0.85); max-width:600px; margin:0 auto 30px;}
+  .hero-ctas{display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-bottom:44px;}
+
+  /* mock dashboard preview -- datos de ejemplo, no reales */
+  .mockdash{
+    max-width:760px; margin:0 auto; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14);
+    border-radius:18px; padding:20px; text-align:left; backdrop-filter:blur(4px);
+  }
+  .mockdash-top{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;}
+  .mockdash-top b{color:#fff; font-size:13px;}
+  .mockdash-top span{color:rgba(255,255,255,0.5); font-size:11px;}
+  .mockdash-kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:14px;}
+  .mockdash-kpis div{background:rgba(255,255,255,0.07); border-radius:10px; padding:10px; text-align:center;}
+  .mockdash-kpis b{display:block; font-size:17px; color:var(--gold-soft); font-weight:800;}
+  .mockdash-kpis span{font-size:9.5px; color:rgba(255,255,255,0.6);}
+  .mockdash-bars{display:flex; flex-direction:column; gap:8px;}
+  .mockdash-bar-row{display:flex; align-items:center; gap:8px; font-size:10.5px; color:rgba(255,255,255,0.7);}
+  .mockdash-bar-track{flex:1; height:6px; background:rgba(255,255,255,0.1); border-radius:100px; overflow:hidden;}
+  .mockdash-bar-fill{height:100%; background:linear-gradient(90deg, var(--gold) 0%, var(--gold-soft) 100%); border-radius:100px;}
+  .mockdash-note{font-size:9.5px; color:rgba(255,255,255,0.35); text-align:center; margin-top:12px;}
+
+  section{padding:56px 0;}
+  .section-head{text-align:center; max-width:620px; margin:0 auto 36px;}
+  .section-head .tag{color:var(--gold); font-weight:700; font-size:12.5px; letter-spacing:0.6px; text-transform:uppercase;}
+  .section-head h2{font-size:clamp(22px,4vw,32px); margin:8px 0 10px; color:var(--navy); font-weight:800;}
+  .section-head p{color:var(--ink-dim); font-size:14.5px;}
+
+  .grid{display:grid; gap:18px;}
+  .grid-3{grid-template-columns:repeat(auto-fit,minmax(230px,1fr));}
+  .grid-2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr));}
+
+  .card{background:#fff; border:1px solid var(--border); border-radius:16px; padding:24px; box-shadow:0 2px 10px rgba(20,42,77,0.05);}
+  .card .ic{font-size:28px; margin-bottom:12px; display:block;}
+  .card h3{margin:0 0 8px; font-size:16px; color:var(--navy); font-weight:800;}
+  .card p{margin:0; font-size:13.5px; color:var(--ink-dim);}
+
+  .band-navy{background:var(--navy); color:#fff;}
+  .band-navy .section-head h2{color:#fff;}
+  .band-navy .section-head p{color:rgba(255,255,255,0.7);}
+  .band-navy .card{background:rgba(255,255,255,0.06); border-color:rgba(255,255,255,0.14);}
+  .band-navy .card h3{color:#fff;}
+  .band-navy .card p{color:rgba(255,255,255,0.72);}
+
+  .steps{counter-reset:step; display:grid; gap:16px; max-width:640px; margin:0 auto;}
+  .step{display:flex; gap:16px; align-items:flex-start;}
+  .step-num{
+    counter-increment:step; flex:0 0 auto; width:34px; height:34px; border-radius:50%;
+    background:var(--gold); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px;
+  }
+  .step-num::before{content:counter(step);}
+  .step h4{margin:0 0 4px; font-size:14.5px; color:var(--navy); font-weight:800;}
+  .step p{margin:0; font-size:13px; color:var(--ink-dim);}
+
+  .form-box{background:#fff; border:1px solid var(--border); border-radius:20px; padding:32px; max-width:520px; margin:0 auto; box-shadow:0 6px 24px rgba(20,42,77,0.08);}
+  .field{margin-bottom:16px;}
+  .field label{display:block; font-size:12.5px; font-weight:700; color:var(--navy); margin-bottom:6px;}
+  .field input, .field textarea{width:100%; padding:12px 14px; border:1.5px solid var(--border); border-radius:10px; font-size:14.5px; font-family:inherit; color:var(--ink); background:var(--cream);}
+  .field input:focus, .field textarea:focus{outline:none; border-color:var(--gold);}
+  .field textarea{resize:vertical; min-height:80px;}
+  .hp{position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden;}
+  #formMsg{font-size:13.5px; font-weight:700; margin-top:12px; text-align:center; display:none; padding:10px; border-radius:10px;}
+  #formMsg.ok{display:block; background:#E7F3EC; color:var(--ok);}
+  #formMsg.err{display:block; background:#FBEAE8; color:var(--danger);}
+
+  footer{background:var(--navy); color:rgba(255,255,255,0.65); padding:32px 0; text-align:center; font-size:12.5px;}
+  footer b{color:#fff;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="brand"><img src="../logo-crm-majo-icono.png" alt="MAJO"> MAJO · CRM/ERP</div>
+    <nav>
+      <a href="#modulos">Módulos</a>
+      <a href="#ia">Inteligencia Artificial</a>
+      <a href="#como-funciona">Cómo funciona</a>
+      <a href="#demo">Solicitar demo</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap hero-inner">
+    <span class="eyebrow">CRM / ERP para inmobiliarias</span>
+    <h1>Toda tu operación inmobiliaria, <span>conectada en tiempo real</span></h1>
+    <p class="lead">Ventas, leads, cobranzas, inventario y equipo comercial en un solo sistema — con IA que analiza cada conversación y reportes que se envían solos por WhatsApp.</p>
+    <div class="hero-ctas">
+      <a href="#demo" class="btn btn-gold">🚀 Solicitar una demo</a>
+      <a href="#modulos" class="btn btn-outline">Ver módulos</a>
+    </div>
+
+    <div class="mockdash">
+      <div class="mockdash-top"><b>📊 Tablero de Control</b><span>Datos de ejemplo</span></div>
+      <div class="mockdash-kpis">
+        <div><b>128</b><span>LEADS DEL MES</span></div>
+        <div><b>37</b><span>SEPARACIONES ACTIVAS</span></div>
+        <div><b>92%</b><span>RESPUESTA &lt; 30 MIN</span></div>
+        <div><b>S/ 1.4M</b><span>PIPELINE PONDERADO</span></div>
+      </div>
+      <div class="mockdash-bars">
+        <div class="mockdash-bar-row"><span style="width:70px;">Prospección</span><div class="mockdash-bar-track"><div class="mockdash-bar-fill" style="width:80%;"></div></div></div>
+        <div class="mockdash-bar-row"><span style="width:70px;">Negociación</span><div class="mockdash-bar-track"><div class="mockdash-bar-fill" style="width:55%;"></div></div></div>
+        <div class="mockdash-bar-row"><span style="width:70px;">Venta cerrada</span><div class="mockdash-bar-track"><div class="mockdash-bar-fill" style="width:35%;"></div></div></div>
+      </div>
+      <div class="mockdash-note">Vista ilustrativa del Tablero de Control · los datos reales viven dentro del sistema, protegidos por login</div>
+    </div>
+  </div>
+</section>
+
+<section id="modulos">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="tag">Módulos</span>
+      <h2>Un sistema, no diez apps sueltas</h2>
+      <p>Cada módulo escribe y lee de la misma base de datos en vivo — nada de exportar Excel para "sincronizar".</p>
+    </div>
+    <div class="grid grid-3">
+      <div class="card"><span class="ic">🧩</span><h3>Pipeline de ventas</h3><p>Kanban con historial de etapas, arrastrar y soltar táctil, y alertas de clientes en riesgo.</p></div>
+      <div class="card"><span class="ic">📞</span><h3>Seguimiento de leads</h3><p>Integración con GoHighLevel: tiempo de respuesta del asesor y de la IA, tipificación y últimos mensajes, en vivo.</p></div>
+      <div class="card"><span class="ic">💳</span><h3>Cobranzas y cuotas</h3><p>Saldos, cuotas pagadas/pendientes y mora calculados en tiempo real, con portal propio para el propietario.</p></div>
+      <div class="card"><span class="ic">📦</span><h3>Inventario en vivo</h3><p>Disponibilidad de lotes, precios y estado sincronizados directo con el sistema de lotización.</p></div>
+      <div class="card"><span class="ic">✍️</span><h3>Documentos legales</h3><p>Cotización, minuta y contratos con firma digital, generados y validados dentro del flujo de venta.</p></div>
+      <div class="card"><span class="ic">🔐</span><h3>Roles y permisos</h3><p>Permisos granulares por módulo y departamento — el menú de cada usuario se actualiza solo, en tiempo real, si le cambian el acceso.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="ia" class="band-navy">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="tag">Inteligencia Artificial</span>
+      <h2>MAJO no solo guarda datos, los interpreta</h2>
+      <p>IA integrada en el flujo diario de ventas, no un chatbot aparte.</p>
+    </div>
+    <div class="grid grid-3">
+      <div class="card"><span class="ic">🧠</span><h3>Análisis de conversaciones</h3><p>Evalúa el interés real de cada lead y avisa cuando algo necesita atención de un gerente.</p></div>
+      <div class="card"><span class="ic">📈</span><h3>Recomendaciones ejecutivas</h3><p>Sugerencias accionables sobre campañas y desempeño del equipo, generadas a partir de datos reales.</p></div>
+      <div class="card"><span class="ic">💬</span><h3>Asistente corporativo</h3><p>Responde preguntas del equipo sobre clientes, políticas y procesos con la información real del negocio.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="como-funciona">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="tag">Cómo funciona</span>
+      <h2>De la primera consulta al reporte, sin pasos manuales</h2>
+    </div>
+    <div class="steps">
+      <div class="step"><div class="step-num"></div><div><h4>El lead llega</h4><p>Desde campañas, WhatsApp o tu propia web — entra directo al pipeline.</p></div></div>
+      <div class="step"><div class="step-num"></div><div><h4>El equipo lo gestiona</h4><p>Cotiza, agenda visitas y avanza el pipeline desde el celular, incluso sin conexión.</p></div></div>
+      <div class="step"><div class="step-num"></div><div><h4>El sistema cobra y da seguimiento</h4><p>Cuotas, mora y portal del propietario se actualizan solos con cada pago registrado.</p></div></div>
+      <div class="step"><div class="step-num"></div><div><h4>Los reportes se envían solos</h4><p>PDF generado y enviado por WhatsApp automáticamente — nadie tiene que acordarse de hacerlo.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="demo" class="band-navy">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="tag">Solicitar demo</span>
+      <h2>Conoce MAJO en una llamada de 20 minutos</h2>
+      <p>Te mostramos el sistema con un caso parecido al tuyo.</p>
+    </div>
+    <form id="formLead" class="form-box" novalidate>
+      <input type="text" name="sitioWeb" class="hp" tabindex="-1" autocomplete="off">
+      <div class="field">
+        <label for="f_nombre">Nombre completo</label>
+        <input type="text" id="f_nombre" name="nombre" required maxlength="120" placeholder="Tu nombre">
+      </div>
+      <div class="field">
+        <label for="f_telefono">Celular (WhatsApp)</label>
+        <input type="tel" id="f_telefono" name="telefono" required maxlength="20" placeholder="9XXXXXXXX">
+      </div>
+      <div class="field">
+        <label for="f_email">Correo (opcional)</label>
+        <input type="email" id="f_email" name="email" maxlength="160" placeholder="tucorreo@empresa.com">
+      </div>
+      <div class="field">
+        <label for="f_mensaje">Cuéntanos sobre tu inmobiliaria (opcional)</label>
+        <textarea id="f_mensaje" name="mensaje" maxlength="500" placeholder="Ej. Tamaño del equipo, cuántos proyectos activos, qué usas hoy..."></textarea>
+      </div>
+      <button type="submit" id="btnEnviarLead" class="btn btn-gold" style="width:100%; color:#fff;">🚀 Solicitar demo</button>
+      <div id="formMsg"></div>
+    </form>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p><b>MAJO CRM/ERP</b> · un producto de Casa Dorada S.A.C.</p>
+    <p>© <span id="anioFooter"></span> Todos los derechos reservados</p>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('anioFooter').textContent = new Date().getFullYear();
+
+  const ENDPOINT_LEAD = 'https://nboikojylmkujdxinztj.supabase.co/functions/v1/captura-lead-web';
+  const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ib2lrb2p5bG1rdWpkeGluenRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyOTU1NzksImV4cCI6MjEwMzg3MTU3OX0.O6yaQPFwjYmIhQD--smhX1IRY0D1KETHsX30kFOmU5s';
+
+  const form = document.getElementById('formLead');
+  const btnEnviar = document.getElementById('btnEnviarLead');
+  const msgEl = document.getElementById('formMsg');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    msgEl.className = ''; msgEl.style.display = 'none';
+
+    const nombre = document.getElementById('f_nombre').value.trim();
+    const telefono = document.getElementById('f_telefono').value.trim();
+    const email = document.getElementById('f_email').value.trim();
+    const mensaje = document.getElementById('f_mensaje').value.trim();
+    const sitioWeb = form.sitioWeb.value; // honeypot
+
+    if (!nombre || !telefono) {
+      msgEl.textContent = 'Por favor completa tu nombre y celular.';
+      msgEl.className = 'err'; msgEl.style.display = 'block';
+      return;
+    }
+
+    btnEnviar.disabled = true;
+    btnEnviar.textContent = 'Enviando…';
+
+    try {
+      const resp = await fetch(ENDPOINT_LEAD, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': ANON_KEY,
+          'Authorization': `Bearer ${ANON_KEY}`,
+        },
+        body: JSON.stringify({ nombre, telefono, email, mensaje, sitioWeb, origen: 'sitio-corporativo-crm' }),
+      });
+      const data = await resp.json().catch(() => ({}));
+
+      if (resp.ok && data.ok) {
+        msgEl.textContent = '¡Listo! Te contactaremos para coordinar tu demo.';
+        msgEl.className = 'ok'; msgEl.style.display = 'block';
+        form.reset();
+      } else {
+        throw new Error(data.error || 'No se pudo enviar.');
+      }
+    } catch (err) {
+      msgEl.textContent = 'No se pudo enviar el formulario. Intenta de nuevo en un momento.';
+      msgEl.className = 'err'; msgEl.style.display = 'block';
+    } finally {
+      btnEnviar.disabled = false;
+      btnEnviar.textContent = '🚀 Solicitar demo';
+    }
+  });
+</script>
+
+</body>
+</html>
