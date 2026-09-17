@@ -723,7 +723,12 @@
 
 /* Placa blanca detrás de cada logo -- antes los logos iban directo sobre
    el degradado del atardecer sin ningún fondo, y con colores similares
-   (dorado/azul) se perdían contra el fondo en vez de resaltar. */
+   (dorado/azul) se perdían contra el fondo en vez de resaltar. La sombra
+   en capas (contacto + halo dorado ambiental) y el brillo que la recorre
+   son lo que da la sensación de placa 3D flotando con luz real -- no se
+   puede "subir a 4K" un PNG ya rasterizado sin inventarle detalle que no
+   tiene, así que el realce viene de la iluminación/profundidad, no de
+   procesar el archivo de imagen. */
 .logo-badge{
   width: 132px;
   height: 82px;
@@ -732,12 +737,35 @@
   border-radius: 14px;
   padding: 10px 14px;
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 6px 16px rgba(14, 26, 48, 0.35), 0 0 0 1px rgba(255,255,255,0.6);
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    0 12px 26px rgba(14, 26, 48, 0.5),
+    0 2px 4px rgba(14, 26, 48, 0.3),
+    0 0 0 1px rgba(255,255,255,0.75),
+    0 0 30px 4px rgba(232, 206, 143, 0.4);
   animation: logoFlotar3D 4.5s ease-in-out infinite;
   transition: transform 0.3s ease;
 }
 .logo-badge img{
   width: 100%; height: 100%; object-fit: contain;
+  position: relative; z-index: 1;
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.15));
+}
+/* Brillo diagonal que recorre la placa, como una vitrina iluminada. */
+.logo-badge::after{
+  content: '';
+  position: absolute; top: -60%; left: -70%;
+  width: 45%; height: 220%;
+  background: linear-gradient(115deg, transparent 0%, rgba(255,255,255,0.85) 50%, transparent 100%);
+  transform: rotate(20deg);
+  animation: wcLogoBrillo 3.6s ease-in-out infinite;
+  pointer-events: none;
+}
+.logo-badge:nth-of-type(2)::after{ animation-delay: 0.6s; }
+@keyframes wcLogoBrillo{
+  0%, 12%{ left: -70%; }
+  55%, 100%{ left: 140%; }
 }
 .logo-badge:hover{
   transform: scale(1.08);
@@ -748,9 +776,9 @@
 }
   @keyframes logoFlotar3D{
     0%, 100% { transform: translateY(0) rotateY(0deg) rotateX(0deg); }
-    25% { transform: translateY(-6px) rotateY(8deg) rotateX(3deg); }
+    25% { transform: translateY(-7px) rotateY(11deg) rotateX(4deg); }
     50% { transform: translateY(0) rotateY(0deg) rotateX(0deg); }
-    75% { transform: translateY(6px) rotateY(-8deg) rotateX(-3deg); }
+    75% { transform: translateY(7px) rotateY(-11deg) rotateX(-4deg); }
   }
   .welcome-title{ font-size: 19px; font-weight: 800; margin: 0 0 4px; letter-spacing: -0.02em; }
   .welcome-sub{ font-size: 12px; color: #CBD5E1; margin: 0; line-height: 1.4; }
