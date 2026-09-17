@@ -371,6 +371,80 @@
   .badge-activa{ background: var(--warning-bg); color: var(--warning); }
   .badge-vencida{ background: var(--danger-bg); color: var(--danger); }
   .badge-convertida_venta{ background: var(--ok-bg); color: var(--ok); }
+  /* PLAYLIST COSTA DORADA -- tarjeta oscura navy/dorado a juego con la
+     identidad corporativa (login, badges), reproductor propio en vez del
+     <audio controls> nativo (se ve distinto y "básico" en cada navegador). */
+  .pl-card{
+    background: linear-gradient(155deg, #142A4D 0%, #0B1A33 100%);
+    border-radius: 16px; padding: 16px; margin-bottom: 14px;
+    box-shadow: 0 8px 24px rgba(20,42,77,0.28);
+    color: #F2EFE6; position: relative; overflow: hidden;
+  }
+  .pl-card::before{
+    content:''; position:absolute; inset:0; pointer-events:none;
+    background: radial-gradient(circle at 90% -10%, rgba(200,155,60,0.22) 0%, transparent 55%);
+  }
+  .pl-head{ display:flex; justify-content:space-between; align-items:center; gap:10px; position:relative; z-index:1; }
+  .pl-head-title{ display:flex; align-items:center; gap:10px; min-width:0; }
+  .pl-head-icon{ font-size:22px; flex-shrink:0; }
+  .pl-head-title h4{ margin:0; font-size:13.5px; font-weight:800; color:#fff; letter-spacing:.2px; }
+  .pl-head-title p{ margin:1px 0 0; font-size:10.5px; color:#C9D3E4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pl-btn-subir{
+    width:34px; height:34px; border-radius:50%; border:1px solid rgba(200,155,60,0.5);
+    background: rgba(200,155,60,0.15); color:#E8CE8F; font-size:15px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0; transition: background .15s;
+  }
+  .pl-btn-subir:active{ background: rgba(200,155,60,0.32); }
+
+  .pl-now-playing{ display:flex; align-items:center; gap:12px; margin-top:14px; position:relative; z-index:1; }
+  .pl-vinyl{
+    width:46px; height:46px; border-radius:50%; flex-shrink:0;
+    background: radial-gradient(circle, #C89B3C 0%, #8A6D24 70%, #6B5219 100%);
+    display:flex; align-items:center; justify-content:center; font-size:18px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.35), inset 0 0 0 3px rgba(20,42,77,0.5);
+  }
+  .pl-vinyl.pl-spin{ animation: plSpin 4s linear infinite; }
+  @keyframes plSpin{ to{ transform: rotate(360deg); } }
+  .pl-title{ margin:0; font-size:13px; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pl-subtitle{ margin:2px 0 0; font-size:10.5px; color:#B9C3D6; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+  .pl-progress-row{ display:flex; align-items:center; gap:8px; margin-top:12px; position:relative; z-index:1; }
+  .pl-time{ font-size:10px; color:#B9C3D6; font-variant-numeric: tabular-nums; flex-shrink:0; width:30px; text-align:center; }
+  .pl-seek{ flex:1; -webkit-appearance:none; appearance:none; height:4px; border-radius:3px; background: rgba(255,255,255,0.18); outline:none; cursor:pointer; margin:0; }
+  .pl-seek::-webkit-slider-thumb{ -webkit-appearance:none; width:13px; height:13px; border-radius:50%; background:#E8CE8F; box-shadow:0 1px 3px rgba(0,0,0,0.4); }
+  .pl-seek::-moz-range-thumb{ width:13px; height:13px; border-radius:50%; background:#E8CE8F; border:none; }
+
+  .pl-controls{ display:flex; align-items:center; justify-content:center; gap:14px; margin-top:12px; position:relative; z-index:1; }
+  .pl-ctrl-btn{
+    background: rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:#fff;
+    width:38px; height:38px; border-radius:50%; font-size:14px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; transition: background .15s, transform .1s;
+  }
+  .pl-ctrl-btn:active{ transform: scale(0.93); }
+  .pl-ctrl-play{
+    width:48px; height:48px; font-size:17px; border:none;
+    background: linear-gradient(135deg, #E8CE8F 0%, #C89B3C 100%); color:#142A4D;
+    box-shadow: 0 3px 10px rgba(200,155,60,0.4);
+  }
+  .pl-ctrl-cast{ margin-left:4px; }
+
+  .pl-tracklist{ margin-top:14px; display:flex; flex-direction:column; gap:4px; max-height:150px; overflow-y:auto; position:relative; z-index:1; }
+  .pl-track-item{ display:flex; align-items:center; gap:8px; padding:7px 9px; border-radius:9px; cursor:pointer; background: rgba(255,255,255,0.04); transition: background .15s; }
+  .pl-track-item:active{ background: rgba(255,255,255,0.1); }
+  .pl-track-item.pl-track-activo{ background: rgba(200,155,60,0.18); }
+  .pl-track-num{ font-size:10px; color:#8B97AE; width:16px; text-align:center; flex-shrink:0; }
+  .pl-track-activo .pl-track-num{ color:#E8CE8F; }
+  .pl-track-nombre{ flex:1; min-width:0; font-size:11.5px; color:#DCE3F0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pl-track-activo .pl-track-nombre{ color:#fff; font-weight:700; }
+  .pl-track-tipo{ font-size:11px; flex-shrink:0; }
+
+  .pl-hint{ margin:12px 0 0; font-size:9.5px; color:#8B97AE; text-align:center; position:relative; z-index:1; }
+
+  .pl-subida{ margin-top:12px; padding-top:12px; border-top:1px dashed rgba(255,255,255,0.15); position:relative; z-index:1; }
+  .pl-subida label{ font-size:11px; font-weight:700; color:#E8CE8F; display:block; margin-bottom:4px; }
+  .pl-subida input[type=file]{ width:100%; font-size:11px; color:#DCE3F0; }
+  .pl-subida p{ font-size:10.5px; color:#B9C3D6; margin:5px 0 0; }
+
   .ghl-dots{ display:inline-flex; gap:3px; }
   .ghl-dot{ display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; font-size:10px; font-weight:700; border:1.5px solid var(--border); color: var(--ink-dim); }
   .ghl-dot.lleno{ border-color: var(--ok); color: var(--ok); background: var(--ok-bg); }
@@ -1472,35 +1546,52 @@ main.app-content {
         </div>
 
         <!-- PLAYLIST CORPORATIVA COSTA DORADA -->
-        <div class="card" id="cardPlaylistCostaDorada" style="margin-bottom:14px; border:1.5px solid #E8D9B5;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span style="font-size:18px;">🎵</span>
-              <h4 style="margin:0; font-size:13px;">Playlist Costa Dorada</h4>
-            </div>
-            <button class="chip-btn hidden" id="btnPlaylistSubirMp3" onclick="togglePlaylistSubida()" style="font-size:11px; padding:3px 9px; border-color:var(--gold); color:var(--navy); background:#fff;" title="Subir nueva pista (SuperAdmin)">⬆️ Subir pista</button>
-          </div>
-          <p id="playlist_estado" style="font-size:11.5px; color:var(--ink-dim); margin:0 0 8px;">Cargando playlist…</p>
-          <div id="playlist_reproductor" class="hidden">
-            <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-              <button class="chip-btn" onclick="playlistAnterior()" style="padding:6px 10px; flex-shrink:0;">⏮️</button>
-              <div style="flex:1; min-width:0;">
-                <p id="playlist_titulo_actual" style="margin:0; font-size:12px; font-weight:700; color:var(--navy); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">—</p>
-                <p id="playlist_tipo_actual" style="margin:0; font-size:10px; color:var(--ink-dim);"></p>
+        <div class="pl-card" id="cardPlaylistCostaDorada">
+          <div class="pl-head">
+            <div class="pl-head-title">
+              <span class="pl-head-icon">🎵</span>
+              <div style="min-width:0;">
+                <h4>Playlist Costa Dorada</h4>
+                <p id="playlist_estado">Cargando playlist…</p>
               </div>
-              <button class="chip-btn" onclick="playlistSiguiente()" style="padding:6px 10px; flex-shrink:0;">⏭️</button>
             </div>
-            <audio id="playlist_audio" controls style="width:100%;"></audio>
-            <video id="playlist_video_oculto" style="display:none;" playsinline></video>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px; gap:8px; flex-wrap:wrap;">
-              <p style="margin:0; font-size:10px; color:var(--ink-dim); flex:1; min-width:180px;">🔊 Se reproduce por el altavoz o el Bluetooth que tengas conectado en tu celular.</p>
-              <button class="chip-btn hidden" id="btnPlaylistTransmitir" onclick="playlistTransmitirAPantalla()" style="font-size:10.5px; padding:4px 10px; border-color:var(--gold); color:var(--navy); background:#fff; flex-shrink:0;">📺 Transmitir a pantalla</button>
-            </div>
+            <button class="pl-btn-subir hidden" id="btnPlaylistSubirMp3" onclick="togglePlaylistSubida()" title="Subir nuevas pistas (SuperAdmin)">⬆️</button>
           </div>
-          <div id="playlist_subida" class="hidden" style="margin-top:10px; padding-top:10px; border-top:1px dashed #E8D9B5;">
-            <label style="font-size:11px; font-weight:700; color:var(--navy);">Subir nueva pista (audio o video)</label>
-            <input type="file" id="playlist_input_archivo" accept="audio/*,video/mp4,video/quicktime,video/webm" style="width:100%; font-size:12px; margin-top:4px;">
-            <p id="playlist_subida_estado" style="font-size:10.5px; color:var(--ink-dim); margin:4px 0 0;"></p>
+
+          <div id="playlist_reproductor" class="hidden">
+            <div class="pl-now-playing">
+              <div class="pl-vinyl" id="playlist_vinyl">🎧</div>
+              <div style="min-width:0; flex:1;">
+                <p id="playlist_titulo_actual" class="pl-title">—</p>
+                <p id="playlist_tipo_actual" class="pl-subtitle"></p>
+              </div>
+            </div>
+
+            <div class="pl-progress-row">
+              <span id="playlist_tiempo_actual" class="pl-time">0:00</span>
+              <input type="range" id="playlist_seek" class="pl-seek" min="0" max="100" value="0" step="0.1">
+              <span id="playlist_tiempo_total" class="pl-time">0:00</span>
+            </div>
+
+            <div class="pl-controls">
+              <button class="pl-ctrl-btn" onclick="playlistAnterior()" title="Anterior">⏮</button>
+              <button class="pl-ctrl-btn pl-ctrl-play" id="btnPlaylistPlayPause" onclick="playlistTogglePlay()" title="Reproducir / Pausar">▶</button>
+              <button class="pl-ctrl-btn" onclick="playlistSiguiente()" title="Siguiente">⏭</button>
+              <button class="pl-ctrl-btn pl-ctrl-cast hidden" id="btnPlaylistTransmitir" onclick="playlistTransmitirAPantalla()" title="Transmitir a pantalla">📺</button>
+            </div>
+
+            <audio id="playlist_audio" style="display:none;"></audio>
+            <video id="playlist_video_oculto" style="display:none;" playsinline></video>
+
+            <div id="playlist_lista" class="pl-tracklist"></div>
+
+            <p class="pl-hint">🔊 Se reproduce por el altavoz o el Bluetooth que tengas conectado en tu celular.</p>
+          </div>
+
+          <div id="playlist_subida" class="hidden pl-subida">
+            <label>Subir nuevas pistas (audio o video — puedes elegir varias a la vez)</label>
+            <input type="file" id="playlist_input_archivo" accept="audio/*,video/mp4,video/quicktime,video/webm" multiple>
+            <p id="playlist_subida_estado"></p>
           </div>
         </div>
 
@@ -2217,14 +2308,14 @@ main.app-content {
               <button class="chip-btn" onclick="abrirModalDomingoDeCierres()" style="width:100%; justify-content:center; font-size:11px; font-weight:700; background:#FEF3C7; color:#B45309; border-color:#FCD34D; padding:8px;">🎉 Abrir Pantalla Showroom</button>
             </div>
 
-            <!-- 7. Minuta Legal con Firma Táctil -->
+            <!-- 7. Formalización de Separación con Firma Táctil -->
             <div style="background:#fff; border:1px solid #99F6E4; border-radius:12px; padding:14px; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 2px 8px rgba(15,118,110,0.08);">
               <div>
                 <span style="font-size:22px;">✍️</span>
-                <h4 style="margin:4px 0 2px; font-size:13px; font-weight:800; color:#0F766E;">Minuta Legal & Firma Táctil</h4>
-                <p style="margin:0 0 10px; font-size:11px; color:var(--ink-dim); line-height:1.35;">Formalización del contrato preparatorio con captura de firma en pantalla táctil y generación de PDF formal en 2 páginas.</p>
+                <h4 style="margin:4px 0 2px; font-size:13px; font-weight:800; color:#0F766E;">Formalización de Separación</h4>
+                <p style="margin:0 0 10px; font-size:11px; color:var(--ink-dim); line-height:1.35;">Recibo de Adelanto de Inicial con captura de firma en pantalla táctil y generación de PDF formal.</p>
               </div>
-              <button class="chip-btn" onclick="abrirModalMinutaCompraventa()" style="width:100%; justify-content:center; font-size:11px; font-weight:700; background:#CCFBF1; color:#0F766E; border-color:#99F6E4; padding:8px;">✍️ Formalizar Contrato</button>
+              <button class="chip-btn" onclick="abrirModalMinutaCompraventa()" style="width:100%; justify-content:center; font-size:11px; font-weight:700; background:#CCFBF1; color:#0F766E; border-color:#99F6E4; padding:8px;">✍️ Formalizar Separación</button>
             </div>
 
             <!-- 8. Red de Embajadores (Referidos) -->
@@ -3047,7 +3138,7 @@ main.app-content {
       <div class="modal-actions" style="margin-top:8px; flex-wrap:wrap; gap:8px;">
         <button class="btn-secondary" onclick="descargarCotizacionPDF()" style="flex:1;">📄 Descargar PDF</button>
         <button class="btn-secondary" onclick="descargarHojaResumen1PaginaPDF()" style="flex:1; border-color:var(--gold); color:var(--navy); font-weight:700;">📑 Hoja Resumen (1 Pág)</button>
-        <button class="btn-primary" onclick="abrirMinutaDesdeCotizador()" style="flex:1; background:#0F766E; border-color:#0F766E; font-weight:700;">✍️ Generar Minuta & Firmar</button>
+        <button class="btn-primary" onclick="abrirMinutaDesdeCotizador()" style="flex:1; background:#0F766E; border-color:#0F766E; font-weight:700;">✍️ Formalizar Separación y Firmar</button>
         <button class="btn-primary" onclick="pasarCotizacionASeparacion()" style="flex:1;">🏷️ Pasar a Separación</button>
       </div>
     </div>
@@ -4004,7 +4095,7 @@ main.app-content {
   </div>
 
   <!-- ============================================================== -->
-  <!-- MODAL 2: MINUTA DE COMPRAVENTA & FIRMA DIGITAL TÁCTIL (CANVAS) -->
+  <!-- MODAL 2: FORMALIZACIÓN DE SEPARACIÓN & FIRMA DIGITAL TÁCTIL (CANVAS) -->
   <!-- ============================================================== -->
   <div class="modal-backdrop" id="modalMinutaCompraventa">
     <div class="modal-sheet" style="max-width:680px; width:95%; max-height:90vh; overflow-y:auto;">
@@ -4541,7 +4632,7 @@ const PERMISOS_CATALOGO = [
   // 💼 DEPARTAMENTO COMERCIAL (VENTAS & CIERRES)
   { key: 'ver_operaciones_campo',          label: 'Panel Operativo de Campo (Pantalla Exclusiva)',   dept: 'Comercial', default: true },
   { key: 'ver_domingo_cierres',            label: 'Domingo de Cierres (Showroom TV en Terreno)',    dept: 'Comercial', default: true },
-  { key: 'generar_minuta_digital',          label: 'Formalización de Minuta Legal y Firma Táctil',    dept: 'Comercial', default: true },
+  { key: 'generar_minuta_digital',          label: 'Formalización de Separación y Firma Táctil',    dept: 'Comercial', default: true },
   { key: 'ver_red_embajadores',            label: 'Red de Embajadores y Referidos (Tracking Bonos)', dept: 'Comercial', default: true },
   { key: 'usar_dictado_voz',               label: 'Dictado por Voz en Campo (Web Speech API)',      dept: 'Comercial', default: true },
   { key: 'usar_pre_reserva_qr',            label: 'Pre-Reserva Digital QR in situ (S/ 500 Offline)', dept: 'Comercial', default: true },
@@ -4658,22 +4749,45 @@ async function cargarPlaylistCostaDorada(){
       });
 
     if (!playlistPistas.length) {
-      if (elEstado) elEstado.textContent = esUsuarioSuperAdmin() ? 'Aún no hay pistas — sube la primera con "Subir pista".' : 'Aún no hay pistas cargadas.';
+      if (elEstado) elEstado.textContent = esUsuarioSuperAdmin() ? 'Aún no hay pistas — sube la primera con el botón ⬆️.' : 'Aún no hay pistas cargadas.';
       if (elReproductor) elReproductor.classList.add('hidden');
       return;
     }
 
-    if (elEstado) elEstado.textContent = '';
+    if (elEstado) elEstado.textContent = `${playlistPistas.length} pista${playlistPistas.length === 1 ? '' : 's'}`;
     if (elReproductor) elReproductor.classList.remove('hidden');
-    playlistIndiceActual = 0;
-    playlistCargarPista(0);
+    playlistRenderLista();
+    playlistCargarPista(0, false);
   } catch (e) {
     console.error('No se pudo cargar la playlist de Costa Dorada:', e);
     if (elEstado) elEstado.textContent = 'No se pudo cargar la playlist en este momento.';
   }
 }
 
-function playlistCargarPista(i){
+function playlistRenderLista(){
+  const cont = document.getElementById('playlist_lista');
+  if (!cont) return;
+  cont.innerHTML = playlistPistas.map((p, i) => `
+    <div class="pl-track-item ${i === playlistIndiceActual ? 'pl-track-activo' : ''}" onclick="playlistCargarPista(${i}, true)">
+      <span class="pl-track-num">${i + 1}</span>
+      <span class="pl-track-nombre">${escapeHtml(p.titulo)}</span>
+      <span class="pl-track-tipo">${p.tipo === 'video' ? '🎥' : '🎧'}</span>
+    </div>
+  `).join('');
+}
+
+function playlistFmtTiempo(seg){
+  if (!isFinite(seg) || seg < 0) return '0:00';
+  const m = Math.floor(seg / 60);
+  const s = Math.floor(seg % 60);
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+// autoplay=false al cargar la playlist por primera vez (los navegadores
+// bloquean reproducir audio sin que el usuario haya interactuado con la
+// página todavía) -- true al elegir una pista de la lista o tocar
+// siguiente/anterior, donde el propio toque ya cuenta como interacción.
+function playlistCargarPista(i, autoplay){
   if (!playlistPistas.length) return;
   playlistIndiceActual = ((i % playlistPistas.length) + playlistPistas.length) % playlistPistas.length;
   const pista = playlistPistas[playlistIndiceActual];
@@ -4690,20 +4804,61 @@ function playlistCargarPista(i){
   // <audio> puede decodificar la pista de sonido de un mp4/webm sin
   // mostrar el video) -- ver la imagen requiere transmitir a una pantalla,
   // nunca se muestra el video dentro del celular.
-  if (audio) { audio.pause(); audio.src = pista.url; }
+  if (audio) { audio.pause(); audio.src = pista.url; if (autoplay) audio.play().catch(() => {}); }
   if (video) { video.pause(); video.src = pista.url; }
 
   if (pista.tipo === 'video') {
-    if (elTipo) elTipo.textContent = '🎥 Video · reproduciendo solo el audio aquí — usa "Transmitir a pantalla" para verlo';
+    if (elTipo) elTipo.textContent = '🎥 Video · reproduciendo solo el audio aquí';
     if (btnTransmitir) btnTransmitir.classList.remove('hidden');
   } else {
     if (elTipo) elTipo.textContent = '🎧 Audio';
     if (btnTransmitir) btnTransmitir.classList.toggle('hidden', !('remote' in HTMLMediaElement.prototype));
   }
+  playlistRenderLista();
+  playlistActualizarBotonPlay();
 }
 
-function playlistAnterior(){ playlistCargarPista(playlistIndiceActual - 1); }
-function playlistSiguiente(){ playlistCargarPista(playlistIndiceActual + 1); }
+function playlistAnterior(){ playlistCargarPista(playlistIndiceActual - 1, true); }
+function playlistSiguiente(){ playlistCargarPista(playlistIndiceActual + 1, true); }
+
+function playlistActualizarBotonPlay(){
+  const audio = document.getElementById('playlist_audio');
+  const btn = document.getElementById('btnPlaylistPlayPause');
+  const vinilo = document.getElementById('playlist_vinyl');
+  const reproduciendo = audio && !audio.paused && !audio.ended;
+  if (btn) btn.textContent = reproduciendo ? '⏸' : '▶';
+  if (vinilo) vinilo.classList.toggle('pl-spin', !!reproduciendo);
+}
+
+function playlistTogglePlay(){
+  const audio = document.getElementById('playlist_audio');
+  if (!audio || !audio.src) return;
+  if (audio.paused) audio.play().catch(() => {}); else audio.pause();
+}
+
+// Barra de progreso + tiempos, propios en vez del <audio controls> nativo
+// para que el reproductor luzca igual en cualquier navegador/celular.
+(function initPlaylistSeekBinding(){
+  const audio = document.getElementById('playlist_audio');
+  const seek = document.getElementById('playlist_seek');
+  const elActual = document.getElementById('playlist_tiempo_actual');
+  const elTotal = document.getElementById('playlist_tiempo_total');
+  if (!audio || !seek) return;
+
+  let arrastrando = false;
+  audio.addEventListener('loadedmetadata', () => { seek.max = audio.duration || 0; if (elTotal) elTotal.textContent = playlistFmtTiempo(audio.duration); });
+  audio.addEventListener('timeupdate', () => {
+    if (arrastrando) return;
+    seek.value = audio.currentTime || 0;
+    if (elActual) elActual.textContent = playlistFmtTiempo(audio.currentTime);
+  });
+  audio.addEventListener('play', playlistActualizarBotonPlay);
+  audio.addEventListener('pause', playlistActualizarBotonPlay);
+  audio.addEventListener('ended', () => playlistSiguiente());
+
+  seek.addEventListener('input', () => { arrastrando = true; if (elActual) elActual.textContent = playlistFmtTiempo(Number(seek.value)); });
+  seek.addEventListener('change', () => { audio.currentTime = Number(seek.value); arrastrando = false; });
+})();
 
 // Transmitir a pantalla: la Remote Playback API (Chrome/Android, Chromecast)
 // es la unica forma real de "enviar" un elemento de audio/video a otra
@@ -4734,24 +4889,29 @@ function togglePlaylistSubida(){
 }
 
 document.getElementById('playlist_input_archivo')?.addEventListener('change', async (e) => {
-  const archivo = e.target.files?.[0];
-  if (!archivo) return;
+  const archivos = Array.from(e.target.files || []);
+  if (!archivos.length) return;
   const elEstadoSubida = document.getElementById('playlist_subida_estado');
-  const nombreLimpio = archivo.name.trim().replace(/[^a-zA-Z0-9.\-_ ]/g, '').replace(/\s+/g, '-');
 
-  if (elEstadoSubida) elEstadoSubida.textContent = 'Subiendo…';
-  try {
-    const { error } = await sb.storage.from(PLAYLIST_BUCKET).upload(nombreLimpio, archivo, { upsert: true, contentType: archivo.type || undefined });
-    if (error) throw error;
-    if (elEstadoSubida) elEstadoSubida.textContent = '✓ Pista subida.';
-    toast('Pista subida a la playlist ✓');
-    e.target.value = '';
-    await cargarPlaylistCostaDorada();
-  } catch (err) {
-    console.error('Error subiendo pista a la playlist:', err);
-    if (elEstadoSubida) elEstadoSubida.textContent = 'Error al subir. Intenta de nuevo.';
-    toast('No se pudo subir la pista');
+  let subidas = 0, fallidas = 0;
+  for (let i = 0; i < archivos.length; i++) {
+    const archivo = archivos[i];
+    const nombreLimpio = archivo.name.trim().replace(/[^a-zA-Z0-9.\-_ ]/g, '').replace(/\s+/g, '-');
+    if (elEstadoSubida) elEstadoSubida.textContent = `Subiendo ${i + 1} de ${archivos.length}: ${nombreLimpio}…`;
+    try {
+      const { error } = await sb.storage.from(PLAYLIST_BUCKET).upload(nombreLimpio, archivo, { upsert: true, contentType: archivo.type || undefined });
+      if (error) throw error;
+      subidas++;
+    } catch (err) {
+      console.error('Error subiendo pista a la playlist:', nombreLimpio, err);
+      fallidas++;
+    }
   }
+
+  if (elEstadoSubida) elEstadoSubida.textContent = fallidas ? `✓ ${subidas} subida(s), ${fallidas} con error.` : `✓ ${subidas} pista(s) subida(s).`;
+  toast(fallidas ? `Subidas ${subidas} de ${archivos.length} pistas` : `${subidas} pista(s) subida(s) a la playlist ✓`);
+  e.target.value = '';
+  await cargarPlaylistCostaDorada();
 });
 
 function tienePermiso(key){
@@ -16160,7 +16320,7 @@ const SUBMENUS_DATA = {
       { key: 'ver_herramientas_tacna', icono: '🏛️', titulo: 'Cierre Rápido Tacna', desc: 'Partida SUNARP, Pórtico y Vías', permiso: 'ver_herramientas_tacna', accion: () => { abrirModalHerramientasTacna(); cerrarDrawer(); } },
       { key: 'ver_cadencias_seguimiento', icono: '🎯', titulo: 'Cadencias 1-Toque', desc: 'Scripts para Ferias, Chile y Visitas', permiso: 'ver_cadencias_seguimiento', accion: () => { abrirModalCadencias('Carlos Mamani', '952123456'); cerrarDrawer(); } },
       { key: 'ver_domingo_cierres', icono: '🎉', titulo: 'Domingo de Cierres TV', desc: 'Campana acústica y confeti en vivo', permiso: 'ver_domingo_cierres', accion: () => { abrirModalDomingoDeCierres(); cerrarDrawer(); } },
-      { key: 'generar_minuta_digital', icono: '✍️', titulo: 'Minuta Legal & Firma', desc: 'Contrato preparatorio en pantalla táctil', permiso: 'generar_minuta_digital', accion: () => { abrirModalMinutaCompraventa(); cerrarDrawer(); } },
+      { key: 'generar_minuta_digital', icono: '✍️', titulo: 'Formalización de Separación', desc: 'Recibo de Adelanto de Inicial en pantalla táctil', permiso: 'generar_minuta_digital', accion: () => { abrirModalMinutaCompraventa(); cerrarDrawer(); } },
       { key: 'ver_control_visitas', icono: '🚐', titulo: 'Movilidad Van (14 Asientos)', desc: 'Control de salidas a La Yarada', permiso: 'ver_control_visitas', accion: () => { irAVista('visitas'); cerrarDrawer(); } }
     ]
   },
@@ -17131,7 +17291,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
 /* ============================================================== */
-/* 12. MINUTA LEGAL DE COMPRAVENTA & FIRMA DIGITAL TÁCTIL (CANVAS) */
+/* 12. FORMALIZACIÓN DE SEPARACIÓN & FIRMA DIGITAL TÁCTIL (CANVAS)  */
 /* ============================================================== */
 let canvasFirma = null;
 let ctxFirma = null;
