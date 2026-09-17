@@ -3119,7 +3119,7 @@ main.app-content {
       <div class="field"><label>Número de DNI</label><input type="text" id="eu_dni" placeholder="DNI del colaborador"></div>
       <div class="field"><label>Celular / WhatsApp</label><input type="tel" id="eu_celular" placeholder="Número para alertas"></div>
       
-      <div class="field">
+      <div class="field" id="eu_campo_area">
         <label>Departamento Principal</label>
         <select id="eu_area" onchange="actualizarSubareasYCargos('eu')">
           <option value="Gerencia General">Gerencia General</option>
@@ -3130,27 +3130,27 @@ main.app-content {
         </select>
       </div>
 
-      <div class="field">
+      <div class="field" id="eu_campo_subarea">
         <label>Sub-Área o Especialidad</label>
         <select id="eu_subarea"></select>
       </div>
 
-      <div class="field">
+      <div class="field" id="eu_campo_cargo">
         <label>Cargo Oficial según Organigrama</label>
         <select id="eu_cargo_sel" onchange="alCambiarCargoSelect('eu')"></select>
         <input type="text" id="eu_cargo" placeholder="Escribe el cargo específico" class="hidden" style="margin-top:6px;">
       </div>
 
-      <div class="field">
+      <div class="field" id="eu_campo_supervisor">
         <label>Supervisor a cargo (recibe copia del reporte diario 9pm)</label>
         <select id="eu_supervisor_id"><option value="">— Sin supervisor —</option></select>
       </div>
-      
+
       <div class="field">
         <label>Correo adicional para el reporte diario (opcional)</label>
         <input type="email" id="eu_reporte_email_adicional" placeholder="otro-correo@ejemplo.com">
       </div>
-      
+
       <label class="perm-card" style="margin-bottom:12px;">
         <div class="perm-card-info"><span class="perm-card-title">Recibir Reporte Diario del Equipo (9pm)</span></div>
         <input type="checkbox" id="eu_reporte_diario_activo" checked>
@@ -3161,13 +3161,17 @@ main.app-content {
         <select id="eu_rol"></select>
       </div>
 
-      <div class="field">
+      <div class="field" id="eu_campo_activo">
         <label>Estado de la cuenta</label>
         <select id="eu_activo">
           <option value="true">Activo</option>
           <option value="false">Inactivo (bloqueado)</option>
         </select>
         <p style="font-size:11px; color:var(--ink-dim); margin:4px 0 0;">"Inactivo" cierra su sesión y le impide volver a entrar con su correo, aunque siga en Google Workspace.</p>
+      </div>
+
+      <div id="eu_aviso_dueno_sistema" class="hidden" style="background:#EFF6FF; border:1px solid #BFDBFE; border-radius:10px; padding:10px; margin:12px 0; font-size:12px; color:#1E40AF;">
+        👑 <b>Esta cuenta es el SuperAdmin dueño del sistema</b> — no aplica cargo, departamento, supervisor ni estado de cuenta, así que esos campos no se muestran aquí.
       </div>
 
       <!-- AVISO DE SOLO SUPERADMIN -->
@@ -3349,8 +3353,32 @@ main.app-content {
       </div>
 
       <div class="field">
+        <label>Supervisor a cargo (recibe copia del reporte diario 9pm)</label>
+        <select id="pa_supervisor_id"><option value="">— Sin supervisor —</option></select>
+      </div>
+
+      <div class="field">
+        <label>Correo adicional para el reporte diario (opcional)</label>
+        <input type="email" id="pa_reporte_email_adicional" placeholder="otro-correo@ejemplo.com">
+      </div>
+
+      <label class="perm-card" style="margin-bottom:12px;">
+        <div class="perm-card-info"><span class="perm-card-title">Recibir Reporte Diario del Equipo (9pm)</span></div>
+        <input type="checkbox" id="pa_reporte_diario_activo" checked>
+      </label>
+
+      <div class="field">
         <label>Rol en el sistema *</label>
         <select id="pa_rol"></select>
+      </div>
+
+      <div class="field">
+        <label>Estado de la invitación</label>
+        <select id="pa_activo">
+          <option value="true">Activa</option>
+          <option value="false">Desactivada (bloqueada)</option>
+        </select>
+        <p style="font-size:11px; color:var(--ink-dim); margin:4px 0 0;">"Desactivada" le impide completar su primer ingreso con este correo hasta que la reactives, aunque siga en Google Workspace.</p>
       </div>
 
       <!-- AVISO DE SOLO SUPERADMIN -->
@@ -6798,12 +6826,19 @@ document.getElementById('btnAbrirPreautorizar').addEventListener('click', () => 
   document.getElementById('pa_modal_titulo').textContent = 'Alta de colaborador en el equipo';
   document.getElementById('btnGuardarPreautorizado').textContent = 'Agregar colaborador';
   document.getElementById('pa_email').disabled = false;
-  ['pa_nombre','pa_email','pa_dni','pa_celular','pa_cargo'].forEach(id => {
+  ['pa_nombre','pa_email','pa_dni','pa_celular','pa_cargo','pa_reporte_email_adicional'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   document.getElementById('pa_area').value = 'Departamento Comercial';
   actualizarSubareasYCargos('pa', 'Área de Ventas', 'Asesor(a) Comercial');
   actualizarSelectorRoles('pa_rol', 'usuario');
+  document.getElementById('pa_activo').value = 'true';
+  document.getElementById('pa_reporte_diario_activo').checked = true;
+  const selSupNuevo = document.getElementById('pa_supervisor_id');
+  if (selSupNuevo) {
+    const posiblesNuevo = (usuariosCache || []).filter(u => u.rol === 'supervisor' || u.rol === 'admin' || u.rol === 'superadmin' || u.rol === 'director_comercial');
+    selSupNuevo.innerHTML = '<option value="">— Sin supervisor —</option>' + posiblesNuevo.map(p => `<option value="${p.id}">${escapeHtml(p.nombre)} (${escapeHtml(p.cargo || p.rol)})</option>`).join('');
+  }
 
   window._permisosCompletosEnEdicionPA = null;
   const defPerm = fusionarPermisosConCatalogo(null);
@@ -6866,6 +6901,15 @@ async function abrirEditarPreautorizado(email){
   document.getElementById('pa_area').value = areaVal;
   actualizarSubareasYCargos('pa', p.subarea || '', p.cargo || 'Asesor(a) Comercial');
   actualizarSelectorRoles('pa_rol', p.rol || 'usuario');
+  document.getElementById('pa_activo').value = String(p.activo !== false);
+  document.getElementById('pa_reporte_email_adicional').value = p.reporte_email_adicional || '';
+  document.getElementById('pa_reporte_diario_activo').checked = p.reporte_diario_activo !== false;
+
+  const selSup = document.getElementById('pa_supervisor_id');
+  if (selSup) {
+    const posibles = (usuariosCache || []).filter(u => u.rol === 'supervisor' || u.rol === 'admin' || u.rol === 'superadmin' || u.rol === 'director_comercial');
+    selSup.innerHTML = '<option value="">— Sin supervisor —</option>' + posibles.map(u => `<option value="${u.id}" ${u.id === p.supervisor_id ? 'selected' : ''}>${escapeHtml(u.nombre)} (${escapeHtml(u.cargo || u.rol)})</option>`).join('');
+  }
 
   const perm = fusionarPermisosConCatalogo(p.permisos);
   window._permisosCompletosEnEdicionPA = perm;
@@ -6895,6 +6939,10 @@ document.getElementById('btnGuardarPreautorizado').addEventListener('click', asy
   const subarea = document.getElementById('pa_subarea')?.value || '';
   const cargo = obtenerCargoFinal('pa');
   const rol = document.getElementById('pa_rol').value;
+  const supervisorId = document.getElementById('pa_supervisor_id')?.value || null;
+  const reporteEmailAdicional = document.getElementById('pa_reporte_email_adicional')?.value.trim() || null;
+  const reporteDiarioActivo = document.getElementById('pa_reporte_diario_activo')?.checked !== false;
+  const activo = document.getElementById('pa_activo')?.value !== 'false';
 
   if (!nombre || !email || !email.includes('@') || !cargo) {
     toast('Completa nombre, correo válido y cargo');
@@ -6915,7 +6963,11 @@ document.getElementById('btnGuardarPreautorizado').addEventListener('click', asy
     rol,
     es_supervisor: rol === 'supervisor',
     creado_por: currentUser.id,
-    permisos
+    permisos,
+    supervisor_id: supervisorId,
+    reporte_email_adicional: reporteEmailAdicional,
+    reporte_diario_activo: reporteDiarioActivo,
+    activo
   };
 
   const payloadMinimo = {
@@ -6968,7 +7020,10 @@ document.getElementById('btnGuardarPreautorizado').addEventListener('click', asy
         subarea: subarea || null,
         cargo,
         rol,
-        permisos
+        permisos,
+        supervisor_id: supervisorId,
+        reporte_email_adicional: reporteEmailAdicional,
+        reporte_diario_activo: reporteDiarioActivo
       }).eq('email', emailOriginal);
       if (errorUsuario) console.warn('No se pudo sincronizar usuarios:', errorUsuario.message);
     }
@@ -7093,6 +7148,19 @@ async function abrirEditarUsuario(id){
   const perm = fusionarPermisosConCatalogo(data.permisos);
   window._permisosCompletosEnEdicion = perm;
   renderizarBloquePermisos('eu', perm, data.rol);
+
+  // El SuperAdmin es el dueño/programador del sistema, no un colaborador
+  // más del organigrama -- cargo, departamento, supervisor y estado de
+  // cuenta no aplican a esa cuenta, así que se ocultan en vez de mostrar
+  // campos que no tienen sentido llenar (y que nadie debería poder usar
+  // para bloquearlo). Se decide por ROL, no por el correo especifico --
+  // el mismo criterio que ya se usa en toda la app (ver hallazgo A1 de la
+  // auditoría: nunca volver a condicionar acceso/UI por un correo fijo).
+  const esDuenoDelSistema = data.rol === 'superadmin';
+  ['eu_campo_area', 'eu_campo_subarea', 'eu_campo_cargo', 'eu_campo_supervisor', 'eu_campo_activo'].forEach(id => {
+    document.getElementById(id)?.classList.toggle('hidden', esDuenoDelSistema);
+  });
+  document.getElementById('eu_aviso_dueno_sistema')?.classList.toggle('hidden', !esDuenoDelSistema);
 
   openModal('modalEditarUsuario');
 }
