@@ -2790,8 +2790,8 @@ main.app-content {
           <option value="Interesado">Interesado en lote</option>
           <option value="Cita agendada">Cita agendada</option>
           <option value="Visita realizada">Visita realizada en campo</option>
-          <option value="Evaluación crediticia">Evaluación de financiamiento</option>
           <option value="Separado">Separó lote</option>
+          <option value="Venta cerrada">Venta cerrada</option>
           <option value="No interesado">No interesado</option>
         </select>
       </div>
@@ -2853,6 +2853,7 @@ main.app-content {
         <div class="field"><label>Manzana</label><select id="cot_manzana"></select></div>
         <div class="field"><label>Lote</label><input type="text" id="cot_lote" placeholder="Número de lote"></div>
       </div>
+      <p id="cot_lote_estado_inventario" style="font-size:11px; margin:4px 0 0;"></p>
 
       <!-- VALOR TOTAL ANTES QUE VALOR M2 (SOLICITUD EXPRESA) -->
       <div class="field">
@@ -5344,7 +5345,9 @@ async function cargarKPIs(){
 const PROBABILIDAD_POR_ETAPA = {
   'Cita agendada': 0.15,
   'Visita realizada': 0.30,
-  'Evaluación crediticia': 0.55,
+  'Separado': 0.90,
+  // 'Venta cerrada' se excluye a propósito: ya es ingreso realizado, no una
+  // proyección ponderada del pipeline.
 };
 
 async function cargarAvisoClientesRiesgo(){
@@ -5443,8 +5446,12 @@ async function cargarProyeccionVentas(){
 
   const conteoPorEtapa = {};
   (pipelineClientes || []).forEach(c => { conteoPorEtapa[c.estado_prospecto] = (conteoPorEtapa[c.estado_prospecto] || 0) + 1; });
+  // Antes, cualquier etapa sin probabilidad definida en el mapa (Nuevo, En
+  // seguimiento, Interesado, No interesado -- 5 de las 8 etapas) devolvia
+  // undefined y convertia TODA la suma en NaN desde ese punto en adelante,
+  // arruinando el monto ponderado completo con solo un cliente en esa etapa.
   const montoPipelinePonderado = Object.entries(conteoPorEtapa).reduce((sum, [etapa, n]) =>
-    sum + (n * valorPromedioLote * PROBABILIDAD_POR_ETAPA[etapa]), 0);
+    sum + (n * valorPromedioLote * (PROBABILIDAD_POR_ETAPA[etapa] || 0)), 0);
 
   const fmtSoles = (n) => 'S/ ' + Math.round(n).toLocaleString('es-PE');
 
@@ -7568,11 +7575,23 @@ async function desarchivarCliente(id){
 let clientesCache = [];
 const ETAPAS_PIPELINE = [
   'Nuevo', 'En seguimiento', 'Interesado', 'Cita agendada',
-  'Visita realizada', 'Evaluación crediticia', 'Separado', 'No interesado'
+  'Visita realizada', 'Separado', 'Venta cerrada', 'No interesado'
 ];
+// Color por etapa -- antes todas las columnas del kanban compartian el mismo
+// fondo crema, sin ninguna distincion visual entre "Nuevo" y "No interesado".
+const ETAPAS_PIPELINE_COLOR = {
+  'Nuevo':              '#64748B',
+  'En seguimiento':     '#7C6BAF',
+  'Interesado':         '#2C5691',
+  'Cita agendada':      '#C9973E',
+  'Visita realizada':   '#0EA5E9',
+  'Separado':           '#C89B3C',
+  'Venta cerrada':      '#1B8A3E',
+  'No interesado':      '#B4453C',
+};
 
 function clienteEnRiesgo(c){
-  if (c.estado_prospecto === 'Separado' || c.estado_prospecto === 'No interesado') return false;
+  if (c.estado_prospecto === 'Separado' || c.estado_prospecto === 'Venta cerrada' || c.estado_prospecto === 'No interesado') return false;
   const ultimaFecha = c.proxima_fecha || c.fecha_contacto || c.created_at?.slice(0, 10);
   if (!ultimaFecha) return false;
   const dias = Math.floor((new Date(obtenerHoyLocal()) - new Date(ultimaFecha)) / 86400000);
@@ -7597,20 +7616,24 @@ function renderPipelineClientes(){
   if (clientesCache.length === 0) { cont.innerHTML = emptyState('🧭', 'Aún no tienes clientes para mostrar en el pipeline.'); return; }
 
   cont.innerHTML = `
-    <div style="display:flex; gap:10px; overflow-x:auto; padding-bottom:8px; -webkit-overflow-scrolling:touch;">
+    <div id="pipelineTablero" style="display:flex; gap:10px; overflow-x:auto; padding-bottom:8px; -webkit-overflow-scrolling:touch;">
       ${ETAPAS_PIPELINE.map(etapa => {
         const clientesEtapa = clientesCache.filter(c => (c.estado_prospecto || 'Nuevo') === etapa);
+        const color = ETAPAS_PIPELINE_COLOR[etapa] || '#64748B';
         return `
-        <div style="flex:0 0 240px; background:#F7F4EC; border-radius:14px; padding:10px;">
-          <p style="font-size:12px; font-weight:800; color:var(--navy); margin:0 0 8px; text-transform:uppercase; letter-spacing:0.02em;">
+        <div class="pipeline-col" data-etapa="${escapeHtml(etapa)}" style="flex:0 0 240px; background:#F8F7F2; border-top:4px solid ${color}; border-radius:12px 12px 14px 14px; padding:10px;">
+          <p style="font-size:12px; font-weight:800; color:${color}; margin:0 0 8px; text-transform:uppercase; letter-spacing:0.02em;">
             ${escapeHtml(etapa)} <span style="color:var(--gold);">(${clientesEtapa.length})</span>
           </p>
-          <div style="display:flex; flex-direction:column; gap:8px; max-height:65vh; overflow-y:auto;">
+          <div class="pipeline-col-lista" style="display:flex; flex-direction:column; gap:8px; max-height:65vh; overflow-y:auto; min-height:40px;">
             ${clientesEtapa.length === 0 ? '<p style="font-size:11.5px; color:var(--ink-dim); padding:8px 0;">— vacío —</p>' : clientesEtapa.map(c => {
               const enRiesgo = clienteEnRiesgo(c);
               return `
-              <div style="background:#fff; border-radius:10px; padding:10px; border:1px solid #EFEAE0; ${enRiesgo ? 'border-left:3px solid var(--danger);' : ''} box-shadow:0 2px 6px rgba(26,35,50,0.06);">
-                <p style="font-size:12.5px; font-weight:700; margin:0;">${escapeHtml(c.nombre)}</p>
+              <div class="pipeline-card" data-cliente-id="${c.id}" data-etapa-actual="${escapeHtml(etapa)}" style="background:#fff; border-radius:10px; padding:10px; border:1px solid #EFEAE0; ${enRiesgo ? 'border-left:3px solid var(--danger);' : ''} box-shadow:0 2px 6px rgba(26,35,50,0.06); touch-action:pan-y;">
+                <div class="pipeline-card-drag-handle" style="cursor:grab; display:flex; align-items:center; gap:6px; margin-bottom:2px;">
+                  <span style="color:#CBD5E1; font-size:13px;">⠿</span>
+                  <p style="font-size:12.5px; font-weight:700; margin:0;">${escapeHtml(c.nombre)}</p>
+                </div>
                 <p style="font-size:11px; color:var(--ink-dim); margin:2px 0 6px;">${c.celular || c.telefono || 'Sin celular'}</p>
                 ${enRiesgo ? `<p style="font-size:10.5px; color:var(--danger); font-weight:700; margin:0 0 6px;">⚠️ Sin contacto +7 días</p>` : ''}
                 <select onchange="moverClientePipeline('${c.id}', this.value)" style="width:100%; font-size:11px; padding:5px; border-radius:6px; border:1px solid #E5DFCF; margin-bottom:6px;">
@@ -7625,6 +7648,89 @@ function renderPipelineClientes(){
       }).join('')}
     </div>
   `;
+  inicializarDragPipeline();
+}
+
+// Arrastre táctil y de mouse entre columnas del kanban, en un solo código
+// (Pointer Events unifica touch/mouse). Se activa desde el "handle" (⠿) para
+// no interferir con el scroll normal de la columna o con los botones/select
+// de la tarjeta. Umbral de movimiento antes de considerar que es un arrastre
+// (y no un simple tap) para no competir con el scroll horizontal del tablero.
+function inicializarDragPipeline(){
+  const tablero = document.getElementById('pipelineTablero');
+  if (!tablero) return;
+
+  let arrastrando = null; // { cardEl, clienteId, etapaOrigen, clone, offsetX, offsetY }
+  const UMBRAL_PX = 8;
+  let inicio = null;
+
+  tablero.querySelectorAll('.pipeline-card-drag-handle').forEach(handle => {
+    handle.addEventListener('pointerdown', (e) => {
+      const cardEl = handle.closest('.pipeline-card');
+      if (!cardEl) return;
+      inicio = { x: e.clientX, y: e.clientY, cardEl, pointerId: e.pointerId };
+    });
+  });
+
+  function empezarArrastre(e){
+    const { cardEl } = inicio;
+    const rect = cardEl.getBoundingClientRect();
+    const clone = cardEl.cloneNode(true);
+    clone.style.position = 'fixed';
+    clone.style.left = rect.left + 'px';
+    clone.style.top = rect.top + 'px';
+    clone.style.width = rect.width + 'px';
+    clone.style.zIndex = '9999';
+    clone.style.pointerEvents = 'none';
+    clone.style.opacity = '0.92';
+    clone.style.boxShadow = '0 8px 24px rgba(0,0,0,0.25)';
+    clone.style.transform = 'rotate(-1.5deg)';
+    document.body.appendChild(clone);
+    cardEl.style.opacity = '0.35';
+
+    arrastrando = {
+      cardEl, clone,
+      clienteId: cardEl.dataset.clienteId,
+      etapaOrigen: cardEl.dataset.etapaActual,
+      offsetX: inicio.x - rect.left,
+      offsetY: inicio.y - rect.top,
+    };
+    document.body.style.userSelect = 'none';
+  }
+
+  tablero.addEventListener('pointermove', (e) => {
+    if (!inicio) return;
+    if (!arrastrando) {
+      const dx = e.clientX - inicio.x, dy = e.clientY - inicio.y;
+      if (Math.hypot(dx, dy) < UMBRAL_PX) return;
+      empezarArrastre(e);
+    }
+    if (!arrastrando) return;
+    arrastrando.clone.style.left = (e.clientX - arrastrando.offsetX) + 'px';
+    arrastrando.clone.style.top = (e.clientY - arrastrando.offsetY) + 'px';
+
+    tablero.querySelectorAll('.pipeline-col').forEach(col => col.style.outline = '');
+    const colDebajo = document.elementFromPoint(e.clientX, e.clientY)?.closest('.pipeline-col');
+    if (colDebajo) colDebajo.style.outline = '2px dashed var(--gold)';
+  });
+
+  function terminarArrastre(e){
+    if (arrastrando) {
+      const colDebajo = document.elementFromPoint(e.clientX, e.clientY)?.closest('.pipeline-col');
+      tablero.querySelectorAll('.pipeline-col').forEach(col => col.style.outline = '');
+      arrastrando.clone.remove();
+      arrastrando.cardEl.style.opacity = '';
+      document.body.style.userSelect = '';
+      const nuevaEtapa = colDebajo?.dataset.etapa;
+      if (nuevaEtapa && nuevaEtapa !== arrastrando.etapaOrigen) {
+        moverClientePipeline(arrastrando.clienteId, nuevaEtapa);
+      }
+      arrastrando = null;
+    }
+    inicio = null;
+  }
+  tablero.addEventListener('pointerup', terminarArrastre);
+  tablero.addEventListener('pointercancel', terminarArrastre);
 }
 
 async function moverClientePipeline(id, nuevaEtapa){
@@ -7640,6 +7746,30 @@ async function moverClientePipeline(id, nuevaEtapa){
       toast('⚠️ No puedes marcar "Separado" sin registrar antes la separación real del lote (botón "+ Nueva separación").');
       renderPipelineClientes();
       return;
+    }
+  }
+
+  // "Venta cerrada" cierra formalmente la separación activa (estado ->
+  // convertida_venta), lo que a su vez marca el lote como 'vendido' via el
+  // trigger de sincronización -- antes no existía ninguna acción en la app
+  // para llegar a este estado del enum, así que ninguna venta se marcaba
+  // realmente como cerrada.
+  if (nuevaEtapa === 'Venta cerrada') {
+    const { data: sepActiva } = await sb.from('separaciones').select('id').eq('cliente_id', id).eq('estado', 'activa').limit(1).maybeSingle();
+    if (!sepActiva) {
+      const { count: yaCerrada } = await sb.from('separaciones').select('id', { count: 'exact', head: true }).eq('cliente_id', id).eq('estado', 'convertida_venta');
+      if (!yaCerrada) {
+        toast('⚠️ No puedes marcar "Venta cerrada" sin una separación activa para este cliente.');
+        renderPipelineClientes();
+        return;
+      }
+    } else {
+      if (!confirm('¿Confirmas que esta separación ya fue pagada en su totalidad y quieres cerrar la venta? Esto marcará el lote como VENDIDO.')) {
+        renderPipelineClientes();
+        return;
+      }
+      const { error: errCierre } = await sb.from('separaciones').update({ estado: 'convertida_venta' }).eq('id', sepActiva.id);
+      if (errCierre) { toast('Error al cerrar la venta: ' + errCierre.message); renderPipelineClientes(); return; }
     }
   }
 
@@ -7964,7 +8094,65 @@ function abrirModalCotizador(clienteNombre, celular, manzana, lote, area, precio
   calcularCotizadorMatematica();
   openModal('modalCotizador');
   autocalcularEscalaLoteReal();
+  autocompletarLoteDesdeInventario();
 }
+
+// Autocompleta área y valor real del lote seleccionado desde el lotizador en
+// vivo (misma fuente que el módulo de Inventario) en vez de exigir que el
+// asesor escriba el precio a mano o tenga que pasar primero por Inventario
+// y usar el atajo "Cotizar Lote" de ahí.
+async function autocompletarLoteDesdeInventario(){
+  const elEstado = document.getElementById('cot_lote_estado_inventario');
+  const mz = document.getElementById('cot_manzana')?.value;
+  const lt = (document.getElementById('cot_lote')?.value || '').trim();
+  if (!mz || !lt) { if (elEstado) elEstado.textContent = ''; return; }
+
+  if (elEstado) { elEstado.style.color = 'var(--ink-dim)'; elEstado.textContent = '🔎 Buscando en el lotizador en vivo…'; }
+
+  try {
+    if (!inventarioReporteCache) {
+      let { data, error } = await sb.functions.invoke('inventario-lotes-sire', { body: {} });
+      if (error && error.context?.status === 401) {
+        await sb.auth.refreshSession();
+        ({ data, error } = await sb.functions.invoke('inventario-lotes-sire', { body: {} }));
+      }
+      if (error || !data || data.ok === false) throw error || new Error('Sin datos');
+      inventarioReporteCache = data;
+    }
+
+    const lote = (inventarioReporteCache.lotes || []).find(l =>
+      l.manzana === mz && (l.nombreLote || '').replace(/^Lote\s*/i, '').trim() === lt);
+
+    if (!lote) {
+      if (elEstado) { elEstado.style.color = 'var(--ink-dim)'; elEstado.textContent = 'ℹ️ No se encontró este lote en el lotizador en vivo — completa los datos manualmente.'; }
+      return;
+    }
+
+    if (lote.areaM2) document.getElementById('cot_area').value = lote.areaM2;
+    if (lote.precio) {
+      document.getElementById('cot_valor_total').value = lote.precio;
+      alCambiarValorTotalCotizador();
+    } else if (lote.areaM2) {
+      alCambiarMetrajeCotizador();
+    }
+
+    const cfg = INV_ESTADO_CFG[lote.estado] || INV_ESTADO_CFG.sinPublicar;
+    if (elEstado) {
+      if (lote.estado === 'libre') {
+        elEstado.style.color = '#1B8A3E';
+        elEstado.textContent = `✅ Datos reales cargados del lotizador (${lote.precio ? 'S/ ' + lote.precio.toLocaleString('es-PE') : 'sin precio publicado'}).`;
+      } else {
+        elEstado.style.color = cfg.tone;
+        elEstado.textContent = `⚠️ Atención: este lote figura como "${cfg.lbl}" en el lotizador — verifica antes de cotizarlo a un nuevo cliente.`;
+      }
+    }
+  } catch (e) {
+    console.warn('No se pudo autocompletar el lote desde el inventario en vivo:', e);
+    if (elEstado) { elEstado.style.color = 'var(--ink-dim)'; elEstado.textContent = 'ℹ️ No se pudo consultar el lotizador en vivo — completa los datos manualmente.'; }
+  }
+}
+document.getElementById('cot_manzana')?.addEventListener('change', autocompletarLoteDesdeInventario);
+document.getElementById('cot_lote')?.addEventListener('change', autocompletarLoteDesdeInventario);
 
 
 /* ============ COTIZADOR RÁPIDO Y REGLA DE COMISIONES ============ */
@@ -13971,8 +14159,8 @@ function abrirConvertidorParaInicial(moneda){
 function calcularScoreCliente(c){
   let score = 50;
   const estado = c.estado_prospecto || '';
-  if (estado === 'Separado') score += 45;
-  else if (estado === 'Evaluación crediticia' || estado === 'Visita realizada') score += 35;
+  if (estado === 'Separado' || estado === 'Venta cerrada') score += 45;
+  else if (estado === 'Visita realizada') score += 35;
   else if (estado === 'Cita agendada') score += 25;
   else if (estado === 'Contactado') score += 10;
   else if (estado === 'No interesado') score = 15;
@@ -13988,7 +14176,7 @@ function calcularScoreCliente(c){
   // Factor de actualización
   const ms = Date.now() - new Date(c.updated_at || c.created_at || Date.now()).getTime();
   const dias = Math.floor(ms / (1000 * 60 * 60 * 24));
-  if (dias > 12 && estado !== 'Separado') score -= 14;
+  if (dias > 12 && estado !== 'Separado' && estado !== 'Venta cerrada') score -= 14;
   else if (dias <= 3) score += 6;
 
   score = Math.max(12, Math.min(99, score));
