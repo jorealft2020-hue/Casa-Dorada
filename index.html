@@ -4005,34 +4005,35 @@ main.app-content {
 
       <!-- DATOS DEL LOTE Y PLAN FINANCIERO -->
       <div style="background:#FBF6EC; border:1px solid #E8D9B5; border-radius:12px; padding:12px; margin-bottom:12px;">
-        <h4 style="margin:0 0 10px; font-size:12.5px; color:var(--navy); font-weight:800;">2. Datos del Lote y Condiciones Económicas</h4>
+        <h4 style="margin:0 0 4px; font-size:12.5px; color:var(--navy); font-weight:800;">2. Datos del Lote y Condiciones Económicas</h4>
+        <p style="margin:0 0 10px; font-size:10.5px; color:var(--ink-dim);">Al firmar y guardar, este contrato <strong>formaliza la Separación</strong> del lote elegido — la Separación Abonada es un adelanto a cuenta de la Inicial Pactada, no un monto aparte.</p>
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:8px;">
           <div>
             <label style="font-size:11px; font-weight:700; color:var(--navy);">Manzana</label>
-            <input type="text" id="min_lote_mz" value="B" style="width:100%; font-size:12px; padding:7px 9px; font-weight:700;">
+            <select id="min_lote_mz" style="width:100%; font-size:12px; padding:7px 9px; font-weight:700;"><option value="">Selecciona…</option></select>
           </div>
           <div>
             <label style="font-size:11px; font-weight:700; color:var(--navy);">Lote</label>
-            <input type="text" id="min_lote_num" value="12" style="width:100%; font-size:12px; padding:7px 9px; font-weight:700;">
+            <select id="min_lote_num" style="width:100%; font-size:12px; padding:7px 9px; font-weight:700;"><option value="">Elige manzana primero…</option></select>
           </div>
           <div>
             <label style="font-size:11px; font-weight:700; color:var(--navy);">Área (m²)</label>
-            <input type="number" id="min_lote_area" value="150" style="width:100%; font-size:12px; padding:7px 9px;">
+            <input type="number" id="min_lote_area" value="" style="width:100%; font-size:12px; padding:7px 9px;">
           </div>
           <div>
             <label style="font-size:11px; font-weight:700; color:var(--navy);">Valor Total (S/)</label>
-            <input type="number" id="min_lote_precio" value="22000" style="width:100%; font-size:12px; padding:7px 9px; font-weight:700;">
+            <input type="number" id="min_lote_precio" value="" style="width:100%; font-size:12px; padding:7px 9px; font-weight:700;">
           </div>
         </div>
         <p id="min_lote_estado_inventario" style="font-size:10.5px; margin:6px 0 0;"></p>
 
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:8px; margin-top:10px; padding-top:10px; border-top:1px dashed #E8D9B5;">
           <div>
-            <label style="font-size:11px; font-weight:700; color:var(--navy);">Separación Abonada (S/)</label>
+            <label style="font-size:11px; font-weight:700; color:var(--navy);">Separación Abonada (S/) <span style="font-weight:400;">· adelanto de la inicial</span></label>
             <input type="number" id="min_separacion_abonada" value="500" style="width:100%; font-size:12px; padding:7px 9px; font-weight:700;">
           </div>
           <div>
-            <label style="font-size:11px; font-weight:700; color:var(--navy);">Inicial Pactada (S/)</label>
+            <label style="font-size:11px; font-weight:700; color:var(--navy);">Inicial Pactada Total (S/)</label>
             <input type="number" id="min_lote_inicial" value="2000" style="width:100%; font-size:12px; padding:7px 9px; font-weight:700;">
           </div>
           <div>
@@ -4040,8 +4041,13 @@ main.app-content {
             <input type="number" id="min_lote_meses" value="36" style="width:100%; font-size:12px; padding:7px 9px;">
           </div>
         </div>
+        <p id="min_aviso_separacion" style="font-size:10.5px; margin:6px 0 0; color:#B91C1C; display:none;"></p>
 
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:8px; margin-top:10px; padding-top:10px; border-top:1px dashed #E8D9B5;">
+          <div>
+            <label style="font-size:11px; font-weight:700; color:var(--navy);">Saldo Pendiente de Inicial (S/)</label>
+            <input type="text" id="min_saldo_inicial_calc" readonly style="width:100%; font-size:12px; padding:7px 9px; background:#EFEBDF; font-weight:700;">
+          </div>
           <div>
             <label style="font-size:11px; font-weight:700; color:var(--navy);">Saldo a Financiar (S/)</label>
             <input type="text" id="min_saldo_calc" readonly style="width:100%; font-size:12px; padding:7px 9px; background:#EFEBDF; font-weight:700;">
@@ -16539,16 +16545,17 @@ function limpiarCanvasFirma() {
 function abrirModalMinutaCompraventa() {
   openModal('modalMinutaCompraventa');
   setTimeout(initCanvasFirma, 200);
+  poblarSelectManzanasMinuta();
 }
 
-function abrirMinutaDesdeCotizador() {
+async function abrirMinutaDesdeCotizador() {
   closeModal('modalCotizador');
   const cliente = document.getElementById('cot_cliente')?.value || '';
   const dni = document.getElementById('cot_dni')?.value || '';
   const tel = document.getElementById('cot_celular')?.value || '';
   const dir = document.getElementById('cot_direccion')?.value || '';
-  const mz = document.getElementById('cot_mz_display')?.textContent || 'B';
-  const lote = document.getElementById('cot_lote_display')?.textContent || '12';
+  const mz = document.getElementById('cot_mz_display')?.textContent || '';
+  const lote = document.getElementById('cot_lote_display')?.textContent || '';
   const area = document.getElementById('cot_area')?.value || '150';
   const precio = document.getElementById('cot_valor_total')?.value || '22000';
   const inicial = document.getElementById('cot_inicial')?.value || '2000';
@@ -16560,8 +16567,16 @@ function abrirMinutaDesdeCotizador() {
   if (document.getElementById('min_comprador_dni')) document.getElementById('min_comprador_dni').value = dni;
   if (document.getElementById('min_comprador_tel')) document.getElementById('min_comprador_tel').value = tel;
   if (document.getElementById('min_comprador_domicilio')) document.getElementById('min_comprador_domicilio').value = dir || 'Tacna, Perú';
-  if (document.getElementById('min_lote_mz')) document.getElementById('min_lote_mz').value = mz;
-  if (document.getElementById('min_lote_num')) document.getElementById('min_lote_num').value = lote;
+
+  await poblarSelectManzanasMinuta();
+  if (mz && document.getElementById('min_lote_mz')) {
+    document.getElementById('min_lote_mz').value = mz;
+    poblarSelectLotesMinuta(mz);
+    if (lote && document.getElementById('min_lote_num')) document.getElementById('min_lote_num').value = lote;
+  }
+  // El Cotizador ya trae área/valor propios (con su propia lógica de
+  // escala) -- se usan como respaldo por si el lote elegido ahí no calzó
+  // exacto con el select real de arriba.
   if (document.getElementById('min_lote_area')) document.getElementById('min_lote_area').value = area;
   if (document.getElementById('min_lote_precio')) document.getElementById('min_lote_precio').value = precio;
   if (document.getElementById('min_lote_inicial')) document.getElementById('min_lote_inicial').value = inicial;
@@ -16569,16 +16584,14 @@ function abrirMinutaDesdeCotizador() {
   actualizarCalculosMinuta();
 }
 
-// Mismo patrón que autocompletarLoteDesdeInventario() del Cotizador --
-// consulta el lotizador en vivo al elegir manzana/lote y carga área/valor
-// real, en vez de dejar los valores de ejemplo del formulario en blanco.
-async function autocompletarLoteMinutaDesdeInventario(){
+// Carga el lotizador en vivo (mismo caché que el Cotizador) y llena el
+// select de Manzana con las que existen de verdad en el inventario -- antes
+// era un campo de texto libre, así que un typo (ej. "z1" en vez de "Z1")
+// nunca calzaba con el inventario y el área/valor se quedaban vacíos.
+async function poblarSelectManzanasMinuta(){
+  const selMz = document.getElementById('min_lote_mz');
   const elEstado = document.getElementById('min_lote_estado_inventario');
-  const mz = document.getElementById('min_lote_mz')?.value.trim();
-  const lt = document.getElementById('min_lote_num')?.value.trim();
-  if (!mz || !lt) { if (elEstado) elEstado.textContent = ''; return; }
-
-  if (elEstado) { elEstado.style.color = 'var(--ink-dim)'; elEstado.textContent = '🔎 Buscando en el lotizador en vivo…'; }
+  if (!selMz) return;
 
   try {
     if (!inventarioReporteCache) {
@@ -16591,54 +16604,113 @@ async function autocompletarLoteMinutaDesdeInventario(){
       inventarioReporteCache = data;
     }
 
-    const lote = (inventarioReporteCache.lotes || []).find(l =>
-      l.manzana === mz && (l.nombreLote || '').replace(/^Lote\s*/i, '').trim() === lt);
-
-    if (!lote) {
-      if (elEstado) { elEstado.style.color = 'var(--ink-dim)'; elEstado.textContent = 'ℹ️ No se encontró este lote en el lotizador en vivo — completa los datos manualmente.'; }
-      return;
-    }
-
-    if (lote.areaM2) document.getElementById('min_lote_area').value = lote.areaM2;
-    if (lote.precio) document.getElementById('min_lote_precio').value = lote.precio;
-    actualizarCalculosMinuta();
-
-    const cfg = INV_ESTADO_CFG[lote.estado] || INV_ESTADO_CFG.sinPublicar;
-    if (elEstado) {
-      if (lote.estado === 'libre') {
-        elEstado.style.color = '#1B8A3E';
-        elEstado.textContent = `✅ Datos reales cargados del lotizador (${lote.precio ? 'S/ ' + lote.precio.toLocaleString('es-PE') : 'sin precio publicado'}).`;
-      } else {
-        elEstado.style.color = cfg.tone;
-        elEstado.textContent = `⚠️ Atención: este lote figura como "${cfg.lbl}" en el lotizador — verifica antes de formalizar.`;
-      }
-    }
+    const manzanas = [...new Set((inventarioReporteCache.lotes || []).map(l => l.manzana).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    selMz.innerHTML = '<option value="">Selecciona…</option>' + manzanas.map(m => `<option value="${m}">${m}</option>`).join('');
   } catch (e) {
-    console.warn('No se pudo autocompletar el lote de la minuta desde el inventario en vivo:', e);
-    if (elEstado) { elEstado.style.color = 'var(--ink-dim)'; elEstado.textContent = 'ℹ️ No se pudo consultar el lotizador en vivo — completa los datos manualmente.'; }
+    console.warn('No se pudo cargar el lotizador en vivo para la minuta:', e);
+    if (elEstado) { elEstado.style.color = 'var(--ink-dim)'; elEstado.textContent = 'ℹ️ No se pudo consultar el lotizador en vivo — verifica tu conexión y vuelve a abrir este formulario.'; }
   }
 }
-document.getElementById('min_lote_mz')?.addEventListener('change', autocompletarLoteMinutaDesdeInventario);
-document.getElementById('min_lote_num')?.addEventListener('change', autocompletarLoteMinutaDesdeInventario);
+
+// Al elegir manzana, llena el select de Lote con los lotes reales de esa
+// manzana (con su estado y precio visibles en la propia opción) para que el
+// asesor elija uno que existe de verdad, en vez de escribir un número.
+function poblarSelectLotesMinuta(manzana){
+  const selLote = document.getElementById('min_lote_num');
+  if (!selLote) return;
+
+  if (!manzana || !inventarioReporteCache) {
+    selLote.innerHTML = '<option value="">Elige manzana primero…</option>';
+    return;
+  }
+
+  const lotes = (inventarioReporteCache.lotes || [])
+    .filter(l => l.manzana === manzana)
+    .sort((a, b) => (a.nombreLote || '').localeCompare(b.nombreLote || '', undefined, { numeric: true }));
+
+  if (lotes.length === 0) {
+    selLote.innerHTML = '<option value="">Sin lotes registrados en esta manzana</option>';
+    return;
+  }
+
+  selLote.innerHTML = '<option value="">Selecciona…</option>' + lotes.map(l => {
+    const num = (l.nombreLote || '').replace(/^Lote\s*/i, '').trim();
+    const cfg = INV_ESTADO_CFG[l.estado] || INV_ESTADO_CFG.sinPublicar;
+    const precioTxt = l.precio ? `S/ ${l.precio.toLocaleString('es-PE')}` : 'sin precio';
+    return `<option value="${num}" data-area="${l.areaM2 || ''}" data-precio="${l.precio || ''}" data-estado="${l.estado || ''}">Lote ${num} — ${cfg.lbl} (${precioTxt})</option>`;
+  }).join('');
+}
+
+document.getElementById('min_lote_mz')?.addEventListener('change', function(){
+  poblarSelectLotesMinuta(this.value);
+  if (document.getElementById('min_lote_area')) document.getElementById('min_lote_area').value = '';
+  if (document.getElementById('min_lote_precio')) document.getElementById('min_lote_precio').value = '';
+  const elEstado = document.getElementById('min_lote_estado_inventario');
+  if (elEstado) elEstado.textContent = '';
+  actualizarCalculosMinuta();
+});
+
+document.getElementById('min_lote_num')?.addEventListener('change', function(){
+  const elEstado = document.getElementById('min_lote_estado_inventario');
+  const opt = this.selectedOptions[0];
+  if (!opt || !opt.value) { if (elEstado) elEstado.textContent = ''; return; }
+
+  const area = opt.dataset.area;
+  const precio = opt.dataset.precio;
+  const estado = opt.dataset.estado;
+  if (area) document.getElementById('min_lote_area').value = area;
+  if (precio) document.getElementById('min_lote_precio').value = precio;
+  actualizarCalculosMinuta();
+
+  const cfg = INV_ESTADO_CFG[estado] || INV_ESTADO_CFG.sinPublicar;
+  if (elEstado) {
+    if (estado === 'libre') {
+      elEstado.style.color = '#1B8A3E';
+      elEstado.textContent = `✅ Datos reales cargados del lotizador (${precio ? 'S/ ' + Number(precio).toLocaleString('es-PE') : 'sin precio publicado'}).`;
+    } else {
+      elEstado.style.color = cfg.tone;
+      elEstado.textContent = `⚠️ Atención: este lote figura como "${cfg.lbl}" en el lotizador — verifica antes de formalizar.`;
+    }
+  }
+});
 
 // Saldo, cuota mensual y fecha de vencimiento de la separación (hoy + 3 días
 // calendarios, según la cláusula de vigencia de la separación) recalculados
 // en vivo al tocar cualquier campo económico -- antes solo se calculaban al
 // generar el PDF, sin que el asesor viera el número mientras completa el
 // formulario.
+//
+// La Separación Abonada es un adelanto A CUENTA de la Inicial Pactada, no
+// un monto aparte -- por eso el saldo a financiar resta solo la Inicial
+// Pactada (que ya incluye lo abonado en separación), y por separado se
+// muestra cuánto falta para terminar de pagar esa inicial.
 function actualizarCalculosMinuta(){
   const precio = parseFloat(document.getElementById('min_lote_precio')?.value) || 0;
   const inicial = parseFloat(document.getElementById('min_lote_inicial')?.value) || 0;
   const separacion = parseFloat(document.getElementById('min_separacion_abonada')?.value) || 0;
   const meses = parseInt(document.getElementById('min_lote_meses')?.value, 10) || 0;
 
-  const saldo = Math.max(0, precio - (inicial + separacion));
+  const saldoInicial = Math.max(0, inicial - separacion);
+  const saldo = Math.max(0, precio - inicial);
   const cuota = meses > 0 ? saldo / meses : 0;
 
+  const elSaldoInicial = document.getElementById('min_saldo_inicial_calc');
   const elSaldo = document.getElementById('min_saldo_calc');
   const elCuota = document.getElementById('min_cuota_calc');
+  if (elSaldoInicial) elSaldoInicial.value = 'S/ ' + saldoInicial.toLocaleString('es-PE', { minimumFractionDigits: 2 });
   if (elSaldo) elSaldo.value = 'S/ ' + saldo.toLocaleString('es-PE', { minimumFractionDigits: 2 });
   if (elCuota) elCuota.value = 'S/ ' + cuota.toLocaleString('es-PE', { minimumFractionDigits: 2 });
+
+  const elAviso = document.getElementById('min_aviso_separacion');
+  if (elAviso) {
+    if (inicial > 0 && separacion > inicial) {
+      elAviso.style.display = 'block';
+      elAviso.textContent = '⚠️ La Separación Abonada no puede ser mayor que la Inicial Pactada (la separación es un adelanto de esa inicial).';
+    } else {
+      elAviso.style.display = 'none';
+    }
+  }
 
   const elVenc = document.getElementById('min_fecha_vencimiento');
   if (elVenc && !elVenc.value) {
@@ -16733,8 +16805,8 @@ function descargarMinutaLegalPDF() {
   const dni = document.getElementById('min_comprador_dni')?.value.trim() || '';
   const estadoCivil = document.getElementById('min_comprador_civil')?.value || 'Soltero(a)';
   const domicilio = document.getElementById('min_comprador_domicilio')?.value.trim() || 'Tacna, Perú';
-  const mz = document.getElementById('min_lote_mz')?.value.trim() || 'B';
-  const lote = document.getElementById('min_lote_num')?.value.trim() || '12';
+  const mz = document.getElementById('min_lote_mz')?.value.trim() || '';
+  const lote = document.getElementById('min_lote_num')?.value.trim() || '';
   const area = document.getElementById('min_lote_area')?.value || '150';
   const precio = parseFloat(document.getElementById('min_lote_precio')?.value);
   const inicial = parseFloat(document.getElementById('min_lote_inicial')?.value);
@@ -16746,6 +16818,7 @@ function descargarMinutaLegalPDF() {
   // la auditoría).
   if (!nombre) { toast('Falta el nombre del comprador'); return; }
   if (!dni) { toast('Falta el DNI del comprador'); return; }
+  if (!mz || !lote) { toast('Selecciona manzana y lote'); return; }
   if (!precio || precio <= 0) { toast('Falta el precio del lote'); return; }
   if (isNaN(inicial) || inicial < 0) { toast('Falta la inicial abonada'); return; }
   if (!meses || meses <= 0) { toast('Falta el plazo en meses'); return; }
