@@ -10239,12 +10239,65 @@ function calcularFinanciamiento(){
   document.getElementById('sp_inversion_mensual').value = inversion.toFixed(2);
 }
 
+// Convierte un monto a su forma escrita en letras (español, soles) para el
+// blanco "(_________ y 00/100 SOLES)" del documento de referencia -- ese
+// blanco es un requisito legal del formato original (monto en letras junto
+// al monto en números) que no puede omitirse al transcribirlo.
+function numeroEnteroALetras(num){
+  num = Math.floor(num);
+  if (num === 0) return 'CERO';
+  const UNIDADES = ['', 'UN', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE'];
+  const DIEZ_A_DIECINUEVE = ['DIEZ', 'ONCE', 'DOCE', 'TRECE', 'CATORCE', 'QUINCE', 'DIECISÉIS', 'DIECISIETE', 'DIECIOCHO', 'DIECINUEVE'];
+  const VEINTI = ['VEINTE', 'VEINTIUNO', 'VEINTIDÓS', 'VEINTITRÉS', 'VEINTICUATRO', 'VEINTICINCO', 'VEINTISÉIS', 'VEINTISIETE', 'VEINTIOCHO', 'VEINTINUEVE'];
+  const DECENAS = ['', '', '', 'TREINTA', 'CUARENTA', 'CINCUENTA', 'SESENTA', 'SETENTA', 'OCHENTA', 'NOVENTA'];
+  const CENTENAS = ['', 'CIENTO', 'DOSCIENTOS', 'TRESCIENTOS', 'CUATROCIENTOS', 'QUINIENTOS', 'SEISCIENTOS', 'SETECIENTOS', 'OCHOCIENTOS', 'NOVECIENTOS'];
+
+  const unidadOSola = (n) => (n === 1 ? 'UNO' : UNIDADES[n]);
+  const dosDigitos = (n) => {
+    if (n < 10) return unidadOSola(n);
+    if (n < 20) return DIEZ_A_DIECINUEVE[n - 10];
+    if (n < 30) return VEINTI[n - 20];
+    const d = Math.floor(n / 10), u = n % 10;
+    return u === 0 ? DECENAS[d] : `${DECENAS[d]} Y ${unidadOSola(u)}`;
+  };
+  const tresDigitos = (n) => {
+    if (n === 0) return '';
+    if (n === 100) return 'CIEN';
+    const c = Math.floor(n / 100), resto = n % 100;
+    return [c > 0 ? CENTENAS[c] : '', resto > 0 ? dosDigitos(resto) : ''].filter(Boolean).join(' ');
+  };
+  const bloqueMiles = (n) => {
+    const miles = Math.floor(n / 1000), resto = n % 1000;
+    let out = '';
+    if (miles > 0) out += miles === 1 ? 'MIL' : `${tresDigitos(miles)} MIL`;
+    if (resto > 0) out += (out ? ' ' : '') + tresDigitos(resto);
+    return out;
+  };
+
+  const millones = Math.floor(num / 1000000);
+  const restoMillones = num % 1000000;
+  const partes = [];
+  if (millones > 0) partes.push(millones === 1 ? 'UN MILLÓN' : `${bloqueMiles(millones)} MILLONES`);
+  if (restoMillones > 0 || !partes.length) partes.push(bloqueMiles(restoMillones));
+  return partes.filter(Boolean).join(' ').trim();
+}
+function montoEnLetras(monto){
+  const n = Number(monto) || 0;
+  const entero = Math.floor(n);
+  const centavos = Math.round((n - entero) * 100);
+  return `${numeroEnteroALetras(entero)} Y ${String(centavos).padStart(2, '0')}/100 SOLES`;
+}
+
 // Genera el "Recibo de Adelanto de Inicial" en el formato exacto que Jorge
 // entregó como referencia (docx RECIBO_DE_ADELANTO_DE_INICIAL...): mismo
 // título, mismos campos de cabecera y las mismas 10 cláusulas + condiciones
-// de contratación. Se llena con los datos ya cargados en el formulario de
-// Separación (modalSeparacion) -- no duplica un formulario nuevo, usa el que
-// ya existe y ya se prueba al guardar.
+// de contratación, transcritas literalmente del documento original y solo
+// con los campos variables (nombre, DNI, lote, montos, fechas) rellenados
+// -- Jorge pidió explícitamente que el texto NO se redacte ni parafrasee de
+// nuevo, sino que se use el mismo documento con los blancos llenados. Se
+// llena con los datos ya cargados en el formulario de Separación
+// (modalSeparacion) -- no duplica un formulario nuevo, usa el que ya existe
+// y ya se prueba al guardar.
 // Construye el PDF del "Recibo de Adelanto de Inicial" a partir de un
 // objeto de datos plano -- lo usan tanto el botón de Separación (con todos
 // los campos: cónyuge, socio, medio de pago, N° operación) como el botón
@@ -10356,71 +10409,111 @@ function construirReciboAdelantoInicialPDF(datos){
     const lTxt = doc.splitTextToSize(texto, 178);
     doc.text(lTxt, 16, y); y += (lTxt.length * 3.6) + 3.5;
   };
-  const listaClausula = (titulo, items) => {
+  // intro/cierre opcionales porque el documento original antepone una
+  // frase de contexto a la mayoría de sus listas con viñetas (ej. "EL
+  // CLIENTE se obliga a:") y a veces cierra con una frase adicional
+  // después de la lista -- omitirlas sería alterar el texto original.
+  const listaClausula = (titulo, items, intro = '', cierre = '') => {
     if (y > pageHeight - 30) { doc.addPage(); encabezado(); y = 28; }
     doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(...cNavy);
     const lTit = doc.splitTextToSize(titulo, 178);
     doc.text(lTit, 16, y); y += (lTit.length * 3.8) + 1.5;
     doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...cInk);
+    if (intro) {
+      const lIntro = doc.splitTextToSize(intro, 178);
+      doc.text(lIntro, 16, y); y += (lIntro.length * 3.6) + 1;
+    }
     for (const item of items) {
       if (y > pageHeight - 20) { doc.addPage(); encabezado(); y = 28; }
       const lItem = doc.splitTextToSize('• ' + item, 176);
       doc.text(lItem, 18, y); y += (lItem.length * 3.6) + 1;
     }
+    if (cierre) {
+      if (y > pageHeight - 20) { doc.addPage(); encabezado(); y = 28; }
+      const lCierre = doc.splitTextToSize(cierre, 178);
+      doc.text(lCierre, 16, y); y += (lCierre.length * 3.6) + 1;
+    }
     y += 2.5;
   };
 
-  clausula('1. IDENTIFICACIÓN DEL LOTE Y MANZANA E INICIAL',
-    `El monto total a depositar se considerará como adelanto de la cuota inicial correspondiente al lote ubicado en la Mz ${manzana}, Lote ${lote}, suma de dinero que será imputada como parte de la inicial pactada entre las partes, cuya suma mínima (por este concepto) es de ${fmtMoneda(montoSeparacion)}, o su equivalente en dólares americanos, aplicándose el tipo de cambio vigente al momento de la operación.`);
+  // Cláusula 1 transcrita literal, incluyendo el blanco "(monto en letras) y
+  // 00/100 SOLES" del documento original -- se rellena con montoEnLetras()
+  // en vez de omitirse, porque en un documento legal peruano el monto en
+  // letras junto al monto en números no es decorativo.
+  clausula('1. IDENTFICIACION DEL LOTE Y MANZANA E INICIAL',
+    `El monto total a depositar se considerará como adelanto de la cuota inicial correspondiente al lote ubicado en la: Mz ${manzana} Lote ${lote}, suma de dinero que será imputada como parte de la inicial pactada entre las partes, cuya suma mínima (por este concepto) es de: S/ ${Number(montoSeparacion || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })} (${montoEnLetras(montoSeparacion)}) o su equivalente en dólares americanos, aplicándose el tipo de cambio vigente al momento de la operación.`);
 
   clausula('2. NATURALEZA DE LAS ARRAS Y CONDICIÓN DE NO DEVOLUCIÓN',
-    `La suma entregada por EL CLIENTE tiene la calidad de arras penitenciales, conforme al artículo 1478 del Código Civil, constituyendo un mecanismo de garantía de la operación de compraventa. En caso de desistimiento, retractación o incumplimiento por parte del CLIENTE, incluyendo la falta de pago dentro del plazo establecido o la negativa de suscribir el contrato de compraventa, el monto entregado no será reembolsable, quedando definitivamente en favor de LA EMPRESA, sin necesidad de requerimiento previo, judicial o extrajudicial. No obstante, en caso de incumplimiento imputable a LA EMPRESA, debidamente acreditado, esta se obliga a devolver al CLIENTE el íntegro del monto recibido por concepto de arras, sin intereses ni penalidades adicionales. EL CLIENTE declara haber sido informado de manera clara, suficiente y previa sobre la naturaleza de las arras, sus efectos legales y las condiciones de no devolución, manifestando su aceptación expresa.`);
+    `La suma entregada por EL CLIENTE tiene la calidad de arras penitenciales, conforme al artículo 1478 del Código Civil, constituyendo un mecanismo de garantía de la operación de compraventa. En tal sentido, en caso de desistimiento, retractación o incumplimiento por parte del CLIENTE, incluyendo la falta de pago dentro del plazo establecido o la negativa de suscribir el contrato de compraventa, el monto entregado no será reembolsable, quedando definitivamente en favor de LA EMPRESA, sin necesidad de requerimiento previo, judicial o extrajudicial. No obstante, en caso de incumplimiento imputable a LA EMPRESA, debidamente acreditado, esta se obliga a devolver al CLIENTE el íntegro del monto recibido por concepto de arras, sin intereses ni penalidades adicionales. EL CLIENTE declara haber sido informado de manera clara, suficiente y previa sobre la naturaleza de las arras, sus efectos legales y las condiciones de no devolución, manifestando su aceptación expresa.`);
 
   clausula('3. PLAZO DE VIGENCIA DE LA SEPARACIÓN',
     `La separación tendrá una vigencia de 03 (TRES) DÍAS CALENDARIOS IMPRORROGABLES. Vencido dicho plazo sin que EL CLIENTE cumpla con completar la cuota inicial o formalizar la compraventa, se entenderá producido su desistimiento automático, quedando el lote liberado de manera inmediata y pudiendo LA EMPRESA disponer libremente del mismo. Asimismo, vencido el plazo antes señalado, el monto entregado por concepto de separación quedará sujeto a una retención administrativa progresiva equivalente a S/ 250.00 (DOSCIENTOS CINCUENTA Y 00/100 SOLES) por cada día calendario adicional de inactividad o incumplimiento, por concepto de gastos administrativos, comerciales y operativos generados por la inmovilización del lote y la gestión de separación efectuada por LA EMPRESA, hasta alcanzar el monto total entregado por concepto de arras. Una vez agotado dicho monto, EL CLIENTE declara expresamente no tener derecho a devolución, compensación, reclamo administrativo, judicial ni extrajudicial alguno contra LA EMPRESA.`);
 
   listaClausula('4. LIBERACIÓN AUTOMÁTICA DEL LOTE', [
-    'El lote quedará automáticamente liberado.',
-    'LA EMPRESA podrá disponer libremente del mismo.',
-    'No será necesaria comunicación previa.',
-    'El CLIENTE no tendrá derecho a reclamo alguno.',
-  ]);
+    'El lote quedará automáticamente liberado',
+    'LA EMPRESA podrá disponer libremente del mismo',
+    'No será necesaria comunicación previa',
+    'El CLIENTE no tendrá derecho a reclamo alguno',
+  ], 'Vencido el plazo señalado sin cumplimiento por parte del CLIENTE:');
 
   listaClausula('5. ALCANCE DEL DOCUMENTO', [
-    'Es válido únicamente para la separación de un lote determinado.',
-    'No es válido para más de un lote ni para elección alternativa.',
-    'No constituye transferencia de propiedad.',
-    'No genera posesión ni derecho real alguno.',
-    'No es inscribible en Registros Públicos.',
-  ]);
+    'Es válido únicamente para la separación de un lote determinado',
+    'No es válido para más de un lote ni para elección alternativa',
+    'No constituye transferencia de propiedad',
+    'No genera posesión ni derecho real alguno',
+    'No es inscribible en Registros Públicos',
+  ], 'El presente documento:');
 
-  clausula('6. FORMALIZACIÓN Y OBLIGACIONES DEL CLIENTE',
-    `EL CLIENTE se obliga a: completar el pago de la cuota inicial, suscribir el contrato de compraventa, y cumplir con los requisitos documentarios. El incumplimiento genera resolución automática conforme al artículo 1430 del Código Civil.`);
+  listaClausula('6. FORMALIZACIÓN Y OBLIGACIONES DEL CLIENTE', [
+    'completar el pago de la cuota inicial',
+    'suscribir el contrato de compraventa',
+    'cumplir con los requisitos documentarios',
+  ], 'EL CLIENTE se obliga a:', 'El incumplimiento genera resolución automática conforme al artículo 1430 del Código Civil.');
 
-  clausula('7. VALIDACIÓN Y CONTROL INTERNO',
-    `La validez del presente documento está sujeta a validación por el Área Legal y verificación de pagos por el Área Administrativa. LA EMPRESA podrá observar, suspender o anular operaciones irregulares.`);
+  listaClausula('7. VALIDACIÓN Y CONTROL INTERNO', [
+    'validación por el Área Legal',
+    'verificación de pagos por el Área Administrativa',
+  ], 'La validez del presente documento está sujeta a:', 'LA EMPRESA podrá observar, suspender o anular operaciones irregulares.');
 
-  clausula('8. BANCARIZACIÓN DE PAGOS',
-    `Todo pago deberá realizarse exclusivamente mediante cuentas bancarias oficiales de LA EMPRESA o medios autorizados. EL CLIENTE es responsable de la verificación de sus depósitos y de la conservación de los comprobantes correspondientes.`);
+  listaClausula('8. BANCARIZACIÓN DE PAGOS', [
+    'cuentas bancarias oficiales de LA EMPRESA',
+    'medios autorizados',
+  ], 'Todo pago deberá realizarse exclusivamente mediante:', 'EL CLIENTE es responsable de la verificación de sus depósitos y de la conservación de los comprobantes correspondientes.');
 
   clausula('9. LUGAR DE TRÁMITE',
     `Todos los trámites relacionados deberán efectuarse en las oficinas de LA EMPRESA o mediante canales formales autorizados.`);
 
-  clausula('10. DECLARACIÓN DE INFORMACIÓN',
-    `EL CLIENTE declara haber recibido la información conforme a los artículos 76 y 77 del Código de Protección y Defensa del Consumidor, conocer el proyecto inmobiliario "COSTA DORADA", ubicado en La Yarada Los Palos, Tacna, y aceptar sus condiciones legales, técnicas y comerciales.`);
+  listaClausula('10. DECLARACIÓN DE INFORMACIÓN', [
+    'haber recibido la información conforme a los artículos 76 y 77 del Código de Protección y Defensa del Consumidor',
+    'conocer el proyecto inmobiliario "COSTA DORADA", ubicado en La Yarada Los Palos, Tacna',
+    'aceptar sus condiciones legales, técnicas y comerciales',
+  ], 'EL CLIENTE declara:');
 
+  // "Condiciones de contratación" en el documento original es una lista
+  // numerada del 1 al 6 con una sub-lista de viñetas anidada dentro del
+  // punto 3 -- se reproduce con esa misma estructura en vez de aplanarla
+  // en un solo párrafo por punto.
   if (y > pageHeight - 30) { doc.addPage(); encabezado(); y = 28; }
   doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(...cNavy);
-  doc.text('CONDICIONES DE CONTRATACIÓN', 105, y, { align: 'center' }); y += 5.5;
+  doc.text('CONDICIONES DE CONTRATACIÓN', 105, y, { align: 'center' }); y += 6;
 
-  listaClausula('', [
-    'EL CLIENTE manifiesta su intención de suscribir un contrato de compraventa respecto del lote indicado.',
-    'La suma entregada constituye arras penitenciales irrevocables, sujetas a las condiciones del presente documento.',
-    'La firma del contrato de compraventa deberá efectuarse dentro del plazo de 03 (tres) días calendarios posteriores a la cancelación de la cuota inicial. En caso de incumplimiento, se produce resolución automática, el CLIENTE pierde las arras y LA EMPRESA puede disponer del lote.',
-    'Si LA EMPRESA incumple injustificadamente, deberá devolver el monto recibido por concepto de arras.',
-    'Si EL CLIENTE incumple, las arras quedarán definitivamente en favor de LA EMPRESA, sin derecho a devolución parcial o total, ni reclamo administrativo, judicial o extrajudicial posterior.',
-    'En caso de concretarse la compraventa, las arras se imputarán a la cuota inicial.',
-  ]);
+  const parrafoCondicion = (texto, x, ancho) => {
+    if (y > pageHeight - 20) { doc.addPage(); encabezado(); y = 28; }
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...cInk);
+    const l = doc.splitTextToSize(texto, ancho);
+    doc.text(l, x, y); y += (l.length * 3.6) + 1.3;
+  };
+  parrafoCondicion('1. EL CLIENTE manifiesta su intención de suscribir un contrato de compraventa respecto del lote indicado.', 16, 178);
+  parrafoCondicion('2. La suma entregada constituye arras penitenciales irrevocables, sujetas a las condiciones del presente documento.', 16, 178);
+  parrafoCondicion('3. La firma del contrato de compraventa deberá efectuarse dentro del plazo de 03 (tres) días calendarios posteriores a la cancelación de la cuota inicial.', 16, 178);
+  parrafoCondicion('En caso de incumplimiento:', 16, 178);
+  parrafoCondicion('• se produce resolución automática', 20, 174);
+  parrafoCondicion('• el CLIENTE pierde las arras', 20, 174);
+  parrafoCondicion('• LA EMPRESA puede disponer del lote', 20, 174);
+  parrafoCondicion('4. Si LA EMPRESA incumple injustificadamente, deberá devolver el monto recibido por concepto de arras.', 16, 178);
+  parrafoCondicion('5. Si EL CLIENTE incumple, las arras quedarán definitivamente en favor de LA EMPRESA, sin derecho a devolución parcial o total, ni reclamo administrativo, judicial o extrajudicial posterior.', 16, 178);
+  parrafoCondicion('6. En caso de concretarse la compraventa, las arras se imputarán a la cuota inicial.', 16, 178);
+  y += 1.5;
 
   if (y > pageHeight - 45) { doc.addPage(); encabezado(); y = 28; }
   y += 10;
