@@ -427,8 +427,16 @@
     box-shadow: 0 3px 10px rgba(200,155,60,0.4);
   }
   .pl-ctrl-cast{ margin-left:4px; }
+  .pl-ctrl-btn.pl-repeat-activo{ background: rgba(200,155,60,0.28); border-color:#E8CE8F; color:#E8CE8F; }
 
-  .pl-tracklist{ margin-top:14px; display:flex; flex-direction:column; gap:4px; max-height:150px; overflow-y:auto; position:relative; z-index:1; }
+  .pl-lista-toggle{
+    width:100%; margin-top:14px; padding:8px 10px; border-radius:9px; cursor:pointer;
+    background: rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#DCE3F0;
+    font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:space-between;
+    position:relative; z-index:1;
+  }
+  .pl-lista-toggle:active{ background: rgba(255,255,255,0.12); }
+  .pl-tracklist{ margin-top:6px; display:flex; flex-direction:column; gap:4px; max-height:150px; overflow-y:auto; position:relative; z-index:1; }
   .pl-track-item{ display:flex; align-items:center; gap:8px; padding:7px 9px; border-radius:9px; cursor:pointer; background: rgba(255,255,255,0.04); transition: background .15s; }
   .pl-track-item:active{ background: rgba(255,255,255,0.1); }
   .pl-track-item.pl-track-activo{ background: rgba(200,155,60,0.18); }
@@ -1574,6 +1582,7 @@ main.app-content {
             </div>
 
             <div class="pl-controls">
+              <button class="pl-ctrl-btn" id="btnPlaylistRepeat" onclick="playlistCiclarRepeticion()" title="Modo de repetición">🔁</button>
               <button class="pl-ctrl-btn" onclick="playlistAnterior()" title="Anterior">⏮</button>
               <button class="pl-ctrl-btn pl-ctrl-play" id="btnPlaylistPlayPause" onclick="playlistTogglePlay()" title="Reproducir / Pausar">▶</button>
               <button class="pl-ctrl-btn" onclick="playlistSiguiente()" title="Siguiente">⏭</button>
@@ -1583,7 +1592,10 @@ main.app-content {
             <audio id="playlist_audio" style="display:none;"></audio>
             <video id="playlist_video_oculto" style="display:none;" playsinline></video>
 
-            <div id="playlist_lista" class="pl-tracklist"></div>
+            <button class="pl-lista-toggle" id="btnPlaylistVerLista" onclick="togglePlaylistLista()">
+              <span>📋 Ver lista completa</span><span id="playlist_lista_arrow">▾</span>
+            </button>
+            <div id="playlist_lista" class="pl-tracklist hidden"></div>
 
             <p class="pl-hint">🔊 Se reproduce por el altavoz o el Bluetooth que tengas conectado en tu celular.</p>
           </div>
@@ -4722,6 +4734,10 @@ const PLAYLIST_BUCKET = 'playlist-costa-dorada';
 const PLAYLIST_EXT_VIDEO = ['mp4', 'mov', 'webm', 'm4v'];
 let playlistPistas = [];
 let playlistIndiceActual = 0;
+// 'all' = al terminar la última pista vuelve a la primera (bucle de toda la
+// lista); 'one' = repite la pista actual indefinidamente; 'none' = se
+// detiene al terminar la última pista.
+let playlistRepeatMode = 'all';
 
 function playlistTituloDesdeArchivo(nombreArchivo){
   return nombreArchivo
@@ -4821,6 +4837,48 @@ function playlistCargarPista(i, autoplay){
 function playlistAnterior(){ playlistCargarPista(playlistIndiceActual - 1, true); }
 function playlistSiguiente(){ playlistCargarPista(playlistIndiceActual + 1, true); }
 
+const PLAYLIST_REPEAT_ICONOS = { all: '🔁', one: '🔂', none: '➡️' };
+const PLAYLIST_REPEAT_TITULOS = { all: 'Repetir toda la lista', one: 'Repetir esta pista', none: 'Sin repetir' };
+
+function playlistCiclarRepeticion(){
+  const orden = ['all', 'one', 'none'];
+  playlistRepeatMode = orden[(orden.indexOf(playlistRepeatMode) + 1) % orden.length];
+  const btn = document.getElementById('btnPlaylistRepeat');
+  if (btn) {
+    btn.textContent = PLAYLIST_REPEAT_ICONOS[playlistRepeatMode];
+    btn.title = PLAYLIST_REPEAT_TITULOS[playlistRepeatMode];
+    btn.classList.toggle('pl-repeat-activo', playlistRepeatMode !== 'none');
+  }
+  toast(PLAYLIST_REPEAT_TITULOS[playlistRepeatMode] + ' ✓');
+}
+
+// Al terminar una pista: 'one' la repite, 'all' avanza y da la vuelta al
+// llegar al final (playlistCargarPista ya envuelve el índice con módulo),
+// 'none' avanza solo si no era la última.
+function playlistAlTerminarPista(){
+  const audio = document.getElementById('playlist_audio');
+  if (playlistRepeatMode === 'one') {
+    if (audio) { audio.currentTime = 0; audio.play().catch(() => {}); }
+    return;
+  }
+  if (playlistRepeatMode === 'none' && playlistIndiceActual >= playlistPistas.length - 1) {
+    playlistCargarPista(0, false);
+    return;
+  }
+  playlistSiguiente();
+}
+
+// El botón "Ver lista completa" mantiene la tarjeta compacta por defecto --
+// Jorge pidió que la lista no se vea siempre, sino con un clic para
+// desplegarla.
+function togglePlaylistLista(){
+  const lista = document.getElementById('playlist_lista');
+  const flecha = document.getElementById('playlist_lista_arrow');
+  if (!lista) return;
+  const abierta = lista.classList.toggle('hidden') === false;
+  if (flecha) flecha.textContent = abierta ? '▴' : '▾';
+}
+
 function playlistActualizarBotonPlay(){
   const audio = document.getElementById('playlist_audio');
   const btn = document.getElementById('btnPlaylistPlayPause');
@@ -4854,7 +4912,7 @@ function playlistTogglePlay(){
   });
   audio.addEventListener('play', playlistActualizarBotonPlay);
   audio.addEventListener('pause', playlistActualizarBotonPlay);
-  audio.addEventListener('ended', () => playlistSiguiente());
+  audio.addEventListener('ended', playlistAlTerminarPista);
 
   seek.addEventListener('input', () => { arrastrando = true; if (elActual) elActual.textContent = playlistFmtTiempo(Number(seek.value)); });
   seek.addEventListener('change', () => { audio.currentTime = Number(seek.value); arrastrando = false; });
