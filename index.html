@@ -1336,6 +1336,14 @@ main.app-content {
             <span class="dr-label">Inicio / Portada</span>
           </button>
 
+          <!-- ACCESO DIRECTO A MI JORNADA -- pedido por Jorge: debajo de
+               Portada, suelto, sin estar metido dentro de ninguna de las
+               carpetas/categorías del menú. -->
+          <button class="drawer-item" data-nav="mi_jornada" onclick="irAVista('mi_jornada'); cerrarDrawer();" style="margin-bottom:6px;">
+            <span class="dr-icon">⚡</span>
+            <span class="dr-label">Mi Jornada</span>
+          </button>
+
           <div style="height:1px; background:#E2E8F0; margin:6px 4px 10px;"></div>
 
           <!-- MACRO-GRUPO 1: OPERACIONES DE CAMPO -->
@@ -16726,7 +16734,6 @@ const SUBMENUS_DATA = {
     icono: '📋',
     subtitulo: 'Actividades, agenda y equipo',
     items: [
-      { key: 'mi_jornada', icono: '⚡', titulo: 'Mi Jornada', desc: 'Pendientes del día, movilidad y reportes rápidos', accion: () => { irAVista('mi_jornada'); cerrarDrawer(); } },
       { key: 'ver_actividades', icono: '✓', titulo: 'Actividades y Tareas Hoy', desc: 'Bitácora y horas de trabajo efectivas', permiso: 'ver_actividades', accion: () => { irAVista('actividades'); cerrarDrawer(); } },
       { key: 'ver_agenda', icono: '📅', titulo: 'Agenda & Google Calendar', desc: 'Citas y eventos programados', permiso: 'ver_agenda', accion: () => { irAVista('agenda'); cerrarDrawer(); } },
       { key: 'ver_solicitudes', icono: '📝', titulo: 'Solicitudes y Requerimientos', desc: 'Trámites y pedidos a gerencia', permiso: 'ver_solicitudes', accion: () => { irAVista('solicitudes'); cerrarDrawer(); } },
