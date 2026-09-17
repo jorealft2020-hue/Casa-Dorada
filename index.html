@@ -3175,7 +3175,7 @@ main.app-content {
       </div>
 
       <!-- 2. CUOTAS EXTRAORDINARIAS (JULIO & DICIEMBRE / CAMPAÑAS) -->
-      <div style="background:#EEF2FF; border:1.5px solid #C7D2FE; border-radius:10px; padding:10px 12px; margin-top:10px;">
+      <div id="cot_bloque_cuotas_extra" style="background:#EEF2FF; border:1.5px solid #C7D2FE; border-radius:10px; padding:10px 12px; margin-top:10px;">
         <label style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:700; color:#3730A3; cursor:pointer;">
           <input type="checkbox" id="chkCuotasExtraordinarias" onchange="calcularCotizadorMatematica()" style="width:16px !important; height:16px !important; accent-color:#4F46E5;">
           📅 Plan Cuotas Dobles / Extraordinarias (Julio & Diciembre)
@@ -3193,7 +3193,7 @@ main.app-content {
       </div>
 
       <!-- ESCALA DE COMISIONES DEL ASESOR (CONFIDENCIAL) -->
-      <div class="card" style="background:#EBF3FC; border:1.5px solid #B8D5F5; margin-top:12px; padding:14px;">
+      <div class="card" id="cot_bloque_comision" style="background:#EBF3FC; border:1.5px solid #B8D5F5; margin-top:12px; padding:14px;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <div style="display:flex; align-items:center; gap:6px;">
             <span style="font-size:16px;">💼</span>
@@ -4763,6 +4763,7 @@ const ORGANIGRAMA_CARGOS = [
 
 const PERMISOS_CATALOGO = [
   // 💼 DEPARTAMENTO COMERCIAL (VENTAS & CIERRES)
+  { key: 'ver_mi_jornada',                 label: 'Ver Mi Jornada (Prioridades del Día)',            dept: 'Comercial', default: true },
   { key: 'ver_operaciones_campo',          label: 'Panel Operativo de Campo (Pantalla Exclusiva)',   dept: 'Comercial', default: true },
   { key: 'ver_domingo_cierres',            label: 'Domingo de Cierres (Showroom TV en Terreno)',    dept: 'Comercial', default: true },
   { key: 'generar_minuta_digital',          label: 'Separación Formal y Firma',    dept: 'Comercial', default: true },
@@ -5276,6 +5277,11 @@ function actualizarSelectorRoles(selectId, rolActual = 'usuario'){
   }
 
   sel.innerHTML = opciones.map(o => `<option value="${o.val}" ${o.val === rolActual ? 'selected' : ''}>${escapeHtml(o.label)}</option>`).join('');
+  // Solo el SuperAdmin puede reasignar roles -- de lo contrario cualquier
+  // admin/supervisor con acceso a "Gestión de Equipo" podría auto-promoverse
+  // (o promover a otro) a admin y así saltarse el checklist de permisos que
+  // el propio SuperAdmin configuró para esa persona.
+  sel.disabled = !esSA;
 }
 
 function renderizarBloquePermisos(prefix, permisosActuales = {}, rolDelUsuarioEditado = null){
@@ -5358,7 +5364,7 @@ function marcarTodosPermisos(prefix, estado){
 function aplicarPresetPermisos(prefix, tipo){
   const sets = {
     asesor: [
-      'ver_operaciones_campo', 'ver_domingo_cierres', 'generar_minuta_digital', 'ver_red_embajadores', 'usar_dictado_voz', 'usar_pre_reserva_qr', 'ver_herramientas_tacna', 'ver_cadencias_seguimiento', 'bloqueo_concurrente_lotes', 'cotizar_cuotas_extraordinarias',
+      'ver_mi_jornada', 'ver_operaciones_campo', 'ver_domingo_cierres', 'generar_minuta_digital', 'ver_red_embajadores', 'usar_dictado_voz', 'usar_pre_reserva_qr', 'ver_herramientas_tacna', 'ver_cadencias_seguimiento', 'bloqueo_concurrente_lotes', 'cotizar_cuotas_extraordinarias',
       'ver_control', 'ver_ranking_equipo', 'ver_proyeccion_ventas', 'ver_clientes', 'crear_editar_clientes',
       'ver_pipeline_kanban', 'ver_actividades', 'crear_actividades', 'ver_agenda', 'crear_eventos_agenda',
       'ver_control_visitas', 'agendar_visitas_van', 'ver_separaciones', 'crear_separaciones', 'ver_planos',
@@ -5366,7 +5372,7 @@ function aplicarPresetPermisos(prefix, tipo){
       'ver_checklist_legal', 'usar_generador_doc', 'ver_rendimiento', 'ver_solicitudes', 'crear_solicitudes', 'usar_conversor_divisas', 'ver_inventario_lotes', 'ver_comisiones_erp', 'ver_scoring_predictivo_leads', 'ver_simulador_plusvalia', 'ver_portal_propietarios', 'ver_gemelo_digital_3d'
     ],
     supervisor: [
-      'ver_control', 'ver_kpi_desglose', 'ver_ranking_equipo', 'ver_proyeccion_ventas', 'ver_clientes',
+      'ver_mi_jornada', 'ver_control', 'ver_kpi_desglose', 'ver_ranking_equipo', 'ver_proyeccion_ventas', 'ver_clientes',
       'crear_editar_clientes', 'ver_pipeline_kanban', 'asignar_archivar_masivo', 'ver_actividades', 'crear_actividades',
       'ver_agenda', 'crear_eventos_agenda', 'ver_control_visitas', 'agendar_visitas_van', 'ver_separaciones',
       'crear_separaciones', 'ver_planos', 'ver_cotizador', 'ver_comision_cotizador', 'ver_portafolio',
@@ -5375,7 +5381,7 @@ function aplicarPresetPermisos(prefix, tipo){
       'crear_solicitudes', 'aprobar_solicitudes', 'designar_conductor_movilidad', 'ver_reporte_equipo', 'reportes_pasados', 'generar_informes', 'usar_conversor_divisas', 'configurar_tipo_cambio', 'ver_inventario_lotes', 'ver_comisiones_erp'
     ],
     admin: [
-      'ver_control', 'ver_kpi_monto', 'ver_kpi_desglose', 'ver_ranking_equipo', 'ver_proyeccion_ventas',
+      'ver_mi_jornada', 'ver_control', 'ver_kpi_monto', 'ver_kpi_desglose', 'ver_ranking_equipo', 'ver_proyeccion_ventas',
       'ver_clientes', 'crear_editar_clientes', 'ver_pipeline_kanban', 'asignar_archivar_masivo', 'eliminar_clientes',
       'ver_actividades', 'crear_actividades', 'ver_agenda', 'crear_eventos_agenda', 'ver_control_visitas',
       'agendar_visitas_van', 'ver_separaciones', 'crear_separaciones', 'eliminar_separaciones', 'ver_planos',
@@ -5677,6 +5683,7 @@ async function mostrarApp(){
 
 /* ============ RANKING DEL EQUIPO (SUPERVISIÓN COMERCIAL) ============ */
 function abrirModalRankingEquipo(){
+  if (!tienePermiso('ver_ranking_equipo')) { toast('No tienes permiso para ver el Ranking del Equipo'); return; }
   openModal('modalRankingEquipo');
   cargarRankingEquipo();
 }
@@ -5965,6 +5972,7 @@ function irAVista(vista){
   // Verificación estricta de permisos según checklist del SuperAdmin
   if (!esUsuarioSuperAdmin() && vista !== 'inicio' && vista !== 'notificaciones') {
     const mapaPermisoVista = {
+      mi_jornada: 'ver_mi_jornada',
       control: 'ver_control',
       clientes: 'ver_clientes',
       operaciones_campo: 'ver_operaciones_campo',
@@ -6110,6 +6118,8 @@ async function cargarAvisoClientesRiesgo(){
 async function cargarComparativoManzana(){
   const cont = document.getElementById('cardComparativoManzana');
   if (!cont) return;
+  if (!tienePermiso('ver_proyeccion_ventas')) { cont.classList.add('hidden'); cont.previousElementSibling?.classList.add('hidden'); cont.innerHTML = ''; return; }
+  cont.classList.remove('hidden'); cont.previousElementSibling?.classList.remove('hidden');
 
   const rol = currentProfile?.rol;
   const esSuperAdminODirector = esRolDireccion(rol);
@@ -6152,6 +6162,8 @@ async function cargarComparativoManzana(){
 async function cargarProyeccionVentas(){
   const cont = document.getElementById('cardProyeccionVentas');
   if (!cont) return;
+  if (!tienePermiso('ver_proyeccion_ventas')) { cont.classList.add('hidden'); cont.previousElementSibling?.classList.add('hidden'); cont.innerHTML = ''; return; }
+  cont.classList.remove('hidden'); cont.previousElementSibling?.classList.remove('hidden');
   cont.innerHTML = `<div class="spinner"></div>`;
 
   const rol = currentProfile?.rol;
@@ -6333,6 +6345,7 @@ async function archivarActividad(id){
 }
 
 async function eliminarActividad(id){
+  if (!tienePermiso('eliminar_registros')) { toast('No tienes permiso para eliminar actividades'); return; }
   if (!confirm('¿Eliminar esta actividad? Esta acción no se puede deshacer y no quedará en los reportes.')) return;
   const { error } = await sb.from('actividades').delete().eq('id', id);
   if (error) { toast('Error al eliminar'); console.error(error); return; }
@@ -6411,6 +6424,7 @@ document.getElementById('btnConfirmarTema')?.addEventListener('click', () => {
 });
 
 document.getElementById('btnGuardarActividad').addEventListener('click', async () => {
+  if (!tienePermiso('crear_actividades')) { toast('No tienes permiso para registrar actividades'); return; }
   const titulo = document.getElementById('actTitulo').value.trim();
   const locacion = document.getElementById('actLocacion').value.trim();
   const fecha = document.getElementById('actFecha').value || obtenerHoyLocal();
@@ -7502,6 +7516,7 @@ document.getElementById('btnAbrirPreautorizar').addEventListener('click', () => 
   document.getElementById('pa_area').value = 'Departamento Comercial';
   actualizarSubareasYCargos('pa', 'Área de Ventas', 'Asesor(a) Comercial');
   actualizarSelectorRoles('pa_rol', 'usuario');
+  window._rolOriginalEnEdicionPreautorizado = 'usuario';
   document.getElementById('pa_activo').value = 'true';
   document.getElementById('pa_reporte_diario_activo').checked = true;
   const selSupNuevo = document.getElementById('pa_supervisor_id');
@@ -7572,6 +7587,7 @@ async function abrirEditarPreautorizado(email){
   document.getElementById('pa_area').value = areaVal;
   actualizarSubareasYCargos('pa', p.subarea || '', p.cargo || 'Asesor(a) Comercial');
   actualizarSelectorRoles('pa_rol', p.rol || 'usuario');
+  window._rolOriginalEnEdicionPreautorizado = p.rol || 'usuario';
   document.getElementById('pa_activo').value = String(p.activo !== false);
   document.getElementById('pa_reporte_email_adicional').value = p.reporte_email_adicional || '';
   document.getElementById('pa_reporte_diario_activo').checked = p.reporte_diario_activo !== false;
@@ -7609,7 +7625,7 @@ document.getElementById('btnGuardarPreautorizado').addEventListener('click', asy
   const area = document.getElementById('pa_area').value;
   const subarea = document.getElementById('pa_subarea')?.value || '';
   const cargo = obtenerCargoFinal('pa');
-  const rol = document.getElementById('pa_rol').value;
+  const rol = esUsuarioSuperAdmin() ? document.getElementById('pa_rol').value : (window._rolOriginalEnEdicionPreautorizado || 'usuario');
   const supervisorId = document.getElementById('pa_supervisor_id')?.value || null;
   const reporteEmailAdicional = document.getElementById('pa_reporte_email_adicional')?.value.trim() || null;
   const reporteDiarioActivo = document.getElementById('pa_reporte_diario_activo')?.checked !== false;
@@ -7720,6 +7736,7 @@ document.getElementById('btnGuardarPreautorizado').addEventListener('click', asy
 /* ============ ADMIN: GESTIÓN DE EQUIPO ============ */
 async function eliminarUsuarioActivo(id, nombre){
   if (!id) return;
+  if (!tienePermiso('eliminar_usuarios')) { toast('No tienes permiso para eliminar colaboradores'); return; }
   if (id === currentUser.id) {
     toast('No puedes eliminar tu propia cuenta de SuperAdmin');
     return;
@@ -7778,7 +7795,7 @@ async function cargarUsuariosAdmin(){
       <div class="card-actions" style="margin-top:10px;">
         <button class="chip-btn gold" onclick="abrirEditarUsuario('${u.id}')">✏️ Editar ficha y permisos</button>
         ${u.id !== currentUser.id ? `<button class="chip-btn" style="${u.activo === false ? 'color:#2E7D32; border-color:#2E7D32;' : 'color:var(--danger); border-color:var(--danger);'}" onclick="toggleActivoUsuario('${u.id}', ${u.activo === false}, '${(u.nombre || u.email).replace(/'/g,"\\\\'")}');">${u.activo === false ? '✅ Activar' : '🚫 Desactivar'}</button>` : ''}
-        ${u.id !== currentUser.id ? `<button class="chip-btn" style="color:var(--danger); border-color:var(--danger);" onclick="eliminarUsuarioActivo('${u.id}', '${(u.nombre || u.email).replace(/'/g,"\\\\'")}');">🗑️ Eliminar</button>` : ''}
+        ${(u.id !== currentUser.id && tienePermiso('eliminar_usuarios')) ? `<button class="chip-btn" style="color:var(--danger); border-color:var(--danger);" onclick="eliminarUsuarioActivo('${u.id}', '${(u.nombre || u.email).replace(/'/g,"\\\\'")}');">🗑️ Eliminar</button>` : ''}
       </div>
     </div>
   `).join('');
@@ -7811,6 +7828,7 @@ async function abrirEditarUsuario(id){
   document.getElementById('eu_area').value = areaVal;
   actualizarSubareasYCargos('eu', data.subarea || '', data.cargo || 'Asesor(a) Comercial');
   actualizarSelectorRoles('eu_rol', data.rol || 'usuario');
+  window._rolOriginalEnEdicion = data.rol || 'usuario';
   document.getElementById('eu_activo').value = String(data.activo !== false);
   document.getElementById('eu_reporte_email_adicional').value = data.reporte_email_adicional || '';
   document.getElementById('eu_reporte_diario_activo').checked = data.reporte_diario_activo !== false;
@@ -7837,6 +7855,7 @@ async function abrirEditarUsuario(id){
     document.getElementById(id)?.classList.toggle('hidden', esDuenoDelSistema);
   });
   document.getElementById('eu_aviso_dueno_sistema')?.classList.toggle('hidden', !esDuenoDelSistema);
+  document.getElementById('btnEliminarUsuarioModal')?.classList.toggle('hidden', esDuenoDelSistema || data.id === currentUser.id || !tienePermiso('eliminar_usuarios'));
 
   openModal('modalEditarUsuario');
 }
@@ -7880,7 +7899,12 @@ document.getElementById('btnGuardarUsuario').addEventListener('click', async () 
   const area = document.getElementById('eu_area').value;
   const subarea = document.getElementById('eu_subarea').value;
   const cargo = obtenerCargoFinal('eu');
-  const rol = document.getElementById('eu_rol').value;
+  // El <select> de rol ya viene deshabilitado en el DOM para quien no es
+  // SuperAdmin, pero eso no protege contra editar el valor por consola --
+  // se vuelve a forzar aquí al rol original con el que se abrió la ficha,
+  // para que solo el SuperAdmin pueda reasignar roles y así evitar que un
+  // admin se auto-promueva (o promueva a otro) saltándose el checklist.
+  const rol = esUsuarioSuperAdmin() ? document.getElementById('eu_rol').value : (window._rolOriginalEnEdicion || 'usuario');
 
   if (!id || !nombre) {
     toast('Nombre requerido');
@@ -8098,7 +8122,7 @@ async function cargarRendimiento(){
   ];
 
   let filaPorAsesor = '';
-  if (esSuperAdminODirector && lista.length > 0) {
+  if (esSuperAdminODirector && tienePermiso('ver_kpi_desglose') && lista.length > 0) {
     const { data: nombres } = await sb.from('usuarios').select('id, nombre').in('id', usuarioIds);
     const mapaNombres = Object.fromEntries((nombres || []).map(u => [u.id, u.nombre]));
     filaPorAsesor = `
@@ -8180,6 +8204,7 @@ function prepararModalCliente(){
 }
 
 document.getElementById('btnGuardarCliente').addEventListener('click', async () => {
+  if (!tienePermiso('crear_editar_clientes')) { toast('No tienes permiso para registrar clientes'); return; }
   if (!currentUser?.id) {
     toast('Tu sesión no está lista. Cierra este formulario y vuelve a intentar.');
     return;
@@ -8283,7 +8308,8 @@ document.getElementById('btnGuardarCliente').addEventListener('click', async () 
 async function cargarClientes(){
   const rol = currentProfile?.rol;
   const esSuperAdminODirector = esRolDireccion(rol);
-  
+  document.getElementById('tabClientesPipeline')?.classList.toggle('hidden', !tienePermiso('ver_pipeline_kanban'));
+
   let query = sb.from('clientes').select('*').eq('archivado', false);
   if (!esSuperAdminODirector) {
     query = query.eq('vendedor_id', currentUser.id);
@@ -8357,7 +8383,7 @@ function renderTarjetaCliente(c, esSuperAdminODirector){
         <button class="chip-btn" style="color:var(--gold); border-color:var(--gold);" onclick="abrirGenerarDocumento('${c.id}', '${escapeHtml(c.nombre).replace(/'/g, "\\\\'")}','${(c.celular || '').replace(/'/g, "\\\\'")}')">📝 Minuta</button>
         ${wspUrl ? `<button class="chip-btn gold" onclick="abrirModalWhatsAppRapido('${escapeHtml(c.nombre).replace(/'/g, "\\\'")}', '${c.celular || c.telefono || ''}')">💬 WhatsApp</button>` : ''}
         ${c.celular ? `<a class="chip-btn" href="tel:${c.celular}" style="text-decoration:none;">📞 Llamar</a>` : ''}
-        ${puedeEliminar ? `<button class="chip-btn" style="color:var(--danger); border-color:var(--danger);" onclick="eliminarCliente('${c.id}')">🗑️</button>` : ''}
+        ${(puedeEliminar || tienePermiso('eliminar_clientes')) ? `<button class="chip-btn" style="color:var(--danger); border-color:var(--danger);" onclick="eliminarCliente('${c.id}')">🗑️</button>` : ''}
       </div>
     </div>
   `;
@@ -8389,6 +8415,7 @@ async function poblarSelectAsesoresMasivo(){
 }
 
 async function asignarAsesorMasivo(){
+  if (!tienePermiso('asignar_archivar_masivo')) { toast('No tienes permiso para acciones masivas en clientes'); return; }
   const asesorId = document.getElementById('selAsesorAsignarMasivo').value;
   if (!asesorId) { toast('Elige un asesor primero'); return; }
   if (clientesSeleccionados.size === 0) { toast('Selecciona al menos un cliente'); return; }
@@ -8399,6 +8426,7 @@ async function asignarAsesorMasivo(){
 }
 
 async function archivarClientesMasivo(){
+  if (!tienePermiso('asignar_archivar_masivo')) { toast('No tienes permiso para acciones masivas en clientes'); return; }
   if (clientesSeleccionados.size === 0) { toast('Selecciona al menos un cliente'); return; }
   if (!confirm(`¿Archivar ${clientesSeleccionados.size} cliente(s)? No se borran, solo se ocultan de la lista activa.`)) return;
   const { error } = await sb.from('clientes').update({ archivado: true }).in('id', Array.from(clientesSeleccionados));
@@ -8428,6 +8456,7 @@ async function cargarClientesArchivados(){
 }
 
 async function desarchivarCliente(id){
+  if (!tienePermiso('asignar_archivar_masivo')) { toast('No tienes permiso para restaurar clientes archivados'); return; }
   const { error } = await sb.from('clientes').update({ archivado: false }).eq('id', id);
   if (error) { toast('Error al restaurar'); console.error(error); return; }
   toast('Cliente restaurado ✓');
@@ -8462,6 +8491,7 @@ function clienteEnRiesgo(c){
 }
 
 function cambiarVistaClientes(vista){
+  if (vista === 'pipeline' && !tienePermiso('ver_pipeline_kanban')) { toast('No tienes permiso para ver el Pipeline Kanban'); return; }
   document.getElementById('tabClientesLista').classList.toggle('active', vista === 'lista');
   document.getElementById('tabClientesPipeline').classList.toggle('active', vista === 'pipeline');
   document.getElementById('tabClientesArchivados').classList.toggle('active', vista === 'archivados');
@@ -8597,6 +8627,7 @@ function inicializarDragPipeline(){
 }
 
 async function moverClientePipeline(id, nuevaEtapa){
+  if (!tienePermiso('ver_pipeline_kanban')) { toast('No tienes permiso para mover clientes en el Pipeline Kanban'); renderPipelineClientes(); return; }
   const c = clientesCache.find(x => x.id === id);
   const etapaAnterior = c?.estado_prospecto || 'Nuevo';
   if (etapaAnterior === nuevaEtapa) return;
@@ -8914,6 +8945,7 @@ document.getElementById('btnCopiarDocumento')?.addEventListener('click', () => {
 });
 
 async function eliminarCliente(id){
+  if (!tienePermiso('eliminar_clientes') && !tienePermiso('eliminar_registros')) { toast('No tienes permiso para eliminar clientes'); return; }
   if (!confirm('¿Eliminar este cliente?')) return;
   const { error } = await sb.from('clientes').delete().eq('id', id);
   if (error) { toast('Error al eliminar'); console.error(error); return; }
@@ -8923,6 +8955,10 @@ async function eliminarCliente(id){
 /* ============ COTIZADOR RÁPIDO DE LOTES ============ */
 function abrirModalCotizador(clienteNombre, celular, manzana, lote, area, precioM2, dni = '', direccion = '', ocupacion = '', valorTotal = 0){
   if (!tienePermiso('ver_cotizador')) { toast('No tienes permiso para usar el Cotizador'); return; }
+  document.getElementById('cot_bloque_comision')?.classList.toggle('hidden', !tienePermiso('ver_comision_cotizador'));
+  const puedeCuotasExtra = tienePermiso('cotizar_cuotas_extraordinarias');
+  document.getElementById('cot_bloque_cuotas_extra')?.classList.toggle('hidden', !puedeCuotasExtra);
+  if (!puedeCuotasExtra) { const chk = document.getElementById('chkCuotasExtraordinarias'); if (chk) chk.checked = false; }
   const selMz = document.getElementById('cot_manzana');
   if (selMz && selMz.options.length === 0) {
     const opciones = [];
@@ -9147,7 +9183,7 @@ function calcularCotizadorMatematica(){
   if (elSaldoDisp) elSaldoDisp.value = 'S/ ' + saldo.toLocaleString('es-PE', {minimumFractionDigits:2});
 
   const meses = obtenerMesesFinanciamiento();
-  const esCuotasExtra = document.getElementById('chkCuotasExtraordinarias')?.checked;
+  const esCuotasExtra = tienePermiso('cotizar_cuotas_extraordinarias') && document.getElementById('chkCuotasExtraordinarias')?.checked;
 
   let cuota = 0;
   let detalleResumen = '';
@@ -10884,6 +10920,7 @@ function generarAnexoUbicacionPDFDesdeMinuta(){
 }
 
 document.getElementById('btnGuardarSeparacion').addEventListener('click', async () => {
+  if (!tienePermiso('crear_separaciones')) { toast('No tienes permiso para registrar separaciones'); return; }
   const nombre = document.getElementById('sp_cliente_nombre').value.trim();
   const manzana = document.getElementById('sp_manzana').value;
   const lote = document.getElementById('sp_lote').value.trim();
@@ -11124,7 +11161,7 @@ async function cargarSeparacionesTodas(){
           ${celCliente ? `<button class="chip-btn gold" onclick="abrirModalWhatsAppRapido('${escapeHtml(nomCliente).replace(/'/g, "\'")}', '${celCliente}')">💬 WhatsApp</button>` : ''}
           <button class="chip-btn" style="color:var(--gold); border-color:var(--gold);" onclick="abrirGenerarDocumento('${s.cliente_id}', '${escapeHtml(nomCliente).replace(/'/g, "\'")}', '${celCliente}', '${s.id}')">📝 Minuta</button>
           <button class="chip-btn" style="color:#2C5691; border-color:#2C5691;" onclick="abrirChecklistLegal('${s.cliente_id}', '${escapeHtml(nomCliente).replace(/'/g, "\'")}')">📋 Legal</button>
-          ${puedeEliminar ? `<button class="chip-btn" style="color:var(--danger); border-color:var(--danger);" onclick="eliminarSeparacion('${s.id}')">🗑️</button>` : ''}
+          ${(puedeEliminar || tienePermiso('eliminar_separaciones')) ? `<button class="chip-btn" style="color:var(--danger); border-color:var(--danger);" onclick="eliminarSeparacion('${s.id}')">🗑️</button>` : ''}
         </div>
       </div>
     `;
@@ -11132,6 +11169,7 @@ async function cargarSeparacionesTodas(){
 }
 
 async function eliminarSeparacion(id){
+  if (!tienePermiso('eliminar_separaciones') && !tienePermiso('eliminar_registros')) { toast('No tienes permiso para eliminar/anular separaciones'); return; }
   if (!confirm('¿Cancelar esta separación? El lote quedará disponible nuevamente para otros clientes.')) return;
   // Cancelacion logica (no delete fisico): un trigger en la base de datos libera
   // automaticamente el lote (propiedades.estado -> 'disponible') cuando ya no
@@ -11144,6 +11182,7 @@ async function eliminarSeparacion(id){
 
 /* ============ AGENDA ============ */
 document.getElementById('btnGuardarAgenda').addEventListener('click', async () => {
+  if (!tienePermiso('crear_eventos_agenda')) { toast('No tienes permiso para agendar citas'); return; }
   const actividad = document.getElementById('agActividad').value.trim();
   const locacion = document.getElementById('agLocacion').value.trim();
   const fecha = document.getElementById('agFecha').value;
@@ -11777,6 +11816,7 @@ async function cargarAgenda(){
 }
 
 async function eliminarEventoAgenda(id){
+  if (!tienePermiso('eliminar_registros')) { toast('No tienes permiso para eliminar eventos de agenda'); return; }
   if (!confirm('¿Eliminar este evento de agenda?')) return;
   const { error } = await sb.from('agenda').delete().eq('id', id);
   if (error) { toast('Error al eliminar'); console.error(error); return; }
@@ -12018,9 +12058,9 @@ async function cargarSolicitudes(estado){
       ${s.descripcion ? `<p class="card-sub" style="margin-top:4px;">${escapeHtml(s.descripcion)}</p>` : ''}
       ${limite ? `<p class="card-sub" style="margin-top:4px; font-weight:700;">${limite}</p>` : ''}
       <div class="card-actions" style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
-        ${sig ? `<button class="chip-btn gold" onclick="cambiarEstadoSolicitud('${s.id}','${sig}')">${labelSiguiente[s.estado]}</button>` : ''}
+        ${sig && tienePermiso('aprobar_solicitudes') ? `<button class="chip-btn gold" onclick="cambiarEstadoSolicitud('${s.id}','${sig}')">${labelSiguiente[s.estado]}</button>` : ''}
         ${s.estado !== 'realizado' ? `<button class="chip-btn" style="color:#7C6BAF; border-color:#7C6BAF;" onclick="reprogramarSolicitud('${s.id}')">🔁 Reprogramar</button>` : ''}
-        <button class="chip-btn" style="color:var(--danger); border-color:var(--danger);" onclick="eliminarSolicitud('${s.id}')">🗑️ Eliminar</button>
+        ${puedeEliminar ? `<button class="chip-btn" style="color:var(--danger); border-color:var(--danger);" onclick="eliminarSolicitud('${s.id}')">🗑️ Eliminar</button>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -12037,6 +12077,7 @@ async function reprogramarSolicitud(id){
 }
 
 async function cambiarEstadoSolicitud(id, nuevoEstado){
+  if (!tienePermiso('aprobar_solicitudes')) { toast('No tienes permiso para aprobar/avanzar solicitudes'); return; }
   const payload = { estado: nuevoEstado };
   if (nuevoEstado === 'realizado') payload.completado_at = new Date().toISOString();
   const { error } = await sb.from('solicitudes').update(payload).eq('id', id);
@@ -12046,6 +12087,7 @@ async function cambiarEstadoSolicitud(id, nuevoEstado){
 }
 
 async function eliminarSolicitud(id){
+  if (!tienePermiso('eliminar_registros')) { toast('No tienes permiso para eliminar solicitudes'); return; }
   if (!confirm('¿Eliminar esta solicitud?')) return;
   const { error } = await sb.from('solicitudes').delete().eq('id', id);
   if (error) { toast('Error al eliminar'); console.error(error); return; }
@@ -13472,6 +13514,7 @@ document.getElementById('btnAgregarSitioMajo')?.addEventListener('click', async 
 });
 
 document.getElementById('btnGuardarSolicitud')?.addEventListener('click', async () => {
+  if (!tienePermiso('crear_solicitudes')) { toast('No tienes permiso para registrar solicitudes'); return; }
   const sel = document.getElementById('sol_solicitante_sel');
   let solicitanteFinal = sel ? sel.value : '';
 
@@ -14850,6 +14893,7 @@ function abrirModalNuevaVisita(){
 }
 
 async function guardarNuevaVisita(){
+  if (!tienePermiso('agendar_visitas_van')) { toast('No tienes permiso para agendar visitas en la Van'); return; }
 
   if (!currentUser?.id) {
     toast('⚠️ Tu sesión no está disponible. Vuelve a iniciar sesión.');
@@ -17064,6 +17108,7 @@ function detenerGrabacionVoz() {
 }
 
 function abrirModalDictadoVoz() {
+  if (!tienePermiso('usar_dictado_voz')) { toast('No tienes permiso para usar el Dictado por Voz'); return; }
   dictadoTranscripcionAcumulada = '';
   const txt = document.getElementById('dictado_transcripcion');
   if (txt) txt.value = '';
@@ -17127,6 +17172,7 @@ function actualizarQRPreReserva() {
 }
 
 function abrirModalPreReservaEnTerreno(manzana = 'B', lote = '12', monto = 500) {
+  if (!tienePermiso('usar_pre_reserva_qr')) { toast('No tienes permiso para usar la Pre-Reserva Digital QR'); return; }
   preReservaData = { manzana, lote, monto };
 
   const selManzana = document.getElementById('qr_manzana');
@@ -17232,6 +17278,7 @@ const CADENCIAS_CONFIG = {
 let clienteCadenciaActual = null;
 
 function abrirModalCadencias(nombre, celular) {
+  if (!tienePermiso('ver_cadencias_seguimiento')) { toast('No tienes permiso para ver las Cadencias de Seguimiento'); return; }
   clienteCadenciaActual = { nombre, celular };
   const el = document.getElementById('cad_cliente_nombre');
   if (el) el.textContent = `Cadencia · ${nombre}`;
@@ -17264,6 +17311,7 @@ function renderizarPasosCadencia() {
 
 /* 5. HERRAMIENTAS TÁCTICAS TACNA (SUNARP, PÓRTICO, CONECTIVIDAD) */
 function abrirModalHerramientasTacna() {
+  if (!tienePermiso('ver_herramientas_tacna')) { toast('No tienes permiso para ver las Herramientas Tacna'); return; }
   openModal('modalHerramientasTacna');
 }
 
@@ -17405,6 +17453,7 @@ function abrirCotizadorLote(mz = 'B', lote = '12', area = 150, precio = 22000) {
 }
 
 function bloquearLoteActualTemporal(manzana = 'B', lote = '12', minutos = 15) {
+  if (!tienePermiso('bloqueo_concurrente_lotes')) return;
   const loteId = `Mz ${manzana} - Lote ${lote}`;
   loteBloqueadoActual = {
     manzana,
@@ -17474,6 +17523,7 @@ function liberarLoteActualManual() {
 let timerRelojCierres = null;
 
 function abrirModalDomingoDeCierres() {
+  if (!tienePermiso('ver_domingo_cierres')) { toast('No tienes permiso para ver el Domingo de Cierres'); return; }
   openModal('modalDomingoDeCierres');
   actualizarRelojCierres();
   clearInterval(timerRelojCierres);
@@ -17739,6 +17789,7 @@ function limpiarCanvasFirma() {
 }
 
 function abrirModalMinutaCompraventa() {
+  if (!tienePermiso('generar_minuta_digital')) { toast('No tienes permiso para usar Separación Formal y Firma'); return; }
   openModal('modalMinutaCompraventa');
   setTimeout(initCanvasFirma, 200);
   poblarSelectManzanasMinuta();
@@ -18060,6 +18111,7 @@ async function descargarReciboDesdeMinutaPDF() {
 /* 13. RED DE EMBAJADORES & REFERIDOS (CASA DORADA) */
 /* ============================================================== */
 function abrirModalEmbajadores() {
+  if (!tienePermiso('ver_red_embajadores')) { toast('No tienes permiso para ver la Red de Embajadores'); return; }
   openModal('modalEmbajadoresReferidos');
   const elCod = document.getElementById('embajador_codigo_display');
   if (elCod && currentUser) {
