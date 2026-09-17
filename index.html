@@ -25,11 +25,16 @@
     --gold: #C89B3C;
     --gold-soft: #E8CE8F;
     --gold-strong: #A67F2E;
-    --cream: #F2EFE6;
-    --cream-dim: #E8E2D2;
+    /* Fondo base recambiado de crema cálido a un gris-azulado frío y
+       minimalista (pedido de Jorge: "tipo corporación inmobiliaria,
+       moderna, minimalista y tecnológica") -- los nombres de variable se
+       mantienen (--cream/--cream-dim) para no tocar las ~18 reglas que ya
+       las usan, solo cambia el tono real detrás de ellas. */
+    --cream: #F1F4F8;
+    --cream-dim: #E5EBF2;
     --ink: #142A4D;
     --ink-dim: #6B7280;
-    --border: #DAD3BE;
+    --border: #D7E0E9;
 
     /* semánticos */
     --danger: #B4453C;
@@ -66,14 +71,14 @@
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    /* Fondo base corporativo/inmobiliario: velo azul marino y dorado en
-       diagonal sobre el crema (en vez de un crema plano) para que las
-       tarjetas blancas resalten en vez de fundirse con el fondo. Se aplica
-       igual en mobile y desktop -- antes el bloque de escritorio lo
-       pisaba con una versión demasiado débil para notarse. */
+    /* Fondo base corporativo/inmobiliario, minimalista y tecnológico: dos
+       resplandores sutiles en las esquinas (navy arriba-izquierda, dorado
+       abajo-derecha) sobre un gris-azulado frío -- en vez del velo
+       diagonal anterior, que cruzaba toda la pantalla y competía con las
+       tarjetas. Se aplica igual en mobile y desktop. */
     background:
-      linear-gradient(155deg, rgba(20,42,77,0.07) 0%, rgba(20,42,77,0) 38%),
-      linear-gradient(-25deg, rgba(200,155,60,0.12) 0%, rgba(200,155,60,0) 42%),
+      radial-gradient(circle at 10% -5%, rgba(20,42,77,0.06) 0%, rgba(20,42,77,0) 32%),
+      radial-gradient(circle at 100% 100%, rgba(200,155,60,0.07) 0%, rgba(200,155,60,0) 30%),
       var(--cream);
     position: relative;
     z-index: 1;
@@ -123,10 +128,10 @@
   .bottomnav{ display: none !important; }
 
   @media (min-width: 680px){
-    /* El fondo base (velo azul marino/dorado + grilla tipo plano
-       arquitectónico) se hereda igual que en mobile -- ya no se pisa aquí
-       con una versión más débil, que era por lo que en pantallas anchas
-       se seguía viendo todo plano/blanco. */
+    /* El fondo base (resplandores navy/dorado en las esquinas) se hereda
+       igual que en mobile -- ya no se pisa aquí con una versión más débil,
+       que era por lo que en pantallas anchas se seguía viendo todo
+       plano/blanco. */
     #app{
       max-width: 100% !important;
       margin: 0 !important;
@@ -352,7 +357,7 @@
     to { opacity: 1; transform: translateY(0); }
   }
   .card{
-    background: linear-gradient(160deg, #ffffff 0%, #FDFCF9 100%);
+    background: linear-gradient(160deg, #ffffff 0%, #FAFBFD 100%);
     border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px;
     border: 1px solid rgba(20,42,77,0.09);
     box-shadow: 0 1px 2px rgba(20,42,77,0.04), 0 8px 22px rgba(20,42,77,0.09);
@@ -1476,80 +1481,10 @@ main.app-content {
         </div>
       </div>
 
-        <!-- TARJETA RESALTANTE DE PENDIENTES DEL DÍA -->
-        <div class="card-pendientes-resaltante" id="cardPendientesInicio">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span style="font-size:24px;">⚡</span>
-              <div>
-                <h3 style="margin:0; font-size:15px; color:#142A4D; font-weight:800; letter-spacing:-0.2px;">Prioridades y Pendientes de Hoy</h3>
-                <p id="pi_subtitulo_fecha" style="margin:2px 0 0; font-size:11.5px; color:#8A6D3B; font-weight:600;">Cargando tus tareas del día…</p>
-              </div>
-            </div>
-            <span class="pendientes-badge-alerta" id="pi_badge_total">0 pendientes</span>
-          </div>
-
-          <!-- Mini Strip de Métricas de Pendientes -->
-          <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-bottom:14px;">
-            <div style="background:#fff; border:1px solid #EAD8B1; border-radius:12px; padding:8px 10px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
-              <span style="font-size:11px; color:#6D5D3A; font-weight:600; display:block;">Tareas Hoy</span>
-              <span id="pi_num_tareas" style="font-size:18px; font-weight:800; color:#142A4D;">0</span>
-            </div>
-            <div style="background:#fff; border:1px solid #EAD8B1; border-radius:12px; padding:8px 10px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
-              <span style="font-size:11px; color:#6D5D3A; font-weight:600; display:block;">Citas Agenda</span>
-              <span id="pi_num_citas" style="font-size:18px; font-weight:800; color:#C89B3C;">0</span>
-            </div>
-            <div style="background:#fff; border:1px solid #EAD8B1; border-radius:12px; padding:8px 10px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
-              <span style="font-size:11px; color:#6D5D3A; font-weight:600; display:block;">En Riesgo</span>
-              <span id="pi_num_riesgo" style="font-size:18px; font-weight:800; color:#D32F2F;">0</span>
-            </div>
-          </div>
-
-          <!-- Contenedor dinámico de lista de pendientes prioritarios -->
-          <div id="pi_lista_pendientes" style="display:flex; flex-direction:column; gap:8px;">
-            <div class="spinner"></div>
-          </div>
-
-          <!-- Botones de acción rápida -->
-          <div style="display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;">
-            <button class="chip-btn gold" onclick="abrirModalActividad()" style="font-size:11.5px; padding:8px 14px; font-weight:700;">+ Registrar Actividad</button>
-            <button class="chip-btn" onclick="abrirModalAgenda()" style="font-size:11.5px; padding:8px 14px; border-color:var(--gold); color:var(--navy); background:#fff; font-weight:700;">📅 Agendar Actividad</button>
-            <button class="chip-btn" onclick="irARegistrarSolicitudDesdeInicio()" style="font-size:11.5px; padding:8px 14px; border-color:#CBD5E1; color:var(--navy); background:#fff; font-weight:700;">📝 Agendar Solicitud</button>
-          </div>
-
-          <!-- BARRA DE PROGRESO DE JORNADA LABORAL EFECTIVA (TIEMPO REAL) -->
-          <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:12px; padding:10px 14px; margin-top:14px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-              <span style="font-size:11.5px; font-weight:800; color:var(--navy);">⏱️ Progreso de Jornada Efectiva de Hoy</span>
-              <span id="progreso_jornada_txt" style="font-size:11.5px; font-weight:800; color:#1D4ED8;">0.0 / 8.0 hrs (0%)</span>
-            </div>
-            <div style="width:100%; height:8px; background:#E2E8F0; border-radius:6px; overflow:hidden;">
-              <div id="progreso_jornada_barra" style="width:0%; height:100%; background:linear-gradient(90deg, #3B82F6 0%, #10B981 100%); transition:width 0.4s ease;"></div>
-            </div>
-            <div style="display:flex; justify-content:space-between; margin-top:5px; font-size:10px; color:var(--ink-dim);">
-              <span id="desglose_terreno_txt">🚐 Terreno: 0.0h</span>
-              <span id="desglose_oficina_txt">🏢 Oficina: 0.0h</span>
-              <span id="desglose_meta_txt">Meta: 8.0h completas</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- CONTROL OPERATIVO VISUAL DE LA VAN (14 ASIENTOS) EN INICIO -->
-        <div class="card" style="border:1.5px solid #BFDBFE; background:#F8FAFC; margin-bottom:14px; padding:14px 16px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-            <span style="font-size:12.5px; font-weight:800; color:var(--navy);">🚐 Van Salida a La Yarada (14 Asientos)</span>
-            <span class="badge badge-completada" id="vis_badge_asientos_inicio">14 Cupos Libres</span>
-          </div>
-          <div style="width:100%; height:10px; background:#E2E8F0; border-radius:6px; overflow:hidden; margin-bottom:8px;">
-            <div id="vis_barra_inicio" style="width:0%; height:100%; background:linear-gradient(90deg, #3B82F6 0%, #10B981 100%); transition:width .3s;"></div>
-          </div>
-          <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--ink-dim);">
-            <span>Salidas guiadas: Fin de semana · Oficina Central</span>
-            <button class="chip-btn gold" onclick="abrirModalNuevaVisita()" style="font-size:10.5px; padding:4px 10px; font-weight:700;">+ Reservar Cupos</button>
-          </div>
-        </div>
-
-
+        <!-- ORDEN PEDIDO POR JORGE: saludo -> mensaje motivacional -> playlist
+             -> video -> el resto (pendientes, movilidad, reportes). El
+             ranking del equipo se movió a un modal aparte (Supervisión
+             Comercial), no debe verse en Inicio. -->
         <div class="quote-card">
           <div class="quote-header">
             <span class="quote-tag">💡 Enfoque del día</span>
@@ -1632,11 +1567,77 @@ main.app-content {
           </div>
         </div>
 
-        <!-- RANKING DEL EQUIPO -->
-        <div class="daily-analysis-card hidden" id="cardRankingEquipo">
-          <div class="da-section-title"><span>🏆</span> Ranking del Equipo — Hoy</div>
-          <p style="font-size:11.5px; color:var(--ink-dim); margin:-6px 0 12px;">Metas diarias: 30 leads prospección · 10 referidos · 70 llamadas · 2 citas mín. · Meta semanal: 5 clientes filtrados al domingo.</p>
-          <div id="listaRankingEquipo"></div>
+        <!-- TARJETA RESALTANTE DE PENDIENTES DEL DÍA -->
+        <div class="card-pendientes-resaltante" id="cardPendientesInicio">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:24px;">⚡</span>
+              <div>
+                <h3 style="margin:0; font-size:15px; color:#142A4D; font-weight:800; letter-spacing:-0.2px;">Prioridades y Pendientes de Hoy</h3>
+                <p id="pi_subtitulo_fecha" style="margin:2px 0 0; font-size:11.5px; color:#8A6D3B; font-weight:600;">Cargando tus tareas del día…</p>
+              </div>
+            </div>
+            <span class="pendientes-badge-alerta" id="pi_badge_total">0 pendientes</span>
+          </div>
+
+          <!-- Mini Strip de Métricas de Pendientes -->
+          <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-bottom:14px;">
+            <div style="background:#fff; border:1px solid #EAD8B1; border-radius:12px; padding:8px 10px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
+              <span style="font-size:11px; color:#6D5D3A; font-weight:600; display:block;">Tareas Hoy</span>
+              <span id="pi_num_tareas" style="font-size:18px; font-weight:800; color:#142A4D;">0</span>
+            </div>
+            <div style="background:#fff; border:1px solid #EAD8B1; border-radius:12px; padding:8px 10px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
+              <span style="font-size:11px; color:#6D5D3A; font-weight:600; display:block;">Citas Agenda</span>
+              <span id="pi_num_citas" style="font-size:18px; font-weight:800; color:#C89B3C;">0</span>
+            </div>
+            <div style="background:#fff; border:1px solid #EAD8B1; border-radius:12px; padding:8px 10px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
+              <span style="font-size:11px; color:#6D5D3A; font-weight:600; display:block;">En Riesgo</span>
+              <span id="pi_num_riesgo" style="font-size:18px; font-weight:800; color:#D32F2F;">0</span>
+            </div>
+          </div>
+
+          <!-- Contenedor dinámico de lista de pendientes prioritarios -->
+          <div id="pi_lista_pendientes" style="display:flex; flex-direction:column; gap:8px;">
+            <div class="spinner"></div>
+          </div>
+
+          <!-- Botones de acción rápida -->
+          <div style="display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;">
+            <button class="chip-btn gold" onclick="abrirModalActividad()" style="font-size:11.5px; padding:8px 14px; font-weight:700;">+ Registrar Actividad</button>
+            <button class="chip-btn" onclick="abrirModalAgenda()" style="font-size:11.5px; padding:8px 14px; border-color:var(--gold); color:var(--navy); background:#fff; font-weight:700;">📅 Agendar Actividad</button>
+            <button class="chip-btn" onclick="irARegistrarSolicitudDesdeInicio()" style="font-size:11.5px; padding:8px 14px; border-color:#CBD5E1; color:var(--navy); background:#fff; font-weight:700;">📝 Agendar Solicitud</button>
+          </div>
+
+          <!-- BARRA DE PROGRESO DE JORNADA LABORAL EFECTIVA (TIEMPO REAL) -->
+          <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:12px; padding:10px 14px; margin-top:14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <span style="font-size:11.5px; font-weight:800; color:var(--navy);">⏱️ Progreso de Jornada Efectiva de Hoy</span>
+              <span id="progreso_jornada_txt" style="font-size:11.5px; font-weight:800; color:#1D4ED8;">0.0 / 8.0 hrs (0%)</span>
+            </div>
+            <div style="width:100%; height:8px; background:#E2E8F0; border-radius:6px; overflow:hidden;">
+              <div id="progreso_jornada_barra" style="width:0%; height:100%; background:linear-gradient(90deg, #3B82F6 0%, #10B981 100%); transition:width 0.4s ease;"></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-top:5px; font-size:10px; color:var(--ink-dim);">
+              <span id="desglose_terreno_txt">🚐 Terreno: 0.0h</span>
+              <span id="desglose_oficina_txt">🏢 Oficina: 0.0h</span>
+              <span id="desglose_meta_txt">Meta: 8.0h completas</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CONTROL OPERATIVO VISUAL DE LA VAN (14 ASIENTOS) EN INICIO -->
+        <div class="card" style="border:1.5px solid #BFDBFE; background:#F8FAFC; margin-bottom:14px; padding:14px 16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <span style="font-size:12.5px; font-weight:800; color:var(--navy);">🚐 Van Salida a La Yarada (14 Asientos)</span>
+            <span class="badge badge-completada" id="vis_badge_asientos_inicio">14 Cupos Libres</span>
+          </div>
+          <div style="width:100%; height:10px; background:#E2E8F0; border-radius:6px; overflow:hidden; margin-bottom:8px;">
+            <div id="vis_barra_inicio" style="width:0%; height:100%; background:linear-gradient(90deg, #3B82F6 0%, #10B981 100%); transition:width .3s;"></div>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--ink-dim);">
+            <span>Salidas guiadas: Fin de semana · Oficina Central</span>
+            <button class="chip-btn gold" onclick="abrirModalNuevaVisita()" style="font-size:10.5px; padding:4px 10px; font-weight:700;">+ Reservar Cupos</button>
+          </div>
         </div>
 
         <!-- REPORTES E INFORMES: al final de Inicio para acceso rápido sin
@@ -3381,7 +3382,7 @@ main.app-content {
         <span id="visor_zoom_nivel" style="font-size:11px; font-weight:800; color:var(--gold); background:#FFFBEB; padding:2px 6px; border-radius:6px;">130%</span>
       </div>
 
-      <div id="visdoc_contenedor" style="flex:1; overflow:auto; background:#F2EFE6; border-radius:10px; touch-action:pinch-zoom pan-x pan-y; display:flex; align-items:center; justify-content:center; position:relative;"></div>
+      <div id="visdoc_contenedor" style="flex:1; overflow:auto; background:#F1F4F8; border-radius:10px; touch-action:pinch-zoom pan-x pan-y; display:flex; align-items:center; justify-content:center; position:relative;"></div>
 
       <!-- BOTONES DE DESCARGA DIRECTA VÍA WHATSAPP -->
       <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
@@ -4327,6 +4328,26 @@ main.app-content {
           </div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- MODAL: SUPERVISIÓN COMERCIAL -- RANKING DEL EQUIPO
+       Se movió aquí desde Inicio (Jorge pidió que Inicio quede solo con lo
+       operativo del asesor: saludo, motivación, playlist, video, pendientes,
+       movilidad y reportes -- el ranking es una herramienta de supervisión
+       de Dirección Comercial, no algo que un asesor deba ver a diario). -->
+  <div class="modal-backdrop" id="modalRankingEquipo">
+    <div class="modal-sheet" style="max-width:560px; width:95%; max-height:88vh; overflow-y:auto;">
+      <button class="modal-x-close" data-close="modalRankingEquipo">✕</button>
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+        <span style="font-size:26px;">🏆</span>
+        <div>
+          <h3 style="margin:0; color:var(--navy); font-size:16px;">Supervisión Comercial · Ranking del Equipo</h3>
+          <p style="margin:2px 0 0; font-size:11.5px; color:var(--ink-dim);">Métricas del día por asesor</p>
+        </div>
+      </div>
+      <p style="font-size:11.5px; color:var(--ink-dim); margin:0 0 14px;">Metas diarias: 30 leads prospección · 10 referidos · 70 llamadas · 2 citas mín. · Meta semanal: 5 clientes filtrados al domingo.</p>
+      <div id="listaRankingEquipo"></div>
     </div>
   </div>
 
@@ -5580,13 +5601,11 @@ async function mostrarApp(){
   const cardEnlaces = document.getElementById('cardEnlacesTecnicos');
   if (cardEnlaces) cardEnlaces.classList.toggle('hidden', !esUsuarioSuperAdmin());
 
-  const puedeVerRanking = tienePermiso('ver_ranking_equipo');
-  if (puedeVerRanking) {
-    document.getElementById('cardRankingEquipo')?.classList.remove('hidden');
-    cargarRankingEquipo();
-  } else {
-    document.getElementById('cardRankingEquipo')?.classList.add('hidden');
-  }
+  // El Ranking del Equipo ya no vive suelto en Inicio (Jorge pidió que esa
+  // pantalla quede solo con lo operativo del día a día): ahora es un modal
+  // de Supervisión Comercial, con su propia entrada de menú ya filtrada por
+  // el permiso 'ver_ranking_equipo' (ver SUBMENUS_DATA.comercial) -- no
+  // necesita precargarse aquí, se carga al abrir el modal.
 
   puedeEliminar = tienePermiso('eliminar_registros');
 
@@ -5603,7 +5622,12 @@ async function mostrarApp(){
   await Promise.all([cargarKPIs(), cargarActividadesHoy(), cargarSeparacionesPorVencer(), cargarNotificacionesBadge()]);
 }
 
-/* ============ RANKING DEL EQUIPO ============ */
+/* ============ RANKING DEL EQUIPO (SUPERVISIÓN COMERCIAL) ============ */
+function abrirModalRankingEquipo(){
+  openModal('modalRankingEquipo');
+  cargarRankingEquipo();
+}
+
 async function cargarRankingEquipo(){
   const el = document.getElementById('listaRankingEquipo');
   if (!el) return;
@@ -13997,9 +14021,17 @@ async function cargarPendientesInicio(){
   // Cada fuente de datos ahora corre de forma independiente (Promise.allSettled)
   // asi una que falle no bloquea a las demas, y un error real se muestra en
   // pantalla en vez de dejar el spinner colgado indefinidamente.
+  // 'actividades' no tiene columna `completada` (es un booleano que nunca
+  // existió en el esquema -- la columna real es `estado`, del enum
+  // estado_actividad: pendiente/en_proceso/completada/cancelada) y
+  // 'solicitudes' no tiene `usuario_id` (es `asignado_a`). Filtrar por esas
+  // columnas inexistentes hacía que PostgREST devolviera un error 400 en
+  // cada carga, que el Promise.allSettled de abajo atajaba en silencio --
+  // por eso estas dos tarjetas se quedaban siempre en 0 aunque hubiera
+  // actividades/solicitudes reales.
   const resultados = await Promise.allSettled([
     sb.from('actividades').select('*')
-      .eq('usuario_id', currentUser.id).eq('archivada', false).eq('completada', false)
+      .eq('usuario_id', currentUser.id).eq('archivada', false).in('estado', ['pendiente', 'en_proceso'])
       .lte('fecha_programada', hoy)
       .order('fecha_programada', { ascending: true })
       .order('hora_inicio', { ascending: true, nullsFirst: false }),
@@ -14008,7 +14040,7 @@ async function cargarPendientesInicio(){
       .lte('fecha_inicio', hoy + 'T23:59:59')
       .order('fecha_inicio', { ascending: true }),
     sb.from('solicitudes').select('*')
-      .eq('usuario_id', currentUser.id).eq('estado', 'pendiente')
+      .eq('asignado_a', currentUser.id).in('estado', ['pendiente', 'en_proceso'])
       .order('created_at', { ascending: false }),
     sb.from('actividades').select('*')
       .eq('usuario_id', currentUser.id).eq('fecha_programada', hoy).eq('estado', 'completada'),
@@ -14170,7 +14202,7 @@ async function cargarPendientesInicio(){
 }
 
 async function completarActividadDesdeInicio(actId){
-  const { error } = await sb.from('actividades').update({ completada: true, updated_at: new Date().toISOString() }).eq('id', actId);
+  const { error } = await sb.from('actividades').update({ estado: 'completada', fecha_completada: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', actId);
   if (error) { toast('Error al completar tarea'); return; }
   toast('Tarea completada ✓');
   cargarPendientesInicio();
@@ -16652,6 +16684,7 @@ const SUBMENUS_DATA = {
     subtitulo: 'Pipeline comercial y clientes',
     items: [
       { key: 'ver_control', icono: '📊', titulo: 'Tablero de Control & KPIs', desc: 'Métricas de ventas y rendimiento', permiso: 'ver_control', accion: () => { irAVista('control'); cerrarDrawer(); } },
+      { key: 'ver_ranking_equipo', icono: '🏆', titulo: 'Supervisión Comercial · Ranking', desc: 'Ranking diario del equipo de asesores', permiso: 'ver_ranking_equipo', accion: () => { abrirModalRankingEquipo(); cerrarDrawer(); } },
       { key: 'ver_clientes', icono: '👥', titulo: 'Cartera de Clientes & Kanban', desc: 'Pipeline de prospectos y estados', permiso: 'ver_clientes', accion: () => { irAVista('clientes'); cerrarDrawer(); } },
       { key: 'ver_cotizador', icono: '🧮', titulo: 'Cotizador Rápido de Lotes', desc: 'Cuotas dobles, Dúo y financiamiento', permiso: 'ver_cotizador', accion: () => { abrirModalCotizador(); cerrarDrawer(); } },
       { key: 'ver_planos', icono: '🗺️', titulo: 'Planos Interactivos', desc: 'Disponibilidad y Master Plan 360°', permiso: 'ver_planos', accion: () => { irAVista('planos'); cerrarDrawer(); } },
