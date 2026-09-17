@@ -6288,7 +6288,13 @@ document.getElementById('btnConfirmarDescargaReporte').addEventListener('click',
         });
         toast('Informe generado ✓');
         return;
-      } catch (e) {}
+      } catch (e) {
+        // AbortError = el usuario canceló el cuadro nativo de compartir a
+        // propósito -- no hay que forzarle igual una descarga + WhatsApp
+        // que no pidió. Cualquier otro error sí cae al respaldo de abajo.
+        if (e?.name === 'AbortError') return;
+        console.warn('navigator.share falló, usando respaldo de descarga:', e);
+      }
     }
 
     const blobUrl = URL.createObjectURL(blob);
@@ -6715,7 +6721,10 @@ document.getElementById('btnGenerarInformeFormal').addEventListener('click', asy
         await navigator.share({ files: [archivoInfPDF], title: 'Informe Formal de Actividades' });
         toast('Informe formal generado ✓');
         return;
-      } catch (e) {}
+      } catch (e) {
+        if (e?.name === 'AbortError') return;
+        console.warn('navigator.share falló, usando respaldo de descarga:', e);
+      }
     }
 
     doc.save(nombreArchivo);
@@ -11758,7 +11767,10 @@ async function generarYCompartirPdfGhl(scopeData, tituloPeriodo, subtituloFecha,
       await navigator.share({ files: [archivoPDF], title: 'Seguimiento de Leads · ' + tituloPeriodo });
       toast('Reporte generado ✓');
       return;
-    } catch (e) {}
+    } catch (e) {
+      if (e?.name === 'AbortError') return;
+      console.warn('navigator.share falló, usando respaldo de descarga:', e);
+    }
   }
 
   doc.save(nombreArchivo);
@@ -11839,21 +11851,37 @@ document.getElementById('btnGenerarReporteGhlRango').addEventListener('click', a
   toast('Generando reporte…');
 
   try {
-    const { data, error } = await invocarGhlReporte({ desde, hasta });
-    if (error) throw error;
-    if (!data || data.ok === false) throw new Error(data?.error || 'La función no devolvió datos.');
-    if (!data.rango) throw new Error('No se pudo calcular el rango.');
+    let scopeData, asOf, posibleDatosIncompletos = false, detalleCompleto = true;
+    // Si el rango elegido es exactamente "hoy" y la pantalla ya trajo los
+    // datos de hoy (lo normal, ya que esta vista carga "hoy" apenas se
+    // abre), se reusan en vez de repetir toda la consulta a GHL -- eso era
+    // lo que hacía que generar el PDF de "hoy" se sintiera lento (Jorge
+    // reportó demoras), cuando la mayoría de las veces el dato ya estaba
+    // en pantalla. El mismo atajo que ya usa cargarGhlDiaFecha().
+    if (desde === hasta && desde === ghlYmdPeruHoy(0) && ghlUltimoReporte?.today) {
+      scopeData = ghlUltimoReporte.today;
+      asOf = ghlUltimoReporte.asOf;
+    } else {
+      const { data, error } = await invocarGhlReporte({ desde, hasta });
+      if (error) throw error;
+      if (!data || data.ok === false) throw new Error(data?.error || 'La función no devolvió datos.');
+      if (!data.rango) throw new Error('No se pudo calcular el rango.');
+      scopeData = data.rango;
+      asOf = data.asOf;
+      posibleDatosIncompletos = data.rango.posibleDatosIncompletos;
+      detalleCompleto = data.rango.detalleCompleto;
+    }
 
-    if (data.rango.posibleDatosIncompletos) {
+    if (posibleDatosIncompletos) {
       toast('Aviso: este rango puede tener datos incompletos (fuera de las 500 filas más recientes).');
     }
 
     const subtitulo = desde === hasta
-      ? `Corte: ${ghlFmtHora(data.asOf)} · ${ghlFmtFechaLarga(desde)}`
-      : `Corte: ${ghlFmtHora(data.asOf)} · ${ghlFmtFechaLarga(desde)} – ${ghlFmtFechaLarga(hasta)}${!data.rango.detalleCompleto ? ' · (detalle por lead resumido, rango grande)' : ''}`;
+      ? `Corte: ${ghlFmtHora(asOf)} · ${ghlFmtFechaLarga(desde)}`
+      : `Corte: ${ghlFmtHora(asOf)} · ${ghlFmtFechaLarga(desde)} – ${ghlFmtFechaLarga(hasta)}${!detalleCompleto ? ' · (detalle por lead resumido, rango grande)' : ''}`;
     const nombreArchivo = `seguimiento-ghl-${desde}${desde !== hasta ? '_a_' + hasta : ''}.pdf`;
 
-    await generarYCompartirPdfGhl(data.rango, tituloPeriodo, subtitulo, nombreArchivo);
+    await generarYCompartirPdfGhl(scopeData, tituloPeriodo, subtitulo, nombreArchivo);
   } catch (e) {
     console.error(e);
     toast('Error al generar el reporte: ' + (e.message || ''));
