@@ -2958,6 +2958,7 @@ main.app-content {
             <option value="7">Lote 7 (+S/ 2,500 adicional)</option>
             <option value="8">Lote 8 (+S/ 2,500 adicional)</option>
           </select>
+          <p id="cot_escala_lote_nota" style="font-size:10.5px; color:#3A5372; margin:4px 0 0;">Calculando según tus separaciones de este mes…</p>
         </div>
 
         <div style="background:#fff; border:1px solid #C2DCFA; border-radius:8px; padding:10px; margin-top:8px;">
@@ -4067,6 +4068,21 @@ main.app-content {
     <div class="modal-sheet" style="text-align:center;">
       <button class="modal-x-close" data-close="modalPreReservaQR">✕</button>
       <h3 style="margin-top:0; color:var(--navy);">⚡ Congelar Lote por 48 Horas</h3>
+
+      <div class="field" style="text-align:left;">
+        <label>Nombre del cliente:</label>
+        <input type="text" id="qr_cliente_nombre" placeholder="Nombre completo del cliente">
+      </div>
+      <div style="display:flex; gap:8px;">
+        <div class="field" style="text-align:left; flex:1;">
+          <label>Manzana:</label>
+          <select id="qr_manzana"></select>
+        </div>
+        <div class="field" style="text-align:left; flex:1;">
+          <label>Lote:</label>
+          <input type="text" id="qr_lote" placeholder="Ej. 12">
+        </div>
+      </div>
       <p id="qr_lote_subtitulo" style="font-size:12px; color:var(--ok); font-weight:700; margin:0 0 10px;">Manzana — · Lote — (S/ 500.00)</p>
 
       <div style="background:#fff; border:2px dashed var(--gold); border-radius:14px; padding:12px; display:inline-block; margin-bottom:10px;">
@@ -4831,6 +4847,14 @@ async function cerrarSesionApp(){
   if (confirm('¿Cerrar sesión?')) {
     localStorage.removeItem('google_provider_token');
     sessionStorage.removeItem('google_provider_token');
+    // La suscripción realtime del perfil quedaba abierta (con el id del
+    // usuario que cierra sesión) hasta que el siguiente login la reemplazaba
+    // -- se cierra aquí explícitamente, sobre todo en dispositivos
+    // compartidos donde otro usuario inicia sesión después.
+    if (typeof canalPerfilRealtime !== 'undefined' && canalPerfilRealtime) {
+      try { sb.removeChannel(canalPerfilRealtime); } catch (e) {}
+      canalPerfilRealtime = null;
+    }
     await sb.auth.signOut();
     mostrarLogin();
   }
@@ -4957,21 +4981,42 @@ async function cargarRankingEquipo(){
 }
 
 function rolLabel(rol){
-  return { 
+  return {
     superadmin: 'SuperAdmin (Desarrollador / Matriz)',
     admin: 'Administrador de la Empresa',
     gerencia: 'Gerencia General',
     director_comercial: 'Director Comercial',
-    supervisor: 'Supervisor de Área', 
-    usuario: 'Colaborador / Operativo' 
+    supervisor: 'Supervisor de Área',
+    usuario: 'Colaborador / Operativo'
   }[rol] || 'Colaborador';
 }
 
+// Roles de "dirección" (ven datos de todo el equipo, no solo los propios).
+// Antes esta condición estaba copiada literalmente en más de una decena de
+// lugares del archivo -- una de esas copias (KPIs) se había quedado sin
+// "gerencia" al ir editando, así que Gerencia veía ahí solo sus propios
+// datos en vez de los de todo el equipo. Un solo punto de verdad evita que
+// vuelva a desincronizarse.
+function esRolDireccion(rol){
+  return rol === 'admin' || rol === 'superadmin' || rol === 'director_comercial' || rol === 'gerencia';
+}
+
+let cargarPerfilTokenActual = 0;
 async function cargarPerfil(){
-  let { data } = await sb.from('usuarios').select('*').eq('id', currentUser.id).maybeSingle();
+  // Esta función la disparan 4 eventos independientes (login, realtime,
+  // visibilitychange, focus) sin ningún de-dupe -- si dos llamadas se
+  // solapan (cambio rápido de pestaña, evento realtime durante un login),
+  // la que responde más tarde podía pisar currentProfile con datos ya
+  // desactualizados (last-write-wins). Se descarta la respuesta si ya hay
+  // una llamada más nueva en vuelo.
+  const miToken = ++cargarPerfilTokenActual;
+
+  let { data, error } = await sb.from('usuarios').select('*').eq('id', currentUser.id).maybeSingle();
+  if (error) console.error('Error cargando perfil de usuario:', error);
 
   if (!data && currentUser?.email) {
     const resMail = await sb.from('usuarios').select('*').eq('email', currentUser.email.toLowerCase().trim()).maybeSingle();
+    if (resMail?.error) { console.error('Error buscando perfil por email:', resMail.error); error = error || resMail.error; }
     if (resMail?.data) data = resMail.data;
   }
 
@@ -4982,6 +5027,15 @@ async function cargarPerfil(){
     } catch (e) {
       console.warn('No se pudo activar el usuario preautorizado:', e);
     }
+  }
+
+  if (miToken !== cargarPerfilTokenActual) return; // ya hay una llamada más nueva en curso/resuelta
+
+  // Si la consulta realmente falló (red/BD caída), no dejar caer en silencio a
+  // un perfil vacío sin permisos: el usuario vería la app como si no tuviera
+  // nada asignado, sin saber que fue un error de carga y no de configuración.
+  if (!data && error) {
+    toast('⚠️ No se pudo verificar tu perfil. Revisa tu conexión e intenta de nuevo.');
   }
 
   // El rol, permisos, nombre y cargo vienen únicamente de la tabla "usuarios"
@@ -5219,6 +5273,11 @@ function irAVista(vista){
   if (vista === 'actividades') cargarActividadesTodas();
   if (vista === 'clientes') cargarClientes();
   if (vista === 'separaciones') cargarSeparacionesTodas();
+  if (vista === 'visitas') {
+    const elVisF = document.getElementById('vis_filtro_fecha');
+    if (elVisF && !elVisF.value) elVisF.value = obtenerHoyLocal();
+    cargarVisitasPresentaciones();
+  }
   if (vista === 'agenda') cargarAgenda();
   if (vista === 'rendimiento') cargarRendimiento();
   if (vista === 'notificaciones') cargarNotificaciones();
@@ -5276,7 +5335,7 @@ async function cargarAvisoClientesRiesgo(){
   const cont = document.getElementById('avisoClientesRiesgo');
   if (!cont) return;
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = rol === 'admin' || rol === 'superadmin' || rol === 'director_comercial' || rol === 'gerencia';
+  const esSuperAdminODirector = esRolDireccion(rol);
 
   // NOT IN excluye la fila si estado_prospecto es NULL (NULL NOT IN (...) da
   // NULL, no true, en SQL) -- eso escondia de este aviso a cualquier cliente
@@ -5301,7 +5360,7 @@ async function cargarComparativoManzana(){
   if (!cont) return;
 
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = rol === 'admin' || rol === 'superadmin' || rol === 'director_comercial' || rol === 'gerencia';
+  const esSuperAdminODirector = esRolDireccion(rol);
   // Canceladas/vencidas no son ventas validas -- se traen igual (select) para
   // poder filtrarlas, en vez de dejar que infen el total de su manzana como
   // si fueran negocio real (hallazgo M10).
@@ -5344,7 +5403,7 @@ async function cargarProyeccionVentas(){
   cont.innerHTML = `<div class="spinner"></div>`;
 
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = rol === 'admin' || rol === 'superadmin' || rol === 'director_comercial' || rol === 'gerencia';
+  const esSuperAdminODirector = esRolDireccion(rol);
 
   const hoy = new Date();
   const inicioMes = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-01`;
@@ -5531,7 +5590,7 @@ function estadoLabel(e){
 
 async function poblarSelectClientes(selectId){
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = rol === 'admin' || rol === 'superadmin' || rol === 'director_comercial' || rol === 'gerencia';
+  const esSuperAdminODirector = esRolDireccion(rol);
   let query = sb.from('clientes').select('id, nombre').order('nombre');
   if (!esSuperAdminODirector) query = query.eq('vendedor_id', currentUser.id);
   const { data } = await query;
@@ -5679,7 +5738,7 @@ document.getElementById('btnDescargarReporte').addEventListener('click', () => {
   inputF.value = hoy;
 
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = rol === 'admin' || rol === 'superadmin' || rol === 'director_comercial';
+  const esSuperAdminODirector = esRolDireccion(rol);
   const puedePasados = esSuperAdminODirector || (currentProfile?.permisos?.reportes_pasados === true);
 
   if (!puedePasados) {
@@ -7091,7 +7150,7 @@ function cargarRendimientoPorArea(area){
 async function cargarRendimiento(){
   const panel = document.getElementById('panelEmbudo');
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = rol === 'admin' || rol === 'superadmin' || rol === 'director_comercial' || rol === 'gerencia';
+  const esSuperAdminODirector = esRolDireccion(rol);
   const esSupervisor = rol === 'supervisor';
 
   let usuarioIds = [currentUser.id];
@@ -7323,7 +7382,7 @@ document.getElementById('btnGuardarCliente').addEventListener('click', async () 
 
 async function cargarClientes(){
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = rol === 'admin' || rol === 'superadmin' || rol === 'director_comercial' || rol === 'gerencia';
+  const esSuperAdminODirector = esRolDireccion(rol);
   
   let query = sb.from('clientes').select('*').eq('archivado', false);
   if (!esSuperAdminODirector) {
@@ -7450,7 +7509,7 @@ async function archivarClientesMasivo(){
 
 async function cargarClientesArchivados(){
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = rol === 'admin' || rol === 'superadmin' || rol === 'director_comercial' || rol === 'gerencia';
+  const esSuperAdminODirector = esRolDireccion(rol);
   let query = sb.from('clientes').select('*').eq('archivado', true).order('updated_at', { ascending: false });
   if (!esSuperAdminODirector) query = query.eq('vendedor_id', currentUser.id);
   const { data } = await query;
@@ -7539,10 +7598,29 @@ function renderPipelineClientes(){
 }
 
 async function moverClientePipeline(id, nuevaEtapa){
+  const c = clientesCache.find(x => x.id === id);
+  const etapaAnterior = c?.estado_prospecto || 'Nuevo';
+  if (etapaAnterior === nuevaEtapa) return;
+
+  // "Separado" debe reflejar una separación real ya registrada -- si no, el
+  // pipeline puede mostrar un estado sin ningún respaldo (lote nunca reservado).
+  if (nuevaEtapa === 'Separado') {
+    const { count } = await sb.from('separaciones').select('id', { count: 'exact', head: true }).eq('cliente_id', id).eq('estado', 'activa');
+    if (!count) {
+      toast('⚠️ No puedes marcar "Separado" sin registrar antes la separación real del lote (botón "+ Nueva separación").');
+      renderPipelineClientes();
+      return;
+    }
+  }
+
   const { error } = await sb.from('clientes').update({ estado_prospecto: nuevaEtapa }).eq('id', id);
   if (error) { toast('Error al mover el cliente'); console.error(error); return; }
-  const c = clientesCache.find(x => x.id === id);
   if (c) c.estado_prospecto = nuevaEtapa;
+
+  try {
+    await sb.from('clientes_historial_pipeline').insert({ cliente_id: id, usuario_id: currentUser.id, etapa_anterior: etapaAnterior, etapa_nueva: nuevaEtapa });
+  } catch (e) { console.warn('No se pudo registrar el historial de pipeline:', e); }
+
   toast(`Movido a "${nuevaEtapa}" ✓`);
   renderPipelineClientes();
 }
@@ -7553,14 +7631,16 @@ async function abrirHistorialCliente(clienteId, nombreCliente){
   cont.innerHTML = `<div class="spinner"></div>`;
   openModal('modalHistorialCliente');
 
-  const [{ data: acts }, { data: citas }] = await Promise.all([
+  const [{ data: acts }, { data: citas }, { data: pipeline }] = await Promise.all([
     sb.from('actividades').select('*').eq('cliente_id', clienteId).order('created_at', { ascending: false }),
     sb.from('agenda').select('*').eq('cliente_id', clienteId).order('fecha_inicio', { ascending: false }),
+    sb.from('clientes_historial_pipeline').select('*').eq('cliente_id', clienteId).order('created_at', { ascending: false }),
   ]);
 
   const eventos = [
     ...(acts || []).map(a => ({ tipo: 'actividad', fecha: a.created_at, titulo: a.titulo, detalle: a.locacion, icono: '✓', color: 'var(--ok)' })),
     ...(citas || []).map(c => ({ tipo: 'agenda', fecha: c.fecha_inicio, titulo: c.titulo, detalle: `${c.locacion || ''} · ${estadoLabel(c.estado)}`, icono: '📅', color: c.estado === 'realizada' ? 'var(--ok)' : (c.estado === 'reprogramada' ? '#7C6BAF' : 'var(--gold)') })),
+    ...(pipeline || []).map(p => ({ tipo: 'pipeline', fecha: p.created_at, titulo: `${p.etapa_anterior || 'Nuevo'} → ${p.etapa_nueva}`, detalle: 'Cambio de etapa en el pipeline', icono: '🧭', color: '#7C6BAF' })),
   ].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 
   if (eventos.length === 0) {
@@ -7742,6 +7822,26 @@ document.getElementById('btnGenerarDocumento')?.addEventListener('click', async 
       throw new Error('No hay un cliente seleccionado para generar el documento.');
     }
 
+    // Exige al menos el DNI vigente del titular validado en el Checklist Legal
+    // antes de generar cualquier minuta/contrato -- antes se podia generar con
+    // 0/5 documentos legales validados, sin ningun aviso. Los demas items del
+    // checklist son "si aplica" (conyuge, empresa, poder, transferencia), asi
+    // que solo se avisa de esos, no se bloquea por ellos.
+    const { data: cliChecklist } = await sb.from('clientes').select('checklist_legal').eq('id', documentoClienteActual.id).maybeSingle();
+    const checklistDoc = cliChecklist?.checklist_legal || {};
+    if (!checklistDoc.dni) {
+      toast('⚠️ Bloqueado: valida primero el DNI vigente del titular en el Checklist Legal antes de generar este documento.');
+      btn.disabled = false;
+      btn.textContent = 'Generar con IA';
+      closeModal('modalGenerarDocumento');
+      abrirChecklistLegal(documentoClienteActual.id, documentoClienteActual.nombre);
+      return;
+    }
+    const pendientesChecklist = DOCUMENTOS_LEGALES.filter(d => d.key !== 'dni' && !checklistDoc[d.key]).map(d => d.label);
+    if (pendientesChecklist.length) {
+      toast(`⚠️ Aviso: aún faltan validar (si aplican a este cliente): ${pendientesChecklist.join(', ')}.`);
+    }
+
     // Si se abrió desde una tarjeta de lote especifico (separacion_id conocido)
     // se usa esa separacion exacta -- si no, se cae al mas reciente del cliente
     // (unico dato disponible en vistas donde no hay un lote en pantalla). Ver
@@ -7833,10 +7933,52 @@ function abrirModalCotizador(clienteNombre, celular, manzana, lote, area, precio
 
   calcularCotizadorMatematica();
   openModal('modalCotizador');
+  autocalcularEscalaLoteReal();
 }
 
 
 /* ============ COTIZADOR RÁPIDO Y REGLA DE COMISIONES ============ */
+// Último cálculo financiado (saldo/cuota con bono Dúo Inversionista y cuotas dobles ya aplicados),
+// para poder transferirlo tal cual a la Separación. Ver pasarCotizacionASeparacion().
+let cotizadorUltimoCalculo = null;
+
+// La escala de comisión ("¿qué número de lote del mes es este?") se autocalcula contando
+// las separaciones reales del asesor en el mes, en vez de dejarla en un dropdown manual
+// que cualquiera puede fijar en "Lote 6" para cobrar el bono máximo sin haberlo vendido.
+// Sigue siendo editable manualmente para corregir casos excepcionales.
+async function autocalcularEscalaLoteReal(){
+  const sel = document.getElementById('cot_escala_lote');
+  const nota = document.getElementById('cot_escala_lote_nota');
+  if (!sel || !currentUser?.id) return;
+
+  const hoy = new Date();
+  const inicioMes = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-01`;
+
+  try {
+    const { count, error } = await sb.from('separaciones')
+      .select('id', { count: 'exact', head: true })
+      .eq('vendedor_id', currentUser.id)
+      .gte('fecha_separacion', inicioMes)
+      .in('estado', ['activa', 'convertida_venta']);
+    if (error) throw error;
+
+    const numeroReal = (count || 0) + 1; // +1 por el lote que se está cotizando ahora mismo
+    if (![...sel.options].some(o => o.value === String(numeroReal))) {
+      const opt = document.createElement('option');
+      opt.value = String(numeroReal);
+      opt.textContent = `Lote ${numeroReal} (calculado)`;
+      sel.appendChild(opt);
+    }
+    sel.value = String(numeroReal);
+    if (nota) nota.textContent = `🔒 Calculado automáticamente: llevas ${count || 0} lote(s) vendido(s) este mes. Puedes ajustarlo manualmente si es necesario.`;
+  } catch (e) {
+    console.warn('No se pudo autocalcular la escala de comisión real:', e);
+    if (nota) nota.textContent = '⚠️ No se pudo verificar tus ventas del mes; revisa manualmente antes de confiar en el cálculo.';
+  }
+
+  calcularComisionAsesorEscala();
+}
+
 function alCambiarValorTotalCotizador(){
   const total = parseFloat(document.getElementById('cot_valor_total')?.value) || 0;
   const area = parseFloat(document.getElementById('cot_area')?.value) || 160;
@@ -7903,6 +8045,7 @@ function calcularCotizadorMatematica(){
     if (disp) disp.textContent = 'Pago al contado: S/ ' + valorTotal.toLocaleString('es-PE', {minimumFractionDigits:2});
     const resDisp = document.getElementById('cot_resumen_display');
     if (resDisp) resDisp.textContent = `Inversión total al contado: S/ ${valorTotal.toLocaleString('es-PE')} · Descuento de pronto pago`;
+    cotizadorUltimoCalculo = null;
     calcularComisionAsesorEscala();
     return;
   }
@@ -7917,7 +8060,8 @@ function calcularCotizadorMatematica(){
   const esDuo = document.getElementById('chkDuoInversionista')?.checked;
   let bonoDuo = esDuo ? 1000 : 0;
 
-  const saldo = Math.max(0, valorTotal - inicial);
+  // El bono debe reducir realmente el saldo a financiar, no solo mencionarse en el texto.
+  const saldo = Math.max(0, valorTotal - inicial - bonoDuo);
   const elSaldoDisp = document.getElementById('cot_saldo_display');
   if (elSaldoDisp) elSaldoDisp.value = 'S/ ' + saldo.toLocaleString('es-PE', {minimumFractionDigits:2});
 
@@ -7949,6 +8093,12 @@ function calcularCotizadorMatematica(){
 
   const resDisp = document.getElementById('cot_resumen_display');
   if (resDisp) resDisp.textContent = detalleResumen;
+
+  // Guarda el resultado final (con bono y cuotas dobles ya aplicados) para poder
+  // transferirlo intacto a la Separación en vez de que se recalcule con la fórmula
+  // simple (saldo/meses) y se pierdan estos términos ya cotizados al cliente.
+  const mesesEquivalentes = esCuotasExtra && meses >= 12 ? meses + (Math.floor(meses / 12) * 2) : meses;
+  cotizadorUltimoCalculo = { saldo, cuota, meses, mesesEquivalentes, bonoDuo, esCuotasExtra: !!esCuotasExtra, detalleResumen };
 
   calcularComisionAsesorEscala();
 }
@@ -8228,8 +8378,27 @@ function pasarCotizacionASeparacion(){
   if (meses) document.getElementById('sp_meses_financiar').value = meses;
 
   calcularFinanciamiento();
+
+  // Si la cotización tenía Bono Dúo Inversionista o cuotas dobles Jul/Dic aplicados,
+  // esos términos no se pueden reconstruir con la fórmula simple de la Separación
+  // (saldo/meses): se transfieren los montos finales ya cotizados al cliente, tal cual.
+  separacionNotasTransferidas = null;
+  if (condicion === 'financiado' && cotizadorUltimoCalculo) {
+    const montoSeparacion = parseFloat(document.getElementById('sp_monto_separacion')?.value) || 0;
+    const saldoFinal = Math.max(0, cotizadorUltimoCalculo.saldo - montoSeparacion);
+    const mesesEq = cotizadorUltimoCalculo.mesesEquivalentes || cotizadorUltimoCalculo.meses || 1;
+    const cuotaFinal = mesesEq > 0 ? saldoFinal / mesesEq : 0;
+    document.getElementById('sp_saldo').value = saldoFinal.toFixed(2);
+    document.getElementById('sp_inversion_mensual').value = cuotaFinal.toFixed(2);
+
+    const notas = [];
+    if (cotizadorUltimoCalculo.bonoDuo > 0) notas.push('Bono Dúo Inversionista aplicado: -S/ 1,000 en el saldo.');
+    if (cotizadorUltimoCalculo.esCuotasExtra) notas.push(`Incluye cuotas dobles en Julio y Diciembre (cuota ordinaria calculada sobre ${mesesEq} cuotas equivalentes).`);
+    if (notas.length) separacionNotasTransferidas = 'Términos transferidos del cotizador: ' + notas.join(' ');
+  }
+
   openModal('modalSeparacion');
-  toast('Datos transferidos a la separación ✓');
+  toast('Datos transferidos a la separación ✓' + (separacionNotasTransferidas ? ' (bono/cuotas dobles incluidos)' : ''));
 }
 
 /* ============ CONTROL DE COBRANZAS Y CUOTAS ============ */
@@ -8257,7 +8426,7 @@ async function cargarCobranzasCuotas(){
   el.innerHTML = `<div class="spinner"></div>`;
 
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = rol === 'superadmin' || rol === 'admin' || rol === 'director_comercial' || rol === 'gerencia';
+  const esSuperAdminODirector = esRolDireccion(rol);
 
   let query = sb.from('separaciones')
     .select('*, propiedades(codigo), clientes(nombre, celular, telefono)')
@@ -8297,6 +8466,14 @@ async function cargarCobranzasCuotas(){
     else if (item.cuotas_pendientes === 0) badgeAtraso = `<span class="badge" style="background:#E8F5E9; color:#2E7D32; border:1px solid #C8E6C9;">✅ Plan completado</span>`;
     else badgeAtraso = `<span class="badge badge-activa">🟢 Al día</span>`;
 
+    // meses_atraso es un valor guardado (lo actualiza el import externo o registrar_pago_cuota);
+    // si nadie lo recalculó y la fecha de próximo pago ya venció, avisar en vez de mostrar "Al día"
+    // indefinidamente por un dato desactualizado (no se sobreescribe el valor, solo se avisa).
+    const hoyPeruCob = ghlYmdPeruHoy(0);
+    const avisoAtrasoDesactualizado = (!(item.meses_atraso > 0) && item.cuotas_pendientes > 0 && item.fecha_proximo_pago && item.fecha_proximo_pago < hoyPeruCob)
+      ? `<p class="card-sub" style="color:var(--danger); font-weight:700; margin-top:3px;">⚠️ El próximo pago (${fmtFecha(item.fecha_proximo_pago)}) ya venció pero el sistema no registra atraso — verificar con cobranzas.</p>`
+      : '';
+
     return `
       <div class="card" style="border-left: 4px solid var(--gold); cursor:pointer;" onclick="abrirDetalleCuotas('${item.id}')">
         <div class="card-row">
@@ -8307,6 +8484,7 @@ async function cargarCobranzasCuotas(){
               ${cuotaMensual ? `💵 S/ ${cuotaMensual} / mes` : `⚠️ Cuota mensual no definida`} · ${meses} cuotas · Saldo: S/ ${saldo}
             </p>
             ${item.cuotas_totales ? `<p class="card-sub" style="margin-top:2px;">${item.cuotas_pagadas ?? 0} de ${item.cuotas_totales} cuotas pagadas</p>` : ''}
+            ${avisoAtrasoDesactualizado}
           </div>
           ${badgeAtraso}
         </div>
@@ -8442,7 +8620,51 @@ async function abrirDetalleCuotas(separacionId){
     }
   }
 
-  bodyEl.innerHTML = resumenHtml + mismatchHtml + pagadasHtml + pendientesHtml;
+  // Registrar un pago desde la app (antes esto solo se podía hacer importando
+  // la hoja de cálculo externa: los pagos cobrados por WhatsApp nunca
+  // actualizaban el saldo). Solo administración registra pagos -- coincide
+  // con el permiso ya exigido por la RPC registrar_pago_cuota en la base.
+  const puedeRegistrarPago = ['admin', 'superadmin'].includes(currentProfile?.rol);
+  const siguienteCuota = (pagos && pagos.length ? pagos[pagos.length - 1].numero_cuota : 0) + 1;
+  const registrarPagoHtml = (puedeRegistrarPago && sep.condicion === 'financiado' && (sep.cuotas_pendientes ?? 0) > 0) ? `
+    <div class="card" style="background:#F0FDF4; border:1px solid #86EFAC; margin-top:12px;">
+      <p class="card-title" style="margin-bottom:8px;">💰 Registrar pago de cuota</p>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+        <div class="field"><label>N° de cuota</label><input type="number" id="pc_numero_cuota" min="1" value="${siguienteCuota}"></div>
+        <div class="field"><label>Fecha de pago</label><input type="date" id="pc_fecha_pago" value="${obtenerHoyLocal()}"></div>
+      </div>
+      <div class="field"><label>Comprobante / referencia (opcional)</label><input type="text" id="pc_comprobante" placeholder="N° operación, voucher..."></div>
+      <button class="btn-primary" style="width:100%; margin-top:6px;" onclick="guardarPagoCuota('${separacionId}')">Guardar pago</button>
+    </div>
+  ` : '';
+
+  bodyEl.innerHTML = resumenHtml + mismatchHtml + pagadasHtml + pendientesHtml + registrarPagoHtml;
+}
+
+async function guardarPagoCuota(separacionId){
+  const numeroCuota = parseInt(document.getElementById('pc_numero_cuota')?.value);
+  const fechaPago = document.getElementById('pc_fecha_pago')?.value;
+  const comprobante = document.getElementById('pc_comprobante')?.value.trim() || null;
+
+  if (!numeroCuota || numeroCuota < 1) { toast('⚠️ Indica un número de cuota válido'); return; }
+  if (!fechaPago) { toast('⚠️ Indica la fecha de pago'); return; }
+
+  toast('Registrando pago…');
+  try {
+    const { error } = await sb.rpc('registrar_pago_cuota', {
+      p_separacion_id: separacionId,
+      p_numero_cuota: numeroCuota,
+      p_fecha_pago: fechaPago,
+      p_comprobante: comprobante
+    });
+    if (error) throw error;
+    toast('Pago registrado ✓ Saldo actualizado');
+    abrirDetalleCuotas(separacionId);
+    cargarCobranzasCuotas();
+  } catch (e) {
+    toast('Error al registrar el pago: ' + (e.message || ''));
+    console.error(e);
+  }
 }
 
 function enviarRecordatorioCuotaWhatsApp(cliente, tel, lote, monto){
@@ -8933,6 +9155,10 @@ async function eliminarItemPortafolio(id){
 }
 
 /* ============ SEPARACIONES ============ */
+// Notas de términos especiales (bono Dúo Inversionista, cuotas dobles) transferidos
+// desde el cotizador. Ver pasarCotizacionASeparacion().
+let separacionNotasTransferidas = null;
+
 document.getElementById('btnAbrirNuevaSeparacion').addEventListener('click', () => {
   prepararModalSeparacion();
   openModal('modalSeparacion');
@@ -8971,6 +9197,8 @@ function prepararModalSeparacion(){
   document.getElementById('secCli').classList.remove('collapsed');
   document.getElementById('secLote').classList.add('collapsed');
   document.getElementById('secPago').classList.add('collapsed');
+
+  separacionNotasTransferidas = null;
 }
 
 document.getElementById('sp_tiene_conyuge').addEventListener('change', (e) => {
@@ -9029,12 +9257,14 @@ document.getElementById('btnGuardarSeparacion').addEventListener('click', async 
       console.warn('No se pudo generar el código correlativo de cliente:', e);
     }
 
-    const { data: nuevoCliente, error: errCliente } = await sb.from('clientes').insert({
+    const dniSep = document.getElementById('sp_cliente_dni').value.trim() || null;
+    const celularSep = document.getElementById('sp_cliente_celular').value.trim() || null;
+    const datosCliente = {
       vendedor_id: currentUser.id,
       nombre,
-      dni: document.getElementById('sp_cliente_dni').value.trim() || null,
-      celular: document.getElementById('sp_cliente_celular').value.trim() || null,
-      telefono: document.getElementById('sp_cliente_celular').value.trim() || null,
+      dni: dniSep,
+      celular: celularSep,
+      telefono: celularSep,
       direccion: document.getElementById('sp_cliente_direccion').value.trim() || null,
       correo: document.getElementById('sp_cliente_correo').value.trim() || null,
       email: document.getElementById('sp_cliente_correo').value.trim() || null,
@@ -9043,7 +9273,25 @@ document.getElementById('btnGuardarSeparacion').addEventListener('click', async 
       conyuge_celular: document.getElementById('sp_conyuge_celular').value.trim() || null,
       conyuge_direccion: document.getElementById('sp_conyuge_direccion').value.trim() || null,
       codigo_correlativo: codigoGenerado || null
-    }).select().single();
+    };
+
+    // Reutiliza al prospecto ya existente (por DNI o celular) en vez de crear
+    // siempre un cliente nuevo -- antes cada separación duplicaba el registro
+    // del cliente y el pipeline original nunca se enteraba de la separación.
+    let clienteExistenteId = null;
+    if (dniSep || celularSep) {
+      let qExist = sb.from('clientes').select('id');
+      qExist = dniSep ? qExist.eq('dni', dniSep) : qExist.eq('celular', celularSep);
+      const { data: existData } = await qExist.limit(1).maybeSingle();
+      clienteExistenteId = existData?.id || null;
+    }
+
+    let nuevoCliente, errCliente;
+    if (clienteExistenteId) {
+      ({ data: nuevoCliente, error: errCliente } = await sb.from('clientes').update(datosCliente).eq('id', clienteExistenteId).select().single());
+    } else {
+      ({ data: nuevoCliente, error: errCliente } = await sb.from('clientes').insert(datosCliente).select().single());
+    }
     if (errCliente) { toast('Error al registrar cliente'); console.error(errCliente); return; }
 
     const codigoPropiedad = `MZ${manzana}-LT${lote}`;
@@ -9088,10 +9336,35 @@ document.getElementById('btnGuardarSeparacion').addEventListener('click', async 
       inversion_mensual: condicion === 'financiado' ? (parseFloat(document.getElementById('sp_inversion_mensual').value) || null) : null,
       medio_pago: document.getElementById('sp_medio_pago').value.trim() || null,
       n_operacion: document.getElementById('sp_n_operacion').value.trim() || null,
-      voucher_url: voucherUrl
+      voucher_url: voucherUrl,
+      notas: separacionNotasTransferidas || null
     }).select().single();
 
-    if (errSep) { toast('Error al guardar separación'); console.error(errSep); return; }
+    if (errSep) {
+      // 23505 = unique_violation: el indice unico (separaciones.propiedad_id WHERE estado='activa')
+      // impide dos separaciones activas sobre el mismo lote (condicion de carrera entre asesores).
+      if (errSep.code === '23505') {
+        toast('⚠️ Este lote ya fue separado (posiblemente por otro asesor en este instante). Actualiza la lista e intenta con otro lote.');
+      } else {
+        toast('Error al guardar separación');
+      }
+      console.error(errSep);
+      return;
+    }
+
+    // Sincroniza el pipeline: una separación real siempre mueve al cliente a
+    // "Separado", en vez de dejar que la tarjeta del kanban se quede en una
+    // etapa anterior mientras ya existe una separación activa para ese lote.
+    const etapaAnteriorCliente = clientesCache.find(c => c.id === nuevoCliente.id)?.estado_prospecto || 'Nuevo';
+    try {
+      await sb.from('clientes').update({ estado_prospecto: 'Separado' }).eq('id', nuevoCliente.id);
+      await sb.from('clientes_historial_pipeline').insert({
+        cliente_id: nuevoCliente.id, usuario_id: currentUser.id,
+        etapa_anterior: etapaAnteriorCliente, etapa_nueva: 'Separado'
+      });
+    } catch (errPipe) {
+      console.warn('No se pudo sincronizar el pipeline tras la separación:', errPipe);
+    }
 
     toast(`Separación creada con éxito ✓`);
     closeModal('modalSeparacion');
@@ -9113,7 +9386,7 @@ document.getElementById('btnGuardarSeparacion').addEventListener('click', async 
 
 async function cargarSeparacionesPorVencer(){
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = rol === 'admin' || rol === 'superadmin' || rol === 'director_comercial' || rol === 'gerencia';
+  const esSuperAdminODirector = esRolDireccion(rol);
 
   let query = sb.from('vista_separaciones_por_vencer').select('*');
   if (!esSuperAdminODirector) {
@@ -9145,7 +9418,7 @@ async function cargarSeparacionesPorVencer(){
 
 async function cargarSeparacionesTodas(){
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = rol === 'admin' || rol === 'superadmin' || rol === 'director_comercial' || rol === 'gerencia';
+  const esSuperAdminODirector = esRolDireccion(rol);
 
   // Esta pestaña se llama "Separaciones Activas": solo debe mostrar
   // separaciones con estado 'activa' que todavia no vencieron -- las ya
@@ -9208,10 +9481,13 @@ async function cargarSeparacionesTodas(){
 }
 
 async function eliminarSeparacion(id){
-  if (!confirm('¿Eliminar esta separación? Esta acción no se puede deshacer.')) return;
-  const { error } = await sb.from('separaciones').delete().eq('id', id);
-  if (error) { toast('Error al eliminar'); console.error(error); return; }
-  toast('Separación eliminada');
+  if (!confirm('¿Cancelar esta separación? El lote quedará disponible nuevamente para otros clientes.')) return;
+  // Cancelacion logica (no delete fisico): un trigger en la base de datos libera
+  // automaticamente el lote (propiedades.estado -> 'disponible') cuando ya no
+  // queda ninguna separacion 'activa' apuntando a el.
+  const { error } = await sb.from('separaciones').update({ estado: 'cancelada' }).eq('id', id);
+  if (error) { toast('Error al cancelar la separación'); console.error(error); return; }
+  toast('Separación cancelada; el lote quedó disponible ✓');
   cargarSeparacionesTodas(); cargarSeparacionesPorVencer(); cargarKPIs();
 }
 
@@ -9802,7 +10078,7 @@ async function cargarAgenda(){
   if (!currentUser) return;
 
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = rol === 'superadmin' || rol === 'admin' || rol === 'director_comercial' || rol === 'gerencia';
+  const esSuperAdminODirector = esRolDireccion(rol);
   const esSupervisor = rol === 'supervisor';
 
   try {
@@ -10182,7 +10458,7 @@ function alCambiarSolicitanteSelect(){
 /* ============ REPORTE DIARIO DEL EQUIPO ============ */
 async function obtenerIdsEquipo(){
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = rol === 'superadmin' || rol === 'admin' || rol === 'director_comercial' || rol === 'gerencia';
+  const esSuperAdminODirector = esRolDireccion(rol);
   if (esSuperAdminODirector) {
     const { data } = await sb.from('usuarios').select('id, nombre').eq('activo', true).order('nombre');
     return data || [];
@@ -10204,9 +10480,16 @@ async function cargarReporteEquipo(fecha){
   const idsEquipo = equipo.map(u => u.id);
   const nombrePorId = Object.fromEntries(equipo.map(u => [u.id, u.nombre]));
 
+  // fecha_inicio se guarda como instante UTC calculado a partir de la hora local del dispositivo
+  // (new Date(`${fecha}T${hora}:00`).toISOString()). Los límites del día deben calcularse igual
+  // (hora local), no como strings UTC ingenuos, o los eventos de la tarde/noche caen en el día
+  // equivocado del reporte.
+  const inicioDiaLocal = new Date(`${fecha}T00:00:00`);
+  const finDiaLocal = new Date(inicioDiaLocal.getTime() + 24 * 60 * 60 * 1000);
+
   const [{ data: actividades }, { data: agenda }, { data: solicitudes }] = await Promise.all([
     sb.from('actividades').select('*').in('usuario_id', idsEquipo).eq('fecha_programada', fecha).eq('archivada', false),
-    sb.from('agenda').select('*').in('usuario_id', idsEquipo).gte('fecha_inicio', fecha + 'T00:00:00').lt('fecha_inicio', fecha + 'T23:59:59'),
+    sb.from('agenda').select('*').in('usuario_id', idsEquipo).gte('fecha_inicio', inicioDiaLocal.toISOString()).lt('fecha_inicio', finDiaLocal.toISOString()),
     sb.from('solicitudes').select('*').in('asignado_a', idsEquipo).eq('fecha_limite', fecha),
   ]);
 
@@ -10491,8 +10774,47 @@ function renderGhlMes(m){
 
 let ghlFiltroAsesorHoy = null;
 
+// Los leads de GHL viven solo en el CRM externo (via la edge function) y nunca se
+// cruzaban con la tabla local `clientes` -- una misma persona podia existir como
+// lead en GHL y como cliente en la app sin ningun vinculo visible. Se cruza por
+// clientes.ghl_contact_id (vinculo explicito) o, si no existe aun, por celular
+// (coincidencia heuristica que el asesor puede confirmar con el botón Vincular).
+function buscarClienteVinculadoGhl(lead){
+  const lista = clientesCache || [];
+  if (!lista.length) return null;
+  if (lead.contactId) {
+    const porId = lista.find(c => c.ghl_contact_id === lead.contactId);
+    if (porId) return { cliente: porId, exacto: true };
+  }
+  const telLead = (lead.telefono || '').replace(/\D/g, '').slice(-9);
+  if (telLead) {
+    const porTel = lista.find(c => (c.celular || c.telefono || '').replace(/\D/g, '').slice(-9) === telLead);
+    if (porTel) return { cliente: porTel, exacto: false };
+  }
+  return null;
+}
+
+async function vincularLeadGhlACliente(contactId, clienteId){
+  if (!contactId || !clienteId) return;
+  try {
+    const { error } = await sb.from('clientes').update({ ghl_contact_id: contactId }).eq('id', clienteId);
+    if (error) throw error;
+    const idx = (clientesCache || []).findIndex(c => c.id === clienteId);
+    if (idx !== -1) clientesCache[idx].ghl_contact_id = contactId;
+    toast('Lead vinculado al cliente ✓');
+    if (ghlUltimoReporte?.today) ghlRenderLeadsList(document.getElementById('ghlLeadsHoy'), ghlFiltroAsesorHoy ? (ghlUltimoReporte.today.leads || []).filter(l => l.advisor === ghlFiltroAsesorHoy) : (ghlUltimoReporte.today.leads || []), 'Sin leads.');
+  } catch (e) {
+    toast('Error al vincular: ' + (e.message || ''));
+    console.error(e);
+  }
+}
+
 function ghlRenderLeadsList(containerEl, leads, vacioTexto){
   containerEl.innerHTML = (leads || []).length ? leads.map(l => {
+    const vinculo = buscarClienteVinculadoGhl(l);
+    const vinculoBadge = vinculo
+      ? `<p class="card-sub" style="margin:4px 0 0; color:#2E7D32; font-weight:700;">${vinculo.exacto ? '✅' : '🔎'} ${vinculo.exacto ? 'Ya es cliente' : 'Posible cliente ya registrado'}: ${escapeHtml(vinculo.cliente.nombre)}${!vinculo.exacto ? ` <button class="chip-btn" style="font-size:10px; padding:2px 6px; margin-left:4px;" onclick="vincularLeadGhlACliente('${escapeHtml(l.contactId || '')}','${vinculo.cliente.id}')">Confirmar vínculo</button>` : ''}</p>`
+      : '';
     let respBadge;
     if (l.responded) respBadge = `<span class="badge badge-completada">🧑 Asesor: ${ghlFmtHora(l.asesorRespondioEn)} (${ghlFmtDuracion(l.responseMs)})</span>`;
     else if (l.unassigned) respBadge = `<span class="badge badge-vencida">⚠️ Asignar asesor</span>`;
@@ -10523,6 +10845,7 @@ function ghlRenderLeadsList(containerEl, leads, vacioTexto){
             <p class="card-title">${escapeHtml(l.name)}</p>
             <p class="card-sub">${escapeHtml(l.advisor)}${l.advisorVia ? ' <span style="color:var(--ink-dim);">(' + l.advisorVia + ')</span>' : ''} · llegó ${ghlFmtHora(l.createdAt)}${l.stage ? ' · ' + escapeHtml(l.stage) : ''}</p>
             ${l.telefono ? `<p class="card-sub" style="margin:2px 0 0;">${ghlTelefonoLink(l.telefono)}</p>` : ''}
+            ${vinculoBadge}
           </div>
           ${respBadge}
         </div>
@@ -11288,18 +11611,21 @@ async function enviarMensajeMajo(){
   cont.scrollTop = cont.scrollHeight;
 
   try {
-    const contextoGlobal = await compilarContextoGlobalMAJO();
-    
     let respuestaFinal = null;
     let fuentesFinal = null;
     let imagenesFinal = null;
     let motorFinal = null;
 
     try {
+      // majo-chat hace RAG real (embeddings + busqueda por similitud en
+      // pgvector, ver obtenerContextoDocumentos en el edge function) y nunca
+      // lee "contexto_global" -- antes se calculaba igual en cada mensaje
+      // (varias consultas sin filtrar a portafolio_items/manual_ventas/
+      // majo_documentos/majo_sitios), un trabajo desperdiciado en el caso
+      // comun. Ahora solo se arma si el backend no responde (ver abajo).
       const resp = await invocarEdgeFunction('majo-chat', { body: {
         conversacion_id: majoConversacionActual,
-        mensaje,
-        contexto_global: contextoGlobal
+        mensaje
       } });
 
       if (resp.ok) {
@@ -11316,7 +11642,8 @@ async function enviarMensajeMajo(){
     document.getElementById('majoEscribiendo')?.remove();
 
     if (!respuestaFinal) {
-      respuestaFinal = generarRespuestaMAJOLocal(mensaje, contextoGlobal);
+      const contextoLocal = await compilarContextoGlobalMAJO();
+      respuestaFinal = generarRespuestaMAJOLocal(mensaje, contextoLocal);
       fuentesFinal = ["Documentación Oficial Costa Dorada", "Portafolio Multimedia", "Manual de Ventas"];
       motorFinal = 'local';
     }
@@ -11680,8 +12007,13 @@ document.getElementById('btnGenerarRespaldoAhora')?.addEventListener('click', as
     const dataResp = await resp.json();
     // El HTTP 200 no basta -- una tabla individual puede haber fallado al
     // copiarse y la funcion igual respondia 200 sin avisar (hallazgo B9).
-    if (dataResp.ok === false) {
-      toast(`⚠️ Respaldo generado con errores en: ${(dataResp.tablas_con_error || []).join(', ') || 'una o más tablas'}`);
+    // Tampoco basta con que la subida no lance error: el archivo se vuelve a
+    // descargar y releer para confirmar que es un respaldo realmente
+    // restaurable, no solo "subido sin excepción".
+    if (dataResp.ok === false && (dataResp.tablas_con_error || []).length > 0) {
+      toast(`⚠️ Respaldo generado con errores en: ${dataResp.tablas_con_error.join(', ')}`);
+    } else if (dataResp.ok === false && dataResp.verificado === false) {
+      toast(`⚠️ Respaldo subido pero no se pudo verificar que sea restaurable: ${dataResp.motivo_no_verificado || 'revisar manualmente'}`);
     } else if (dataResp.omitido) {
       toast(dataResp.motivo || 'Ya hay un respaldo reciente.');
     } else {
@@ -11705,7 +12037,7 @@ async function cargarNotificacionesBadge(){
     totalAlertas += (seps || []).length;
 
     const rol = currentProfile?.rol;
-    const esSuperAdminODirector = rol === 'admin' || rol === 'superadmin' || rol === 'director_comercial' || rol === 'gerencia';
+    const esSuperAdminODirector = esRolDireccion(rol);
 
     let qAg = sb.from('agenda').select('id', { count: 'exact', head: true }).eq('estado', 'programada');
     if (!esSuperAdminODirector) qAg = qAg.eq('usuario_id', currentUser.id);
@@ -11809,7 +12141,7 @@ async function cargarNotificaciones(asesorIdFiltro){
     });
 
     const rol = currentProfile?.rol;
-    const esSuperAdminODirector = rol === 'admin' || rol === 'superadmin' || rol === 'director_comercial' || rol === 'gerencia';
+    const esSuperAdminODirector = esRolDireccion(rol);
 
     let qAg = sb.from('agenda')
       .select('*, usuarios(nombre)')
@@ -12448,6 +12780,135 @@ function actualizarItemsDockHorizontal(){
 let filtroTipoVisitasActual = 'todas';
 let visitasPresentacionesCache = [];
 
+async function cargarVisitasPresentaciones(){
+  const elFecha = document.getElementById('vis_filtro_fecha');
+  const fecha = elFecha?.value || obtenerHoyLocal();
+  if (elFecha && !elFecha.value) elFecha.value = fecha;
+
+  const cont = document.getElementById('listaVisitasPresentaciones');
+  if (cont) cont.innerHTML = '<div class="spinner"></div>';
+
+  const key = 'cd_visitas_' + fecha;
+  try {
+    const { data, error } = await sb.from('visitas_presentaciones')
+      .select('*')
+      .eq('fecha', fecha)
+      .order('hora', { ascending: true });
+    if (error) throw error;
+    visitasPresentacionesCache = data || [];
+  } catch (e) {
+    console.warn('No se pudo cargar visitas_presentaciones desde Supabase, usando respaldo local:', e);
+    visitasPresentacionesCache = JSON.parse(localStorage.getItem(key) || '[]');
+  }
+
+  actualizarMetricasMovilidad(fecha);
+  renderizarListaVisitas();
+  if (typeof cargarConductorFecha === 'function') cargarConductorFecha(fecha);
+}
+
+// Suma de asientos (tipo Van) ya ocupados en el mismo turno (±15 min) de esa fecha/hora.
+// No incluye asientos de una visita que se esté agendando en este momento (aún no está en cache).
+function calcularAsientosOcupadosEnHorario(fecha, hora, excluirId){
+  const [hR, mR] = (hora || '09:00').split(':').map(Number);
+  if (!Number.isFinite(hR) || !Number.isFinite(mR)) return 0;
+  const minRef = hR * 60 + mR;
+
+  return (visitasPresentacionesCache || [])
+    .filter(v => v.fecha === fecha
+      && (v.tipo === 'visita_proyecto' || v.tipo === 'oficina_visita')
+      && v.estado !== 'cancelada'
+      && v.id !== excluirId)
+    .filter(v => {
+      const [hE, mE] = (v.hora || '09:00').split(':').map(Number);
+      if (!Number.isFinite(hE) || !Number.isFinite(mE)) return false;
+      return Math.abs((hE * 60 + mE) - minRef) <= 15;
+    })
+    .reduce((sum, v) => sum + (parseInt(v.num_asientos) || 2), 0);
+}
+
+function actualizarMetricasMovilidad(fecha){
+  const visitasVan = (visitasPresentacionesCache || []).filter(v =>
+    (v.tipo === 'visita_proyecto' || v.tipo === 'oficina_visita') && v.estado !== 'cancelada');
+
+  // El "ocupado" del día es el turno más cargado (cada turno tiene su propio cupo de 14).
+  let ocupados = 0;
+  visitasVan.forEach(v => {
+    const totalTurno = calcularAsientosOcupadosEnHorario(fecha, v.hora);
+    if (totalTurno > ocupados) ocupados = totalTurno;
+  });
+  const libres = Math.max(0, 14 - ocupados);
+  const pct = Math.min(100, Math.round((ocupados / 14) * 100));
+
+  const elOc = document.getElementById('vis_num_ocupados'); if (elOc) elOc.textContent = ocupados;
+  const elLib = document.getElementById('vis_num_libres'); if (elLib) elLib.textContent = libres;
+  const elPct = document.getElementById('vis_porcentaje_ocupacion'); if (elPct) elPct.textContent = pct + '%';
+  const elBar = document.getElementById('vis_barra_progreso'); if (elBar) elBar.style.width = pct + '%';
+
+  const elBadge = document.getElementById('vis_badge_estado_van');
+  if (elBadge) {
+    if (ocupados === 0) {
+      elBadge.textContent = '🟢 Van Disponible';
+      elBadge.className = 'badge badge-completada';
+    } else if (ocupados < 14) {
+      elBadge.textContent = `🟡 ${libres} asientos libres`;
+      elBadge.className = 'badge badge-pendiente';
+    } else {
+      elBadge.textContent = '🔴 Van Llena (14/14)';
+      elBadge.className = 'badge badge-vencida';
+    }
+  }
+
+  const elAlerta = document.getElementById('vis_alerta_cruce');
+  if (elAlerta) elAlerta.classList.toggle('hidden', ocupados <= 14);
+}
+
+function renderizarListaVisitas(){
+  const cont = document.getElementById('listaVisitasPresentaciones');
+  if (!cont) return;
+
+  const filtroMap = {
+    proyecto: v => v.tipo === 'visita_proyecto',
+    oficina: v => v.tipo === 'oficina' || v.tipo === 'oficina_visita',
+    virtual: v => v.tipo === 'virtual'
+  };
+  const filtroFn = filtroMap[filtroTipoVisitasActual];
+  const visitas = (visitasPresentacionesCache || []).filter(v => !filtroFn || filtroFn(v));
+
+  if (!visitas.length) {
+    cont.innerHTML = '<p style="text-align:center; color:var(--ink-dim); font-size:12.5px; padding:20px 0;">No hay presentaciones registradas para este filtro en la fecha seleccionada.</p>';
+    return;
+  }
+
+  const tipoLabels = {
+    visita_proyecto: '🚗 Visita a Terreno (Van)',
+    oficina_visita: '🏢🚗 Oficina + Terreno (Van)',
+    oficina: '🏢 Oficina Tacna',
+    virtual: '💻 Virtual'
+  };
+  const estadoBadge = {
+    programada: '<span class="badge badge-pendiente">Programada</span>',
+    realizada: '<span class="badge badge-completada">Realizada</span>',
+    cancelada: '<span class="badge badge-vencida">Cancelada</span>'
+  };
+
+  cont.innerHTML = visitas.map(v => `
+    <div class="card" style="border:1px solid #E2E8F0; border-radius:10px; padding:10px 12px; margin-bottom:8px; ${v.estado === 'cancelada' ? 'opacity:0.55;' : ''}">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; flex-wrap:wrap;">
+        <div>
+          <p style="margin:0; font-weight:700; font-size:13px; color:var(--navy);">⏰ ${escapeHtml(v.hora || '')} · ${escapeHtml(v.cliente_nombre || 'Cliente')}</p>
+          <p style="margin:2px 0 0; font-size:11.5px; color:var(--ink-dim);">${tipoLabels[v.tipo] || v.tipo} · 🪑 ${v.num_asientos || 1} asiento(s) · 👤 ${escapeHtml(v.asesor_nombre || '—')}</p>
+        </div>
+        ${estadoBadge[v.estado] || ''}
+      </div>
+      ${v.estado !== 'cancelada' ? `
+      <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">
+        ${v.cliente_celular && v.cliente_celular !== '—' ? `<button class="chip-btn" onclick="abrirModalWhatsAppRapido('${escapeHtml(v.cliente_nombre || '')}', '${escapeHtml(v.cliente_celular)}')" style="font-size:11px; padding:4px 10px;">💬 WhatsApp</button>` : ''}
+        <button class="chip-btn" onclick="eliminarVisitaPresentacion('${v.id}', '${v.fecha}')" style="font-size:11px; padding:4px 10px; color:#991B1B; border-color:#F87171;">🚫 Cancelar</button>
+      </div>` : ''}
+    </div>
+  `).join('');
+}
+
 function cambiarFiltroTipoVisitas(tipo){
   filtroTipoVisitasActual = tipo;
   ['tabVisitasTodas', 'tabVisitasProyecto', 'tabVisitasOficina', 'tabVisitasVirtual'].forEach(id => {
@@ -12779,7 +13240,7 @@ async function guardarNuevaVisita(){
   // Sincronizar automáticamente con Agenda interna solo si la visita quedó guardada en BD.
   if (visitaGuardadaEnSupabase) {
     try {
-      const { error: agendaError } = await sb.from('agenda').insert({
+      const { data: agendaRow, error: agendaError } = await sb.from('agenda').insert({
         usuario_id: currentUser.id,
         titulo: `${tipo === 'visita_proyecto' ? '🚐 Visita a Terreno' : '🤝 Presentación'}: ${clienteNombre}`,
         fecha_inicio: `${fecha}T${hora}:00`,
@@ -12788,8 +13249,12 @@ async function guardarNuevaVisita(){
         lugar: tipo === 'visita_proyecto' || tipo === 'oficina_visita' ? 'Costa Dorada · La Yarada Los Palos' : 'Oficina Tacna',
         notas: `Tipo: ${tipo}. Asientos en Van: ${numAsientos}. ${observaciones}`,
         estado: 'programada'
-      });
+      }).select('id').single();
       if (agendaError) throw agendaError;
+      // Vincular la cita creada con la visita para poder cancelar ambas juntas.
+      if (agendaRow?.id) {
+        await sb.from('visitas_presentaciones').update({ agenda_id: agendaRow.id }).eq('id', nuevaVisita.id);
+      }
     } catch (errAg) {
       console.warn('Error sincronizando con agenda:', errAg);
     }
@@ -12875,23 +13340,32 @@ function enviarReporteObligatorioWhatsApp(){
 }
 
 async function eliminarVisitaPresentacion(id, fecha){
-  if (!confirm('¿Eliminar esta presentación / visita?')) return;
+  if (!confirm('¿Cancelar esta presentación / visita? El cupo en la Van quedará liberado.')) return;
 
-  let eliminadoEnSupabase = false;
+  let canceladoEnSupabase = false;
   try {
-    const { error } = await sb.from('visitas_presentaciones').delete().eq('id', id);
+    const { data: visitaActual } = await sb.from('visitas_presentaciones').select('agenda_id').eq('id', id).maybeSingle();
+    const { error } = await sb.from('visitas_presentaciones').update({ estado: 'cancelada' }).eq('id', id);
     if (error) throw error;
-    eliminadoEnSupabase = true;
+    canceladoEnSupabase = true;
+    // Cascada: cancelar también la cita vinculada en Agenda para no dejarla huérfana.
+    if (visitaActual?.agenda_id) {
+      try {
+        await sb.from('agenda').update({ estado: 'cancelada', motivo: 'Visita/presentación cancelada' }).eq('id', visitaActual.agenda_id);
+      } catch (errAg) {
+        console.warn('No se pudo cancelar la cita vinculada en Agenda:', errAg);
+      }
+    }
   } catch (e) {
-    console.error('No se pudo eliminar la visita en Supabase:', e);
+    console.error('No se pudo cancelar la visita en Supabase:', e);
   }
 
   const key = 'cd_visitas_' + fecha;
   let listaLocal = JSON.parse(localStorage.getItem(key) || '[]');
-  listaLocal = listaLocal.filter(v => v.id !== id);
+  listaLocal = listaLocal.map(v => v.id === id ? { ...v, estado: 'cancelada' } : v);
   localStorage.setItem(key, JSON.stringify(listaLocal));
 
-  toast(eliminadoEnSupabase ? 'Visita eliminada ✓' : 'Visita eliminada del respaldo local; revisa la sincronización');
+  toast(canceladoEnSupabase ? 'Visita cancelada; cupo liberado ✓' : 'No se pudo cancelar en el servidor; revisa la sincronización');
   cargarVisitasPresentaciones();
 }
 
@@ -13003,7 +13477,7 @@ function filtrarClientesEnVivo(texto){
   if (!el || !clientesCache) return;
 
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = rol === 'admin' || rol === 'superadmin' || rol === 'director_comercial' || rol === 'gerencia';
+  const esSuperAdminODirector = esRolDireccion(rol);
 
   let filtrados = clientesCache.filter(c => {
     if (textoBusquedaClienteActivo) {
@@ -14891,15 +15365,39 @@ async function procesarDictadoConIA() {
 /* 3. PRE-SEPARACIÓN DIGITAL CON QR IN SITU (RESPALDO OFFLINE) */
 let preReservaData = null;
 
-function abrirModalPreReservaEnTerreno(manzana = 'B', lote = '12', monto = 500) {
+function actualizarQRPreReserva() {
+  const manzana = document.getElementById('qr_manzana')?.value || 'B';
+  const lote = document.getElementById('qr_lote')?.value.trim() || '12';
+  const monto = preReservaData?.monto || 500;
   preReservaData = { manzana, lote, monto };
   const sub = document.getElementById('qr_lote_subtitulo');
   if (sub) sub.textContent = `Manzana ${manzana} · Lote ${lote} (S/ ${monto}.00)`;
   const qrData = encodeURIComponent(`PAGO COSTA DORADA - MZ ${manzana} LT ${lote} - MONTO S/${monto}`);
   const img = document.getElementById('qr_imagen_pago');
   if (img) img.src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${qrData}`;
+}
+
+function abrirModalPreReservaEnTerreno(manzana = 'B', lote = '12', monto = 500) {
+  preReservaData = { manzana, lote, monto };
+
+  const selManzana = document.getElementById('qr_manzana');
+  if (selManzana && selManzana.options.length === 0) {
+    const opciones = [];
+    for (let i = 0; i < 26; i++) opciones.push(String.fromCharCode(65 + i));
+    for (let i = 0; i < 26; i++) opciones.push(String.fromCharCode(65 + i) + '1');
+    selManzana.innerHTML = opciones.map(o => `<option value="${o}">${o}</option>`).join('');
+  }
+  if (selManzana) selManzana.value = manzana;
+  const elLote = document.getElementById('qr_lote');
+  if (elLote) elLote.value = lote;
+  const elCliente = document.getElementById('qr_cliente_nombre');
+  if (elCliente) elCliente.value = '';
+
+  actualizarQRPreReserva();
   openModal('modalPreReservaQR');
 }
+document.getElementById('qr_manzana')?.addEventListener('change', actualizarQRPreReserva);
+document.getElementById('qr_lote')?.addEventListener('input', actualizarQRPreReserva);
 
 function descargarQRParaCliente() {
   const link = document.createElement('a');
@@ -14910,17 +15408,34 @@ function descargarQRParaCliente() {
 }
 
 async function confirmarPreReservaEnTerreno() {
+  const nombreCliente = document.getElementById('qr_cliente_nombre')?.value.trim();
+  if (!nombreCliente) { toast('⚠️ Ingresa el nombre del cliente antes de congelar el lote'); return; }
+  if (!preReservaData?.manzana || !preReservaData?.lote) { toast('⚠️ Indica manzana y lote'); return; }
+
   toast('Registrando congelamiento por 48 horas…');
   try {
     if (!currentUser?.id) throw new Error('Sesión de usuario no disponible.');
-    if (!preReservaData?.manzana || !preReservaData?.lote) throw new Error('No hay lote seleccionado.');
+
+    const { data: nuevoCliente, error: errCliente } = await sb.from('clientes').insert({
+      vendedor_id: currentUser.id,
+      nombre: nombreCliente
+    }).select().single();
+    if (errCliente) throw errCliente;
+
+    const codigoPropiedad = `MZ${preReservaData.manzana}-LT${preReservaData.lote}`;
+    const { data: propiedad, error: errProp } = await sb.from('propiedades')
+      .upsert({ codigo: codigoPropiedad, proyecto: 'Costa Dorada', tipo: 'lote', precio: 55400, estado: 'separado' }, { onConflict: 'codigo' })
+      .select().single();
+    if (errProp) throw errProp;
 
     const dVence = new Date();
     dVence.setHours(dVence.getHours() + 48);
     const { error: reservaError } = await sb.from('separaciones').insert({
+      propiedad_id: propiedad.id,
+      cliente_id: nuevoCliente.id,
       vendedor_id: currentUser.id,
-      manzana: preReservaData?.manzana || 'B',
-      lote: preReservaData?.lote || '12',
+      manzana: preReservaData.manzana,
+      lote: parseInt(preReservaData.lote, 10) || null,
       monto_separacion: preReservaData?.monto || 500,
       valor_total: 55400,
       fecha_separacion: obtenerHoyLocal(),
@@ -14928,13 +15443,21 @@ async function confirmarPreReservaEnTerreno() {
       condicion: 'contado',
       estado: 'activa'
     });
-    if (reservaError) throw reservaError;
+    if (reservaError) {
+      // 23505 = unique_violation: ya existe una separacion activa para este lote.
+      if (reservaError.code === '23505') {
+        toast('⚠️ Este lote ya fue separado (posiblemente por otro asesor). Elige otro lote.');
+        return;
+      }
+      throw reservaError;
+    }
     toast('🎉 ¡LOTE CONGELADO POR 48 HORAS!');
     closeModal('modalPreReservaQR');
     cargarSeparacionesTodas();
     cargarPendientesInicio();
   } catch (e) {
     toast('Error al registrar separación');
+    console.error(e);
   }
 }
 
