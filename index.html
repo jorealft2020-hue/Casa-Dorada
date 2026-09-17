@@ -401,11 +401,15 @@
   }
   @keyframes plGlowRespira{ 0%,100%{ opacity:1; } 50%{ opacity:.6; } }
 
-  .pl-head{ display:flex; justify-content:space-between; align-items:center; gap:10px; position:relative; z-index:1; }
-  .pl-head-title{ display:flex; align-items:center; gap:10px; min-width:0; }
-  .pl-head-icon{ font-size:20px; flex-shrink:0; }
-  .pl-head-title h4{ margin:0; font-size:13px; font-weight:800; color:#fff; letter-spacing:.2px; }
-  .pl-head-title p{ margin:1px 0 0; font-size:10px; color:#C9D3E4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  /* Antes había una fila de encabezado fija con ícono + "Playlist Costa
+     Dorada" + "Carpeta · N pistas" -- ocupaba la parte más delgada de la
+     tarjeta sin aportar nada que el reproductor no muestre ya (el título de
+     la pista actual va justo debajo). Se reemplaza por esta fila slim que
+     no reserva altura propia: solo aparece si hay un mensaje de estado
+     (vacío/error) o si el botón de subida es visible (SuperAdmin). */
+  .pl-head-slim{ display:flex; justify-content:space-between; align-items:center; gap:8px; position:relative; z-index:1; }
+  .pl-estado-msg{ margin:0; font-size:11px; color:#C9D3E4; flex:1; min-width:0; }
+  .pl-estado-msg:empty{ display:none; }
   .pl-btn-subir{
     width:30px; height:30px; border-radius:50%; border:1px solid rgba(200,155,60,0.5);
     background: rgba(200,155,60,0.15); color:#E8CE8F; font-size:14px; cursor:pointer;
@@ -721,57 +725,53 @@
   margin: 0 0 12px;
 }
 
-/* Placa blanca detrás de cada logo -- antes los logos iban directo sobre
-   el degradado del atardecer sin ningún fondo, y con colores similares
-   (dorado/azul) se perdían contra el fondo en vez de resaltar. La sombra
-   en capas (contacto + halo dorado ambiental) y el brillo que la recorre
-   son lo que da la sensación de placa 3D flotando con luz real -- no se
-   puede "subir a 4K" un PNG ya rasterizado sin inventarle detalle que no
-   tiene, así que el realce viene de la iluminación/profundidad, no de
-   procesar el archivo de imagen. */
-.logo-badge{
+/* El logo mismo en 3D -- sin placa/tarjeta detrás. Los PNG traen canal
+   alfa (fondo transparente), así que el drop-shadow en capas y el brillo
+   siguen el contorno real de las letras/formas del logo, no un rectángulo
+   blanco. No se puede "subir a 4K" un PNG ya rasterizado sin inventarle
+   detalle que no tiene, así que el realce viene de iluminación + profundidad
+   3D real aplicada directo sobre el diseño del logo. */
+.logo-3d{
+  position: relative;
   width: 132px;
   height: 82px;
   max-width: 45%;
-  background: #fff;
-  border-radius: 14px;
-  padding: 10px 14px;
-  display: flex; align-items: center; justify-content: center;
-  position: relative;
-  overflow: hidden;
-  box-shadow:
-    0 12px 26px rgba(14, 26, 48, 0.5),
-    0 2px 4px rgba(14, 26, 48, 0.3),
-    0 0 0 1px rgba(255,255,255,0.75),
-    0 0 30px 4px rgba(232, 206, 143, 0.4);
   animation: logoFlotar3D 4.5s ease-in-out infinite;
   transition: transform 0.3s ease;
 }
-.logo-badge img{
+.logo-3d img{
+  display: block;
   width: 100%; height: 100%; object-fit: contain;
   position: relative; z-index: 1;
-  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.15));
+  filter:
+    drop-shadow(0 2px 2px rgba(0,0,0,0.35))
+    drop-shadow(0 10px 18px rgba(14,26,48,0.55))
+    drop-shadow(0 0 16px rgba(232,206,143,0.5));
 }
-/* Brillo diagonal que recorre la placa, como una vitrina iluminada. */
-.logo-badge::after{
-  content: '';
-  position: absolute; top: -60%; left: -70%;
-  width: 45%; height: 220%;
-  background: linear-gradient(115deg, transparent 0%, rgba(255,255,255,0.85) 50%, transparent 100%);
-  transform: rotate(20deg);
-  animation: wcLogoBrillo 3.6s ease-in-out infinite;
-  pointer-events: none;
+/* Brillo que recorre solo las formas opacas del logo (enmascarado con el
+   propio PNG como canal alfa), como luz reflejándose sobre una pieza
+   metálica/vidrio -- nunca se ve como un cuadro porque fuera del logo el
+   fondo sigue transparente. */
+.logo-3d-brillo{
+  position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  mask-mode: alpha; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-size: contain; mask-size: contain;
+  -webkit-mask-position: center; mask-position: center;
+  background: linear-gradient(115deg, transparent 32%, rgba(255,255,255,0.95) 50%, transparent 68%);
+  background-size: 300% 300%;
+  background-position: -140% 0;
+  animation: logoBrilloBarrido 3.6s ease-in-out infinite;
 }
-.logo-badge:nth-of-type(2)::after{ animation-delay: 0.6s; }
-@keyframes wcLogoBrillo{
-  0%, 12%{ left: -70%; }
-  55%, 100%{ left: 140%; }
+.logo-3d:nth-of-type(2) .logo-3d-brillo{ animation-delay: 0.7s; }
+@keyframes logoBrilloBarrido{
+  0%, 15%{ background-position: -140% 0; }
+  60%, 100%{ background-position: 140% 0; }
 }
-.logo-badge:hover{
+.logo-3d:hover{
   transform: scale(1.08);
 }
 @media (min-width: 600px){
-  .logo-badge{ width: 210px; height: 120px; padding: 14px 20px; }
+  .logo-3d{ width: 210px; height: 120px; }
   .welcome-logos-3d{ gap: 32px; }
 }
   @keyframes logoFlotar3D{
@@ -786,12 +786,12 @@
 
   .quote-card{
     background: #fff; border: 1.5px solid #EAE5D8; border-left: 5px solid var(--gold);
-    border-radius: var(--radius); padding: 9px 12px; margin-bottom: 8px; box-shadow: 0 4px 14px rgba(0,0,0,0.04);
+    border-radius: var(--radius); padding: 10px 12px; margin-bottom: 8px; box-shadow: 0 4px 14px rgba(0,0,0,0.04);
   }
-  .quote-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom: 3px; }
+  .quote-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px; }
   .quote-tag{ font-size: 10px; font-weight: 800; color: var(--gold); text-transform:uppercase; letter-spacing: 0.04em; }
   .quote-date{ font-size: 10.5px; color: var(--ink-dim); }
-  .quote-body{ font-size: 12px; font-style: italic; color: var(--navy); line-height: 1.3; margin: 0 0 3px; }
+  .quote-body{ font-size: 14px; font-style: italic; color: var(--navy); line-height: 1.38; margin: 0 0 4px; }
   .quote-author{ font-size: 10.5px; font-weight: 700; color: var(--ink-dim); text-align: right; margin: 0; }
 
   .video-card{
@@ -1534,8 +1534,14 @@ main.app-content {
         <!-- Contenido en Primer Plano (Logos con placa blanca de contraste) -->
         <div class="welcome-card-contenido">
           <div class="welcome-logos-3d">
-            <div class="logo-badge" style="animation-delay:0s;"><img src="logo-casa-dorada.png" alt="Casa Dorada"></div>
-            <div class="logo-badge" style="animation-delay:0.5s;"><img src="logo-costa-dorada.png" alt="Costa Dorada"></div>
+            <div class="logo-3d" style="animation-delay:0s;">
+              <img src="logo-casa-dorada.png" alt="Casa Dorada">
+              <div class="logo-3d-brillo" style="-webkit-mask-image:url('logo-casa-dorada.png'); mask-image:url('logo-casa-dorada.png');"></div>
+            </div>
+            <div class="logo-3d" style="animation-delay:0.5s;">
+              <img src="logo-costa-dorada.png" alt="Costa Dorada">
+              <div class="logo-3d-brillo" style="-webkit-mask-image:url('logo-costa-dorada.png'); mask-image:url('logo-costa-dorada.png');"></div>
+            </div>
           </div>
           <h2 class="welcome-title" id="wb_saludo" style="margin-top:14px;">¡Buenos días!</h2>
           <p class="welcome-sub" id="wb_subtitulo" style="margin-bottom:0;">Bienvenido a tu jornada comercial y de gestión. Enfoque total en metas y cierres.</p>
@@ -1557,14 +1563,8 @@ main.app-content {
 
         <!-- PLAYLIST CORPORATIVA COSTA DORADA -->
         <div class="pl-card" id="cardPlaylistCostaDorada">
-          <div class="pl-head">
-            <div class="pl-head-title">
-              <span class="pl-head-icon">🎵</span>
-              <div style="min-width:0;">
-                <h4>Playlist Costa Dorada</h4>
-                <p id="playlist_estado">Cargando playlist…</p>
-              </div>
-            </div>
+          <div class="pl-head-slim">
+            <p id="playlist_estado" class="pl-estado-msg">Cargando playlist…</p>
             <button class="pl-btn-subir hidden" id="btnPlaylistSubirMp3" onclick="togglePlaylistSubida()" title="Subir nuevas pistas (SuperAdmin)">⬆️</button>
           </div>
 
@@ -4964,7 +4964,7 @@ async function playlistSeleccionarCarpeta(carpetaId, autoplay){
         return { path: ruta, url: pub.publicUrl, titulo: playlistTituloDesdeArchivo(f.name), tipo: PLAYLIST_EXT_VIDEO.includes(ext) ? 'video' : 'audio' };
       });
 
-    if (elEstado) elEstado.textContent = `${carpeta.nombre} · ${playlistPistas.length} pista${playlistPistas.length === 1 ? '' : 's'}`;
+    if (elEstado) elEstado.textContent = playlistPistas.length ? '' : `${carpeta.nombre}: aún no tiene pistas.`;
     if (playlistPistas.length) {
       playlistCargarPista(0, autoplay);
     } else {
