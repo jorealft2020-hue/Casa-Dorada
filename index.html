@@ -10141,12 +10141,15 @@ function semaforoAgenda(fechaInicio){
 }
 
 /* ============ CHECKLIST PERSISTENTE ============ */
-async function cargarChecklist(){
-  const { data } = await sb.from('agenda')
-    .select('*')
-    .eq('usuario_id', currentUser.id)
-    .eq('estado', 'programada')
-    .order('fecha_inicio', { ascending: true });
+// Esta pestaña vive dentro de la vista de Agenda (ver cambiarVistaCalendario),
+// así que calEstado.eventos ya está cargado por cargarAgenda() antes de que el
+// usuario pueda llegar aquí. Antes esta función repetía su propia consulta a
+// "agenda" en paralelo -- dos copias independientes de los mismos datos que
+// podían desincronizarse. Se filtra en el cliente en vez de volver a pedirlo.
+function cargarChecklist(){
+  const data = (calEstado.eventos || [])
+    .filter(ev => ev.usuario_id === currentUser.id && ev.estado === 'programada')
+    .sort((a, b) => new Date(a.fecha_inicio) - new Date(b.fecha_inicio));
 
   const el = document.getElementById('listaChecklist');
   if (!data || data.length === 0) { el.innerHTML = emptyState('✅', 'No tienes actividades pendientes en tu checklist.'); return; }
