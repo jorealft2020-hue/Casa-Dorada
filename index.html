@@ -381,7 +381,7 @@
      <audio controls> nativo (se ve distinto y "básico" en cada navegador). */
   .pl-card{
     background: linear-gradient(155deg, #142A4D 0%, #0B1A33 100%);
-    border-radius: 16px; padding: 13px 14px; margin-bottom: 14px;
+    border-radius: 14px; padding: 10px 12px; margin-bottom: 8px;
     box-shadow: 0 8px 24px rgba(20,42,77,0.28);
     color: #F2EFE6; position: relative; overflow: hidden;
     transition: box-shadow .4s ease;
@@ -421,7 +421,7 @@
   }
   .pl-tab.pl-tab-activo{ background: linear-gradient(135deg, #E8CE8F 0%, #C89B3C 100%); color:#142A4D; border-color:transparent; }
 
-  .pl-now-playing{ display:flex; align-items:center; gap:10px; margin-top:10px; position:relative; z-index:1; cursor:pointer; }
+  .pl-now-playing{ display:flex; align-items:center; gap:8px; margin-top:6px; position:relative; z-index:1; cursor:pointer; }
   .pl-chevron{ font-size:14px; color:#B9C3D6; flex-shrink:0; transition: transform .15s; }
   .pl-vinyl-wrap{ position:relative; flex-shrink:0; }
   .pl-vinyl{
@@ -449,21 +449,21 @@
   .pl-title{ margin:0; font-size:13px; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .pl-subtitle{ margin:2px 0 0; font-size:10.5px; color:#B9C3D6; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
-  .pl-progress-row{ display:flex; align-items:center; gap:8px; margin-top:10px; position:relative; z-index:1; }
+  .pl-progress-row{ display:flex; align-items:center; gap:8px; margin-top:6px; position:relative; z-index:1; }
   .pl-time{ font-size:10px; color:#B9C3D6; font-variant-numeric: tabular-nums; flex-shrink:0; width:30px; text-align:center; }
   .pl-seek{ flex:1; -webkit-appearance:none; appearance:none; height:4px; border-radius:3px; background: rgba(255,255,255,0.18); outline:none; cursor:pointer; margin:0; }
   .pl-seek::-webkit-slider-thumb{ -webkit-appearance:none; width:13px; height:13px; border-radius:50%; background:#E8CE8F; box-shadow:0 1px 3px rgba(0,0,0,0.4); }
   .pl-seek::-moz-range-thumb{ width:13px; height:13px; border-radius:50%; background:#E8CE8F; border:none; }
 
-  .pl-controls{ display:flex; align-items:center; justify-content:center; gap:12px; margin-top:10px; position:relative; z-index:1; }
+  .pl-controls{ display:flex; align-items:center; justify-content:center; gap:10px; margin-top:6px; position:relative; z-index:1; }
   .pl-ctrl-btn{
     background: rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:#fff;
-    width:36px; height:36px; border-radius:50%; font-size:14px; cursor:pointer;
+    width:32px; height:32px; border-radius:50%; font-size:13px; cursor:pointer;
     display:flex; align-items:center; justify-content:center; transition: background .15s, transform .1s;
   }
   .pl-ctrl-btn:active{ transform: scale(0.93); }
   .pl-ctrl-play{
-    width:46px; height:46px; font-size:17px; border:none;
+    width:40px; height:40px; font-size:16px; border:none;
     background: linear-gradient(135deg, #E8CE8F 0%, #C89B3C 100%); color:#142A4D;
     box-shadow: 0 3px 10px rgba(200,155,60,0.4);
   }
@@ -620,9 +620,9 @@
 .welcome-card{
   position: relative;
   overflow: hidden;
-  border-radius: 22px;
-  padding: 26px 22px 22px;
-  margin-bottom: 14px;
+  border-radius: 18px;
+  padding: 14px 16px 12px;
+  margin-bottom: 8px;
   background: linear-gradient(
     0deg, 
     #0E1A30 0%, 
@@ -642,11 +642,11 @@
 /* RESPLANDOR Y HALO SOLAR DEL OCASO */
 .wc-sol-resplandor{
   position: absolute;
-  top: -12px;
+  top: -10px;
   left: 50%;
   transform: translateX(-50%);
   width: 96%;
-  height: 155px;
+  height: 80px;
   border-radius: 50%;
   background: radial-gradient(
     ellipse at center, 
@@ -668,10 +668,10 @@
 /* NUBES EN MOVIMIENTO CONTINUO DE IZQUIERDA A DERECHA */
 .wc-nubes-stream{
   position: absolute;
-  top: 10px;
+  top: 4px;
   left: 0;
   width: 200%;
-  height: 135px;
+  height: 70px;
   pointer-events: none;
   z-index: 2;
   will-change: transform;
@@ -712,15 +712,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 26px;
+  gap: 14px;
   perspective: 800px;
-  margin: 4px 0 16px;
+  margin: 0 0 4px;
 }
 
 .logo-3d-flotante{
-  width: 148px;
-  height: 84px;
-  max-width: 46%;
+  width: 72px;
+  height: 42px;
+  max-width: 40%;
   object-fit: contain;
   background: transparent !important;
   border: none !important;
@@ -753,29 +753,29 @@
     50% { transform: translateY(0) rotateY(0deg) rotateX(0deg); }
     75% { transform: translateY(6px) rotateY(-8deg) rotateX(-3deg); }
   }
-  .welcome-title{ font-size: 22px; font-weight: 800; margin: 0 0 6px; letter-spacing: -0.02em; }
-  .welcome-sub{ font-size: 13px; color: #CBD5E1; margin: 0 0 14px; line-height: 1.45; }
+  .welcome-title{ font-size: 15px; font-weight: 800; margin: 0 0 2px; letter-spacing: -0.02em; }
+  .welcome-sub{ font-size: 10.5px; color: #CBD5E1; margin: 0; line-height: 1.3; }
   .btn-ir-control{ background: linear-gradient(135deg, var(--gold) 0%, #D4A74F 100%); color: #fff; border:none; border-radius: 10px; padding: 12px 16px; font-size: 13.5px; font-weight: 700; cursor:pointer; width:100%; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow: 0 4px 14px rgba(201,151,62,0.4); }
 
   .quote-card{
     background: #fff; border: 1.5px solid #EAE5D8; border-left: 5px solid var(--gold);
-    border-radius: var(--radius); padding: 16px 18px; margin-bottom: 14px; box-shadow: 0 4px 14px rgba(0,0,0,0.04);
+    border-radius: var(--radius); padding: 9px 12px; margin-bottom: 8px; box-shadow: 0 4px 14px rgba(0,0,0,0.04);
   }
-  .quote-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px; }
-  .quote-tag{ font-size: 11px; font-weight: 800; color: var(--gold); text-transform:uppercase; letter-spacing: 0.04em; }
-  .quote-date{ font-size: 11.5px; color: var(--ink-dim); }
-  .quote-body{ font-size: 14px; font-style: italic; color: var(--navy); line-height: 1.5; margin: 0 0 8px; }
-  .quote-author{ font-size: 12px; font-weight: 700; color: var(--ink-dim); text-align: right; margin: 0; }
+  .quote-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom: 3px; }
+  .quote-tag{ font-size: 10px; font-weight: 800; color: var(--gold); text-transform:uppercase; letter-spacing: 0.04em; }
+  .quote-date{ font-size: 10.5px; color: var(--ink-dim); }
+  .quote-body{ font-size: 12px; font-style: italic; color: var(--navy); line-height: 1.3; margin: 0 0 3px; }
+  .quote-author{ font-size: 10.5px; font-weight: 700; color: var(--ink-dim); text-align: right; margin: 0; }
 
   .video-card{
     background: #fff; border: 1px solid #EAE5D8; border-radius: var(--radius);
-    padding: 14px; margin-bottom: 14px; box-shadow: 0 4px 14px rgba(0,0,0,0.04);
+    padding: 9px; margin-bottom: 8px; box-shadow: 0 4px 14px rgba(0,0,0,0.04);
   }
-  .video-header{ display:flex; align-items:center; gap:8px; margin-bottom: 10px; }
-  .video-header h4{ margin:0; font-size: 13.5px; font-weight: 700; color: var(--navy); }
+  .video-header{ display:flex; align-items:center; gap:8px; margin-bottom: 6px; }
+  .video-header h4{ margin:0; font-size: 12px; font-weight: 700; color: var(--navy); }
   .video-wrapper{
-    position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;
-    border-radius: 12px; background: #000; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    position: relative; padding-bottom: min(56.25%, 130px); height: 0; overflow: hidden;
+    border-radius: 10px; background: #000; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   }
   .video-wrapper iframe{ position: absolute; top:0; left:0; width:100%; height:100%; border:0; }
 
@@ -1510,11 +1510,11 @@ main.app-content {
             <img src="logo-casa-dorada.png" alt="Casa Dorada" class="logo-3d-flotante" style="animation-delay:0s;">
             <img src="logo-costa-dorada.png" alt="Costa Dorada" class="logo-3d-flotante" style="animation-delay:0.5s;">
           </div>
-          <div style="margin-top:10px; margin-bottom:2px;">
-            <span style="font-size:32px; font-weight:900; color:#fff; letter-spacing:1px; line-height:1; display:block; text-shadow:0 2px 10px rgba(0,0,0,0.35);">MAJO</span>
-            <span style="font-size:12.5px; font-weight:800; color:var(--gold-soft); letter-spacing:2.5px; text-transform:uppercase; display:block; margin-top:2px;">CRM / ERP</span>
+          <div style="margin-top:2px; margin-bottom:1px;">
+            <span style="font-size:17px; font-weight:900; color:#fff; letter-spacing:1px; line-height:1; display:block; text-shadow:0 2px 10px rgba(0,0,0,0.35);">MAJO</span>
+            <span style="font-size:9px; font-weight:800; color:var(--gold-soft); letter-spacing:2px; text-transform:uppercase; display:block; margin-top:1px;">CRM / ERP</span>
           </div>
-          <h2 class="welcome-title" id="wb_saludo" style="margin-top:8px;">¡Buenos días!</h2>
+          <h2 class="welcome-title" id="wb_saludo" style="margin-top:3px;">¡Buenos días!</h2>
           <p class="welcome-sub" id="wb_subtitulo" style="margin-bottom:0;">Bienvenido a tu jornada comercial y de gestión. Enfoque total en metas y cierres.</p>
         </div>
       </div>
