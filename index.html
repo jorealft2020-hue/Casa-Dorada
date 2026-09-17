@@ -4666,8 +4666,20 @@ function renderizarBloquePermisos(prefix, permisosActuales = {}, rolDelUsuarioEd
     `;
   }
 
-  Object.keys(grupos).forEach(dept => {
-    html += `<div class="perm-section-title">📂 ${dept.toUpperCase()}</div>`;
+  // Desglosado por carpeta/departamento (acordeón, todas colapsadas al
+  // abrir) en vez de una sola lista larga de ~66 permisos -- Jorge pidió
+  // poder abrir solo el departamento que le interesa en vez de scrollear
+  // toda la lista cada vez. Reusa el mismo componente accordion-sec/-hdr/-bdy
+  // que ya usa el formulario de Separaciones.
+  Object.keys(grupos).forEach((dept, i) => {
+    const secId = `${prefix}_permsec_${i}`;
+    const marcados = grupos[dept].filter(p => (permisosActuales[p.key] !== undefined ? permisosActuales[p.key] : p.default)).length;
+    html += `<div class="accordion-sec collapsed" id="${secId}">
+      <div class="accordion-hdr" onclick="toggleAccordion('${secId}')">
+        <span>📂 ${escapeHtml(dept.toUpperCase())} <span style="font-weight:600; opacity:0.6;">(${marcados}/${grupos[dept].length})</span></span>
+        <span class="arrow">▼</span>
+      </div>
+      <div class="accordion-bdy">`;
     grupos[dept].forEach(p => {
       const checked = permisosActuales[p.key] !== undefined ? permisosActuales[p.key] : p.default;
       html += `
@@ -4679,6 +4691,7 @@ function renderizarBloquePermisos(prefix, permisosActuales = {}, rolDelUsuarioEd
         </label>
       `;
     });
+    html += `</div></div>`;
   });
 
   cont.innerHTML = html;
@@ -6859,6 +6872,7 @@ async function cargarPreautorizados(){
           ${p.dni ? `<p class="card-sub">DNI: ${escapeHtml(p.dni)}</p>` : ''}
           ${p.celular ? `<p class="card-sub">📱 WhatsApp: ${escapeHtml(p.celular)}</p>` : ''}
           ${p.area ? `<p class="card-sub">🏢 Área: ${escapeHtml(p.area)}</p>` : ''}
+          <p class="card-sub">🧑‍💼 Supervisor: ${p.supervisor_id ? escapeHtml((usuariosCache || []).find(u => u.id === p.supervisor_id)?.nombre || '—') : '<span style="color:var(--ink-dim);">Sin asignar</span>'}</p>
         </div>
         <span class="badge ${p.activo === false ? 'badge-vencida' : 'badge-completada'}">${p.activo === false ? 'Inactivo' : 'Pendiente'}</span>
       </div>
@@ -6978,7 +6992,10 @@ document.getElementById('btnGuardarPreautorizado').addEventListener('click', asy
     area,
     cargo,
     rol,
-    permisos
+    permisos,
+    supervisor_id: supervisorId,
+    reporte_email_adicional: reporteEmailAdicional,
+    reporte_diario_activo: reporteDiarioActivo
   };
 
   const btn = document.getElementById('btnGuardarPreautorizado');
@@ -7086,6 +7103,7 @@ async function cargarUsuariosAdmin(){
   const el = document.getElementById('listaUsuariosAdmin');
   if (error) { el.innerHTML = emptyState('⚠️', 'No se pudo cargar el equipo.'); console.error(error); return; }
   if (!data || data.length === 0) { el.innerHTML = emptyState('👥', 'Aún no hay usuarios.'); return; }
+  const nombrePorIdUsuario = Object.fromEntries(data.map(u => [u.id, u.nombre || u.email]));
   el.innerHTML = data.map(u => `
     <div class="card">
       <div class="card-row">
@@ -7096,6 +7114,7 @@ async function cargarUsuariosAdmin(){
           ${u.dni ? `<p class="card-sub">DNI: ${escapeHtml(u.dni)}</p>` : ''}
           ${u.celular ? `<p class="card-sub">📱 WhatsApp: ${escapeHtml(u.celular)}</p>` : ''}
           ${u.area ? `<p class="card-sub">🏢 Área: ${escapeHtml(u.area)}</p>` : ''}
+          <p class="card-sub">🧑‍💼 Supervisor: ${u.supervisor_id ? escapeHtml(nombrePorIdUsuario[u.supervisor_id] || '—') : '<span style="color:var(--ink-dim);">Sin asignar</span>'}</p>
         </div>
         <span class="badge ${u.activo === false ? 'badge-vencida' : 'badge-completada'}">${u.activo === false ? 'Inactivo' : 'Activo'}</span>
       </div>
@@ -7238,6 +7257,9 @@ document.getElementById('btnGuardarUsuario').addEventListener('click', async () 
     cargo,
     rol,
     activo: document.getElementById('eu_activo').value === 'true',
+    supervisor_id: document.getElementById('eu_supervisor_id').value || null,
+    reporte_email_adicional: document.getElementById('eu_reporte_email_adicional').value.trim() || null,
+    reporte_diario_activo: document.getElementById('eu_reporte_diario_activo').checked,
     permisos
   };
 
