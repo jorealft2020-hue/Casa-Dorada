@@ -1240,7 +1240,7 @@ main.app-content {
   border: 1.5px solid #E5C378;
   border-left: 5px solid #C89B3C;
   border-radius: 16px;
-  padding: 16px;
+  padding: 13px 14px;
   margin-bottom: 14px;
   box-shadow: 0 4px 18px rgba(200, 155, 60, 0.16);
   position: relative;
@@ -1605,31 +1605,26 @@ main.app-content {
                propio botón "+" para crear una nueva sin salir de Mi Jornada
                -- antes esto eran solo 3 números sueltos arriba y 3 botones
                sueltos más abajo, sin decir a qué llevaba cada uno. -->
-          <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-bottom:14px;">
-            <div style="background:#fff; border:1px solid #EAD8B1; border-radius:12px; padding:10px 8px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.04); cursor:pointer;" onclick="irAVista('actividades')">
-              <span style="font-size:17px;">✓</span>
-              <span style="font-size:11px; color:#6D5D3A; font-weight:700; display:block; margin-top:2px;">Actividades</span>
-              <span id="pi_num_tareas" style="font-size:18px; font-weight:800; color:#142A4D; display:block;">0</span>
-              <button type="button" class="chip-btn gold" onclick="event.stopPropagation(); abrirModalActividad();" style="margin-top:6px; font-size:10.5px; padding:4px 6px; font-weight:800; width:100%; justify-content:center;">+ Nueva</button>
+          <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; margin-bottom:10px;">
+            <div style="background:#fff; border:1px solid #EAD8B1; border-radius:10px; padding:7px 5px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.04); cursor:pointer;" onclick="irAVista('actividades')">
+              <span style="font-size:15px;">✓</span>
+              <span style="font-size:10px; color:#6D5D3A; font-weight:700; display:block; margin-top:1px;">Actividades</span>
+              <span id="pi_num_tareas" style="font-size:16px; font-weight:800; color:#142A4D; display:block;">0</span>
+              <button type="button" class="chip-btn gold" onclick="event.stopPropagation(); abrirModalActividad();" style="margin-top:4px; font-size:10px; padding:3px 4px; font-weight:800; width:100%; justify-content:center;">+ Nueva</button>
             </div>
-            <div style="background:#fff; border:1px solid #EAD8B1; border-radius:12px; padding:10px 8px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.04); cursor:pointer;" onclick="irAVista('agenda')">
-              <span style="font-size:17px;">📅</span>
-              <span style="font-size:11px; color:#6D5D3A; font-weight:700; display:block; margin-top:2px;">Agenda</span>
-              <span id="pi_num_citas" style="font-size:18px; font-weight:800; color:#C89B3C; display:block;">0</span>
-              <button type="button" class="chip-btn gold" onclick="event.stopPropagation(); abrirModalAgenda();" style="margin-top:6px; font-size:10.5px; padding:4px 6px; font-weight:800; width:100%; justify-content:center;">+ Nueva</button>
+            <div style="background:#fff; border:1px solid #EAD8B1; border-radius:10px; padding:7px 5px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.04); cursor:pointer;" onclick="irAVista('agenda')">
+              <span style="font-size:15px;">📅</span>
+              <span style="font-size:10px; color:#6D5D3A; font-weight:700; display:block; margin-top:1px;">Agenda</span>
+              <span id="pi_num_citas" style="font-size:16px; font-weight:800; color:#C89B3C; display:block;">0</span>
+              <button type="button" class="chip-btn gold" onclick="event.stopPropagation(); abrirModalAgenda();" style="margin-top:4px; font-size:10px; padding:3px 4px; font-weight:800; width:100%; justify-content:center;">+ Nueva</button>
             </div>
-            <div style="background:#fff; border:1px solid #EAD8B1; border-radius:12px; padding:10px 8px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.04); cursor:pointer;" onclick="irAVista('solicitudes')">
-              <span style="font-size:17px;">📝</span>
-              <span style="font-size:11px; color:#6D5D3A; font-weight:700; display:block; margin-top:2px;">Solicitudes</span>
-              <span id="pi_num_solicitudes" style="font-size:18px; font-weight:800; color:#0F766E; display:block;">0</span>
-              <button type="button" class="chip-btn gold" onclick="event.stopPropagation(); irARegistrarSolicitudDesdeInicio();" style="margin-top:6px; font-size:10.5px; padding:4px 6px; font-weight:800; width:100%; justify-content:center;">+ Nueva</button>
+            <div style="background:#fff; border:1px solid #EAD8B1; border-radius:10px; padding:7px 5px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.04); cursor:pointer;" onclick="irAVista('solicitudes')">
+              <span style="font-size:15px;">📝</span>
+              <span style="font-size:10px; color:#6D5D3A; font-weight:700; display:block; margin-top:1px;">Solicitudes</span>
+              <span id="pi_num_solicitudes" style="font-size:16px; font-weight:800; color:#0F766E; display:block;">0</span>
+              <button type="button" class="chip-btn gold" onclick="event.stopPropagation(); irARegistrarSolicitudDesdeInicio();" style="margin-top:4px; font-size:10px; padding:3px 4px; font-weight:800; width:100%; justify-content:center;">+ Nueva</button>
             </div>
           </div>
-
-          <!-- Clientes en riesgo (>7 días sin contacto) -- se deja como un
-               dato aparte en vez de una 4ta tarjeta porque no es del mismo
-               tipo (actividad/agenda/solicitud) que las de arriba. -->
-          <p style="margin:0 0 10px; font-size:11.5px; color:#D32F2F; font-weight:700; display:flex; align-items:center; gap:5px;">⚠️ <span id="pi_num_riesgo">0</span> cliente(s) en riesgo (&gt;7 días sin contacto)</p>
 
           <!-- Contenedor dinámico de lista de pendientes prioritarios -->
           <div id="pi_lista_pendientes" style="display:flex; flex-direction:column; gap:8px;">
@@ -1637,7 +1632,7 @@ main.app-content {
           </div>
 
           <!-- BARRA DE PROGRESO DE JORNADA LABORAL EFECTIVA (TIEMPO REAL) -->
-          <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:12px; padding:10px 14px; margin-top:14px;">
+          <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:12px; padding:9px 12px; margin-top:10px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
               <span style="font-size:11.5px; font-weight:800; color:var(--navy);">⏱️ Progreso de Jornada Efectiva de Hoy</span>
               <span id="progreso_jornada_txt" style="font-size:11.5px; font-weight:800; color:#1D4ED8;">0.0 / 8.0 hrs (0%)</span>
@@ -14116,8 +14111,6 @@ async function cargarPendientesInicio(){
     if (elNumC) elNumC.textContent = citasPendientes.length;
     const elNumS = document.getElementById('pi_num_solicitudes');
     if (elNumS) elNumS.textContent = solicitudesPendientes.length;
-    const elNumR = document.getElementById('pi_num_riesgo');
-    if (elNumR) elNumR.textContent = clientesEnRiesgoLista.length;
 
     const bTotal = document.getElementById('pi_badge_total');
     if (bTotal) {
