@@ -1600,32 +1600,40 @@ main.app-content {
             <span class="pendientes-badge-alerta" id="pi_badge_total">0 pendientes</span>
           </div>
 
-          <!-- Mini Strip de Métricas de Pendientes -->
+          <!-- Accesos directos: cada tarjeta es clickeable para IR a ver esa
+               lista completa (Actividades/Agenda/Solicitudes), y trae su
+               propio botón "+" para crear una nueva sin salir de Mi Jornada
+               -- antes esto eran solo 3 números sueltos arriba y 3 botones
+               sueltos más abajo, sin decir a qué llevaba cada uno. -->
           <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-bottom:14px;">
-            <div style="background:#fff; border:1px solid #EAD8B1; border-radius:12px; padding:8px 10px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
-              <span style="font-size:11px; color:#6D5D3A; font-weight:600; display:block;">Tareas Hoy</span>
-              <span id="pi_num_tareas" style="font-size:18px; font-weight:800; color:#142A4D;">0</span>
+            <div style="background:#fff; border:1px solid #EAD8B1; border-radius:12px; padding:10px 8px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.04); cursor:pointer;" onclick="irAVista('actividades')">
+              <span style="font-size:17px;">✓</span>
+              <span style="font-size:11px; color:#6D5D3A; font-weight:700; display:block; margin-top:2px;">Actividades</span>
+              <span id="pi_num_tareas" style="font-size:18px; font-weight:800; color:#142A4D; display:block;">0</span>
+              <button type="button" class="chip-btn gold" onclick="event.stopPropagation(); abrirModalActividad();" style="margin-top:6px; font-size:10.5px; padding:4px 6px; font-weight:800; width:100%; justify-content:center;">+ Nueva</button>
             </div>
-            <div style="background:#fff; border:1px solid #EAD8B1; border-radius:12px; padding:8px 10px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
-              <span style="font-size:11px; color:#6D5D3A; font-weight:600; display:block;">Citas Agenda</span>
-              <span id="pi_num_citas" style="font-size:18px; font-weight:800; color:#C89B3C;">0</span>
+            <div style="background:#fff; border:1px solid #EAD8B1; border-radius:12px; padding:10px 8px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.04); cursor:pointer;" onclick="irAVista('agenda')">
+              <span style="font-size:17px;">📅</span>
+              <span style="font-size:11px; color:#6D5D3A; font-weight:700; display:block; margin-top:2px;">Agenda</span>
+              <span id="pi_num_citas" style="font-size:18px; font-weight:800; color:#C89B3C; display:block;">0</span>
+              <button type="button" class="chip-btn gold" onclick="event.stopPropagation(); abrirModalAgenda();" style="margin-top:6px; font-size:10.5px; padding:4px 6px; font-weight:800; width:100%; justify-content:center;">+ Nueva</button>
             </div>
-            <div style="background:#fff; border:1px solid #EAD8B1; border-radius:12px; padding:8px 10px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
-              <span style="font-size:11px; color:#6D5D3A; font-weight:600; display:block;">En Riesgo</span>
-              <span id="pi_num_riesgo" style="font-size:18px; font-weight:800; color:#D32F2F;">0</span>
+            <div style="background:#fff; border:1px solid #EAD8B1; border-radius:12px; padding:10px 8px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.04); cursor:pointer;" onclick="irAVista('solicitudes')">
+              <span style="font-size:17px;">📝</span>
+              <span style="font-size:11px; color:#6D5D3A; font-weight:700; display:block; margin-top:2px;">Solicitudes</span>
+              <span id="pi_num_solicitudes" style="font-size:18px; font-weight:800; color:#0F766E; display:block;">0</span>
+              <button type="button" class="chip-btn gold" onclick="event.stopPropagation(); irARegistrarSolicitudDesdeInicio();" style="margin-top:6px; font-size:10.5px; padding:4px 6px; font-weight:800; width:100%; justify-content:center;">+ Nueva</button>
             </div>
           </div>
+
+          <!-- Clientes en riesgo (>7 días sin contacto) -- se deja como un
+               dato aparte en vez de una 4ta tarjeta porque no es del mismo
+               tipo (actividad/agenda/solicitud) que las de arriba. -->
+          <p style="margin:0 0 10px; font-size:11.5px; color:#D32F2F; font-weight:700; display:flex; align-items:center; gap:5px;">⚠️ <span id="pi_num_riesgo">0</span> cliente(s) en riesgo (&gt;7 días sin contacto)</p>
 
           <!-- Contenedor dinámico de lista de pendientes prioritarios -->
           <div id="pi_lista_pendientes" style="display:flex; flex-direction:column; gap:8px;">
             <div class="spinner"></div>
-          </div>
-
-          <!-- Botones de acción rápida -->
-          <div style="display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;">
-            <button class="chip-btn gold" onclick="abrirModalActividad()" style="font-size:11.5px; padding:8px 14px; font-weight:700;">+ Registrar Actividad</button>
-            <button class="chip-btn" onclick="abrirModalAgenda()" style="font-size:11.5px; padding:8px 14px; border-color:var(--gold); color:var(--navy); background:#fff; font-weight:700;">📅 Agendar Actividad</button>
-            <button class="chip-btn" onclick="irARegistrarSolicitudDesdeInicio()" style="font-size:11.5px; padding:8px 14px; border-color:#CBD5E1; color:var(--navy); background:#fff; font-weight:700;">📝 Agendar Solicitud</button>
           </div>
 
           <!-- BARRA DE PROGRESO DE JORNADA LABORAL EFECTIVA (TIEMPO REAL) -->
@@ -14106,6 +14114,8 @@ async function cargarPendientesInicio(){
     if (elNumT) elNumT.textContent = tareasPendientes.length;
     const elNumC = document.getElementById('pi_num_citas');
     if (elNumC) elNumC.textContent = citasPendientes.length;
+    const elNumS = document.getElementById('pi_num_solicitudes');
+    if (elNumS) elNumS.textContent = solicitudesPendientes.length;
     const elNumR = document.getElementById('pi_num_riesgo');
     if (elNumR) elNumR.textContent = clientesEnRiesgoLista.length;
 
