@@ -6700,9 +6700,26 @@ document.getElementById('btnGenerarInformeFormal').addEventListener('click', asy
     }
 
     const nombreArchivo = `informe-${tipo}-${nombreVendedor.replace(/\s+/g,'-').toLowerCase()}-${fechaInicio}.pdf`;
-    doc.save(nombreArchivo);
-    toast('Informe formal generado ✓');
+    const blobInf = doc.output('blob');
+    const archivoInfPDF = new File([blobInf], nombreArchivo, { type: 'application/pdf' });
     closeModal('modalInformeFormal');
+
+    if (navigator.canShare && navigator.canShare({ files: [archivoInfPDF] })) {
+      try {
+        await navigator.share({ files: [archivoInfPDF], title: 'Informe Formal de Actividades' });
+        toast('Informe formal generado ✓');
+        return;
+      } catch (e) {}
+    }
+
+    doc.save(nombreArchivo);
+    toast('Informe generado y abriendo WhatsApp… ✓');
+    const wspMsgInf = `📄 *INFORME FORMAL ${tipo.toUpperCase()} · CASA DORADA*\n` +
+      `• *Colaborador:* ${nombreVendedor}\n` +
+      `• *Periodo:* ${fmtFecha(fechaInicio)} – ${fmtFecha(fechaFin)}\n\n` +
+      `_📎 Adjunta el PDF que se descargó a tu carpeta de Descargas._\n\n` +
+      `_Informe oficial emitido desde Planner Corporativo Casa Dorada._`;
+    location.href = `https://wa.me/?text=${encodeURIComponent(wspMsgInf)}`;
   } catch (e) {
     toast('Error al generar el informe');
     console.error(e);
