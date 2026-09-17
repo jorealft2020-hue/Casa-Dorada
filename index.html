@@ -4033,16 +4033,39 @@ main.app-content {
             <input type="number" id="min_lote_area" value="150" style="width:100%; font-size:12px; padding:7px 9px;">
           </div>
           <div>
-            <label style="font-size:11px; font-weight:700; color:var(--navy);">Precio Total (S/)</label>
+            <label style="font-size:11px; font-weight:700; color:var(--navy);">Valor Total (S/)</label>
             <input type="number" id="min_lote_precio" value="22000" style="width:100%; font-size:12px; padding:7px 9px; font-weight:700;">
           </div>
+        </div>
+        <p id="min_lote_estado_inventario" style="font-size:10.5px; margin:6px 0 0;"></p>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:8px; margin-top:10px; padding-top:10px; border-top:1px dashed #E8D9B5;">
           <div>
-            <label style="font-size:11px; font-weight:700; color:var(--navy);">Inicial Abonada (S/)</label>
+            <label style="font-size:11px; font-weight:700; color:var(--navy);">Separación Abonada (S/)</label>
+            <input type="number" id="min_separacion_abonada" value="500" style="width:100%; font-size:12px; padding:7px 9px; font-weight:700;">
+          </div>
+          <div>
+            <label style="font-size:11px; font-weight:700; color:var(--navy);">Inicial Pactada (S/)</label>
             <input type="number" id="min_lote_inicial" value="2000" style="width:100%; font-size:12px; padding:7px 9px; font-weight:700;">
           </div>
           <div>
-            <label style="font-size:11px; font-weight:700; color:var(--navy);">Plazo (Meses)</label>
+            <label style="font-size:11px; font-weight:700; color:var(--navy);">Plazo de Financiamiento (Meses)</label>
             <input type="number" id="min_lote_meses" value="36" style="width:100%; font-size:12px; padding:7px 9px;">
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:8px; margin-top:10px; padding-top:10px; border-top:1px dashed #E8D9B5;">
+          <div>
+            <label style="font-size:11px; font-weight:700; color:var(--navy);">Saldo a Financiar (S/)</label>
+            <input type="text" id="min_saldo_calc" readonly style="width:100%; font-size:12px; padding:7px 9px; background:#EFEBDF; font-weight:700;">
+          </div>
+          <div>
+            <label style="font-size:11px; font-weight:700; color:var(--navy);">Inversión Mensual (S/)</label>
+            <input type="text" id="min_cuota_calc" readonly style="width:100%; font-size:12px; padding:7px 9px; background:#EFEBDF; font-weight:700;">
+          </div>
+          <div>
+            <label style="font-size:11px; font-weight:700; color:var(--navy);">Vencimiento de Separación</label>
+            <input type="date" id="min_fecha_vencimiento" style="width:100%; font-size:12px; padding:7px 9px;">
           </div>
         </div>
       </div>
@@ -4062,9 +4085,12 @@ main.app-content {
 
       <!-- BOTONES DE ACCIÓN -->
       <div style="display:flex; gap:10px; flex-wrap:wrap;">
-        <button type="button" class="btn-secondary" onclick="closeModal('modalMinutaCompraventa')" style="flex:1;">Cerrar</button>
-        <button type="button" class="btn-primary" onclick="descargarMinutaLegalPDF()" style="flex:2; background:#0F766E; border-color:#0F766E; font-weight:800; font-size:13px;">
-          📑 Descargar Minuta Legal Firmada (PDF 2 Págs)
+        <button type="button" class="btn-secondary" onclick="closeModal('modalMinutaCompraventa')" style="flex:1; flex-basis:100%;">Cerrar</button>
+        <button type="button" class="btn-primary" onclick="descargarMinutaLegalPDF()" style="flex:1; min-width:180px; background:#0F766E; border-color:#0F766E; font-weight:800; font-size:13px;">
+          📑 Descargar Minuta Firmada (PDF)
+        </button>
+        <button type="button" class="btn-primary" onclick="formalizarSeparacionDesdeMinuta()" style="flex:1; min-width:180px; background:var(--gold); border-color:var(--gold); font-weight:800; font-size:13px;">
+          🏷️ Formalizar Separación
         </button>
       </div>
     </div>
@@ -16553,6 +16579,148 @@ function abrirMinutaDesdeCotizador() {
   if (document.getElementById('min_lote_precio')) document.getElementById('min_lote_precio').value = precio;
   if (document.getElementById('min_lote_inicial')) document.getElementById('min_lote_inicial').value = inicial;
   if (document.getElementById('min_lote_meses')) document.getElementById('min_lote_meses').value = meses;
+  actualizarCalculosMinuta();
+}
+
+// Mismo patrón que autocompletarLoteDesdeInventario() del Cotizador --
+// consulta el lotizador en vivo al elegir manzana/lote y carga área/valor
+// real, en vez de dejar los valores de ejemplo del formulario en blanco.
+async function autocompletarLoteMinutaDesdeInventario(){
+  const elEstado = document.getElementById('min_lote_estado_inventario');
+  const mz = document.getElementById('min_lote_mz')?.value.trim();
+  const lt = document.getElementById('min_lote_num')?.value.trim();
+  if (!mz || !lt) { if (elEstado) elEstado.textContent = ''; return; }
+
+  if (elEstado) { elEstado.style.color = 'var(--ink-dim)'; elEstado.textContent = '🔎 Buscando en el lotizador en vivo…'; }
+
+  try {
+    if (!inventarioReporteCache) {
+      let { data, error } = await sb.functions.invoke('inventario-lotes-sire', { body: {} });
+      if (error && error.context?.status === 401) {
+        await sb.auth.refreshSession();
+        ({ data, error } = await sb.functions.invoke('inventario-lotes-sire', { body: {} }));
+      }
+      if (error || !data || data.ok === false) throw error || new Error('Sin datos');
+      inventarioReporteCache = data;
+    }
+
+    const lote = (inventarioReporteCache.lotes || []).find(l =>
+      l.manzana === mz && (l.nombreLote || '').replace(/^Lote\s*/i, '').trim() === lt);
+
+    if (!lote) {
+      if (elEstado) { elEstado.style.color = 'var(--ink-dim)'; elEstado.textContent = 'ℹ️ No se encontró este lote en el lotizador en vivo — completa los datos manualmente.'; }
+      return;
+    }
+
+    if (lote.areaM2) document.getElementById('min_lote_area').value = lote.areaM2;
+    if (lote.precio) document.getElementById('min_lote_precio').value = lote.precio;
+    actualizarCalculosMinuta();
+
+    const cfg = INV_ESTADO_CFG[lote.estado] || INV_ESTADO_CFG.sinPublicar;
+    if (elEstado) {
+      if (lote.estado === 'libre') {
+        elEstado.style.color = '#1B8A3E';
+        elEstado.textContent = `✅ Datos reales cargados del lotizador (${lote.precio ? 'S/ ' + lote.precio.toLocaleString('es-PE') : 'sin precio publicado'}).`;
+      } else {
+        elEstado.style.color = cfg.tone;
+        elEstado.textContent = `⚠️ Atención: este lote figura como "${cfg.lbl}" en el lotizador — verifica antes de formalizar.`;
+      }
+    }
+  } catch (e) {
+    console.warn('No se pudo autocompletar el lote de la minuta desde el inventario en vivo:', e);
+    if (elEstado) { elEstado.style.color = 'var(--ink-dim)'; elEstado.textContent = 'ℹ️ No se pudo consultar el lotizador en vivo — completa los datos manualmente.'; }
+  }
+}
+document.getElementById('min_lote_mz')?.addEventListener('change', autocompletarLoteMinutaDesdeInventario);
+document.getElementById('min_lote_num')?.addEventListener('change', autocompletarLoteMinutaDesdeInventario);
+
+// Saldo, cuota mensual y fecha de vencimiento de la separación (hoy + 3 días
+// calendarios, según la cláusula de vigencia de la separación) recalculados
+// en vivo al tocar cualquier campo económico -- antes solo se calculaban al
+// generar el PDF, sin que el asesor viera el número mientras completa el
+// formulario.
+function actualizarCalculosMinuta(){
+  const precio = parseFloat(document.getElementById('min_lote_precio')?.value) || 0;
+  const inicial = parseFloat(document.getElementById('min_lote_inicial')?.value) || 0;
+  const separacion = parseFloat(document.getElementById('min_separacion_abonada')?.value) || 0;
+  const meses = parseInt(document.getElementById('min_lote_meses')?.value, 10) || 0;
+
+  const saldo = Math.max(0, precio - (inicial + separacion));
+  const cuota = meses > 0 ? saldo / meses : 0;
+
+  const elSaldo = document.getElementById('min_saldo_calc');
+  const elCuota = document.getElementById('min_cuota_calc');
+  if (elSaldo) elSaldo.value = 'S/ ' + saldo.toLocaleString('es-PE', { minimumFractionDigits: 2 });
+  if (elCuota) elCuota.value = 'S/ ' + cuota.toLocaleString('es-PE', { minimumFractionDigits: 2 });
+
+  const elVenc = document.getElementById('min_fecha_vencimiento');
+  if (elVenc && !elVenc.value) {
+    const venc = new Date();
+    venc.setDate(venc.getDate() + 3);
+    elVenc.value = venc.toISOString().slice(0, 10);
+  }
+}
+['min_lote_precio', 'min_lote_inicial', 'min_separacion_abonada', 'min_lote_meses'].forEach(id => {
+  document.getElementById(id)?.addEventListener('input', actualizarCalculosMinuta);
+});
+
+// La firma táctil formaliza el contrato preparatorio, pero la separación en
+// sí (cliente, cónyuge, medio de pago, N° operación, etc.) ya tiene su
+// propio formulario completo y probado (modalSeparacion) -- en vez de
+// duplicar esos campos aquí, se transfieren los datos ya capturados y se
+// abre ese mismo formulario para completar/confirmar y guardar, igual que
+// ya hace pasarCotizacionASeparacion() desde el Cotizador.
+function formalizarSeparacionDesdeMinuta(){
+  const nombre = document.getElementById('min_comprador_nombre')?.value.trim();
+  const dni = document.getElementById('min_comprador_dni')?.value.trim();
+  const mz = document.getElementById('min_lote_mz')?.value.trim();
+  const lote = document.getElementById('min_lote_num')?.value.trim();
+
+  if (!nombre || !dni) { toast('Completa nombre y DNI del comprador antes de formalizar la separación'); return; }
+  if (!mz || !lote) { toast('Completa manzana y lote antes de formalizar la separación'); return; }
+
+  actualizarCalculosMinuta();
+
+  const precio = document.getElementById('min_lote_precio')?.value;
+  const area = document.getElementById('min_lote_area')?.value;
+  const inicial = document.getElementById('min_lote_inicial')?.value;
+  const separacion = document.getElementById('min_separacion_abonada')?.value;
+  const meses = document.getElementById('min_lote_meses')?.value;
+  const tel = document.getElementById('min_comprador_tel')?.value.trim();
+  const dir = document.getElementById('min_comprador_domicilio')?.value.trim();
+  const fechaVencimiento = document.getElementById('min_fecha_vencimiento')?.value;
+
+  closeModal('modalMinutaCompraventa');
+  prepararModalSeparacion();
+
+  document.getElementById('sp_cliente_nombre').value = nombre;
+  document.getElementById('sp_cliente_dni').value = dni;
+  if (tel) document.getElementById('sp_cliente_celular').value = tel;
+  if (dir) document.getElementById('sp_cliente_direccion').value = dir;
+  document.getElementById('sp_manzana').value = mz;
+  document.getElementById('sp_lote').value = lote;
+  if (area) document.getElementById('sp_area').value = area;
+  if (precio) document.getElementById('sp_valor_total').value = precio;
+  document.getElementById('sp_condicion').value = 'financiado';
+  document.getElementById('sp_bloque_financiado').classList.remove('hidden');
+  if (inicial) document.getElementById('sp_valor_inicial').value = inicial;
+  if (separacion) document.getElementById('sp_monto_separacion').value = separacion;
+  if (fechaVencimiento) document.getElementById('sp_fecha_vencimiento').value = fechaVencimiento;
+
+  const mesesNum = parseInt(meses, 10) || 0;
+  const selMeses = document.getElementById('sp_meses_financiar');
+  const opcionExiste = [...selMeses.options].some(o => o.value === String(mesesNum));
+  if (opcionExiste) {
+    selMeses.value = String(mesesNum);
+  } else {
+    selMeses.value = 'otro';
+    document.getElementById('sp_meses_otro_wrap').classList.remove('hidden');
+    document.getElementById('sp_meses_otro').value = mesesNum;
+  }
+
+  calcularFinanciamiento();
+  openModal('modalSeparacion');
+  toast('Datos de la minuta transferidos — revisa y confirma para guardar la separación ✓');
 }
 
 // El canvas de firma no tiene forma nativa de saber "esta vacio" -- se
