@@ -2320,11 +2320,11 @@ main.app-content {
               <button class="chip-btn" onclick="abrirModalDomingoDeCierres()" style="width:100%; justify-content:center; font-size:11px; font-weight:700; background:#FEF3C7; color:#B45309; border-color:#FCD34D; padding:8px;">🎉 Abrir Pantalla Showroom</button>
             </div>
 
-            <!-- 7. Formalización de Separación con Firma Táctil -->
+            <!-- 7. Separación Formal y Firma -->
             <div style="background:#fff; border:1px solid #99F6E4; border-radius:12px; padding:14px; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 2px 8px rgba(15,118,110,0.08);">
               <div>
                 <span style="font-size:22px;">✍️</span>
-                <h4 style="margin:4px 0 2px; font-size:13px; font-weight:800; color:#0F766E;">Formalización de Separación</h4>
+                <h4 style="margin:4px 0 2px; font-size:13px; font-weight:800; color:#0F766E;">Separación Formal y Firma</h4>
                 <p style="margin:0 0 10px; font-size:11px; color:var(--ink-dim); line-height:1.35;">Recibo de Adelanto de Inicial con captura de firma en pantalla táctil y generación de PDF formal.</p>
               </div>
               <button class="chip-btn" onclick="abrirModalMinutaCompraventa()" style="width:100%; justify-content:center; font-size:11px; font-weight:700; background:#CCFBF1; color:#0F766E; border-color:#99F6E4; padding:8px;">✍️ Formalizar Separación</button>
@@ -4116,7 +4116,7 @@ main.app-content {
       <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
         <span style="font-size:24px;">📑</span>
         <div>
-          <h3 style="margin:0; color:var(--navy); font-size:16px;">Formalización de Separación</h3>
+          <h3 style="margin:0; color:var(--navy); font-size:16px;">Separación Formal y Firma</h3>
           <p style="margin:2px 0 0; font-size:11.5px; color:var(--ink-dim);">Recibo de Adelanto de Inicial · Firma Táctil · Costa Dorada</p>
         </div>
       </div>
@@ -4214,6 +4214,18 @@ main.app-content {
             <input type="date" id="min_fecha_vencimiento" style="width:100%; font-size:12px; padding:7px 9px;">
           </div>
         </div>
+      </div>
+
+      <!-- UBICACIÓN DE LA VIVIENDA (GOOGLE MAPS) -->
+      <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:12px; padding:12px; margin-bottom:12px;">
+        <h4 style="margin:0 0 4px; font-size:12.5px; color:var(--navy); font-weight:800;">📍 Ubicación de la Vivienda (Google Maps)</h4>
+        <p style="font-size:11px; color:var(--ink-dim); margin:0 0 8px;">Abre Google Maps para que el cliente marque el punto exacto de su vivienda, luego pide que te comparta el enlace y pégalo aquí abajo para generar el anexo de ubicación.</p>
+        <button type="button" class="chip-btn" onclick="abrirGoogleMapsParaUbicacion(document.getElementById('min_comprador_domicilio')?.value.trim())" style="width:100%; justify-content:center; font-size:12px; font-weight:700; border-color:var(--gold); color:var(--navy); background:#fff; margin-bottom:8px;">🗺️ Abrir Google Maps</button>
+        <div style="margin-bottom:8px;">
+          <label style="font-size:11px; font-weight:700; color:var(--navy);">Enlace de Google Maps compartido por el cliente</label>
+          <input type="url" id="min_ubicacion_link" placeholder="https://maps.app.goo.gl/..." style="width:100%; font-size:12px; padding:7px 9px;">
+        </div>
+        <button type="button" class="chip-btn gold" onclick="generarAnexoUbicacionPDFDesdeMinuta()" style="width:100%; justify-content:center; font-size:12px; font-weight:700;">📄 Descargar Anexo de Ubicación (PDF)</button>
       </div>
 
       <!-- CANVAS DE FIRMA DIGITAL TÁCTIL -->
@@ -4644,7 +4656,7 @@ const PERMISOS_CATALOGO = [
   // 💼 DEPARTAMENTO COMERCIAL (VENTAS & CIERRES)
   { key: 'ver_operaciones_campo',          label: 'Panel Operativo de Campo (Pantalla Exclusiva)',   dept: 'Comercial', default: true },
   { key: 'ver_domingo_cierres',            label: 'Domingo de Cierres (Showroom TV en Terreno)',    dept: 'Comercial', default: true },
-  { key: 'generar_minuta_digital',          label: 'Formalización de Separación y Firma Táctil',    dept: 'Comercial', default: true },
+  { key: 'generar_minuta_digital',          label: 'Separación Formal y Firma',    dept: 'Comercial', default: true },
   { key: 'ver_red_embajadores',            label: 'Red de Embajadores y Referidos (Tracking Bonos)', dept: 'Comercial', default: true },
   { key: 'usar_dictado_voz',               label: 'Dictado por Voz en Campo (Web Speech API)',      dept: 'Comercial', default: true },
   { key: 'usar_pre_reserva_qr',            label: 'Pre-Reserva Digital QR in situ (S/ 500 Offline)', dept: 'Comercial', default: true },
@@ -10395,8 +10407,11 @@ function generarReciboAdelantoInicialPDF(){
 // exacto de su vivienda -- usa la URL pública de búsqueda de Maps (sin API
 // key, no requiere cuenta de Google Cloud) centrada en la dirección ya
 // escrita si existe, para no partir de un mapa en blanco.
-function abrirGoogleMapsParaUbicacion(){
-  const direccion = document.getElementById('sp_cliente_direccion')?.value.trim();
+// direccionOverride permite reusar este mismo botón desde la Minuta (que
+// guarda la dirección en min_comprador_domicilio, no en sp_cliente_direccion)
+// sin duplicar la función.
+function abrirGoogleMapsParaUbicacion(direccionOverride){
+  const direccion = direccionOverride !== undefined ? direccionOverride : document.getElementById('sp_cliente_direccion')?.value.trim();
   const url = direccion
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccion + ', Tacna, Perú')}`
     : 'https://www.google.com/maps';
@@ -10421,16 +10436,22 @@ function extraerCoordenadasDeEnlaceMaps(url){
 // un código QR hacia ese mismo enlace -- cualquiera que reciba el PDF
 // (impreso o por WhatsApp) puede escanearlo con la cámara del celular y
 // abrir la ubicación exacta en Maps, sin depender de ninguna credencial.
-async function generarAnexoUbicacionPDF(){
+// datosOverride permite reusar este generador desde la Minuta (campos
+// min_*) sin duplicar todo el dibujo del PDF -- si no se pasa, lee los
+// campos de Separación como hacía antes.
+async function generarAnexoUbicacionPDF(datosOverride){
   const { jsPDF } = window.jspdf || {};
   if (!jsPDF) { toast('Librería PDF no disponible'); return; }
 
-  const nombre = document.getElementById('sp_cliente_nombre')?.value.trim() || '';
-  const dni = document.getElementById('sp_cliente_dni')?.value.trim() || '';
-  const direccion = document.getElementById('sp_cliente_direccion')?.value.trim() || '';
-  const manzana = document.getElementById('sp_manzana')?.value || '';
-  const lote = document.getElementById('sp_lote')?.value.trim() || '';
-  const enlaceMaps = document.getElementById('sp_ubicacion_link')?.value.trim() || '';
+  const d = datosOverride || {
+    nombre: document.getElementById('sp_cliente_nombre')?.value.trim() || '',
+    dni: document.getElementById('sp_cliente_dni')?.value.trim() || '',
+    direccion: document.getElementById('sp_cliente_direccion')?.value.trim() || '',
+    manzana: document.getElementById('sp_manzana')?.value || '',
+    lote: document.getElementById('sp_lote')?.value.trim() || '',
+    enlaceMaps: document.getElementById('sp_ubicacion_link')?.value.trim() || '',
+  };
+  const { nombre, dni, direccion, manzana, lote, enlaceMaps } = d;
 
   if (!nombre) { toast('Falta el nombre del cliente'); return; }
   if (!enlaceMaps) { toast('Pega primero el enlace de Google Maps que te compartió el cliente'); return; }
@@ -10539,6 +10560,20 @@ async function generarAnexoUbicacionPDF(){
     `• *Google Maps:* ${enlaceMaps}\n\n` +
     `_Documento emitido desde el Planner Corporativo Casa Dorada._`;
   window.open(`https://wa.me/?text=${encodeURIComponent(wspMsgUbic)}`, '_blank');
+}
+
+// Mismo anexo de ubicación pero leyendo los campos de la Minuta (comprador,
+// manzana/lote, enlace propio min_ubicacion_link) -- Jorge pidió que esta
+// misma opción también esté disponible ahí, no solo en Separación.
+function generarAnexoUbicacionPDFDesdeMinuta(){
+  generarAnexoUbicacionPDF({
+    nombre: document.getElementById('min_comprador_nombre')?.value.trim() || '',
+    dni: document.getElementById('min_comprador_dni')?.value.trim() || '',
+    direccion: document.getElementById('min_comprador_domicilio')?.value.trim() || '',
+    manzana: document.getElementById('min_lote_mz')?.value.trim() || '',
+    lote: document.getElementById('min_lote_num')?.value.trim() || '',
+    enlaceMaps: document.getElementById('min_ubicacion_link')?.value.trim() || '',
+  });
 }
 
 document.getElementById('btnGuardarSeparacion').addEventListener('click', async () => {
@@ -16378,7 +16413,7 @@ const SUBMENUS_DATA = {
       { key: 'ver_herramientas_tacna', icono: '🏛️', titulo: 'Cierre Rápido Tacna', desc: 'Partida SUNARP, Pórtico y Vías', permiso: 'ver_herramientas_tacna', accion: () => { abrirModalHerramientasTacna(); cerrarDrawer(); } },
       { key: 'ver_cadencias_seguimiento', icono: '🎯', titulo: 'Cadencias 1-Toque', desc: 'Scripts para Ferias, Chile y Visitas', permiso: 'ver_cadencias_seguimiento', accion: () => { abrirModalCadencias('Carlos Mamani', '952123456'); cerrarDrawer(); } },
       { key: 'ver_domingo_cierres', icono: '🎉', titulo: 'Domingo de Cierres TV', desc: 'Campana acústica y confeti en vivo', permiso: 'ver_domingo_cierres', accion: () => { abrirModalDomingoDeCierres(); cerrarDrawer(); } },
-      { key: 'generar_minuta_digital', icono: '✍️', titulo: 'Formalización de Separación', desc: 'Recibo de Adelanto de Inicial en pantalla táctil', permiso: 'generar_minuta_digital', accion: () => { abrirModalMinutaCompraventa(); cerrarDrawer(); } },
+      { key: 'generar_minuta_digital', icono: '✍️', titulo: 'Separación Formal y Firma', desc: 'Recibo de Adelanto de Inicial en pantalla táctil', permiso: 'generar_minuta_digital', accion: () => { abrirModalMinutaCompraventa(); cerrarDrawer(); } },
       { key: 'ver_control_visitas', icono: '🚐', titulo: 'Movilidad Van (14 Asientos)', desc: 'Control de salidas a La Yarada', permiso: 'ver_control_visitas', accion: () => { irAVista('visitas'); cerrarDrawer(); } }
     ]
   },
