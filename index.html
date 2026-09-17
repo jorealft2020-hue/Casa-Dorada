@@ -381,27 +381,39 @@
      <audio controls> nativo (se ve distinto y "básico" en cada navegador). */
   .pl-card{
     background: linear-gradient(155deg, #142A4D 0%, #0B1A33 100%);
-    border-radius: 16px; padding: 16px; margin-bottom: 14px;
+    border-radius: 16px; padding: 13px 14px; margin-bottom: 14px;
     box-shadow: 0 8px 24px rgba(20,42,77,0.28);
     color: #F2EFE6; position: relative; overflow: hidden;
+    transition: box-shadow .4s ease;
   }
   .pl-card::before{
     content:''; position:absolute; inset:0; pointer-events:none;
     background: radial-gradient(circle at 90% -10%, rgba(200,155,60,0.22) 0%, transparent 55%);
+    transition: background .6s ease;
   }
+  /* Efectos animados mientras suena la música: el resplandor dorado de la
+     esquina respira y la tarjeta gana un aro dorado tenue -- además del
+     ecualizador junto al vinilo y el pulso del botón de Play. */
+  .pl-card.pl-reproduciendo{ box-shadow: 0 8px 28px rgba(200,155,60,0.3); }
+  .pl-card.pl-reproduciendo::before{
+    background: radial-gradient(circle at 90% -10%, rgba(200,155,60,0.34) 0%, transparent 60%);
+    animation: plGlowRespira 3s ease-in-out infinite;
+  }
+  @keyframes plGlowRespira{ 0%,100%{ opacity:1; } 50%{ opacity:.6; } }
+
   .pl-head{ display:flex; justify-content:space-between; align-items:center; gap:10px; position:relative; z-index:1; }
   .pl-head-title{ display:flex; align-items:center; gap:10px; min-width:0; }
-  .pl-head-icon{ font-size:22px; flex-shrink:0; }
-  .pl-head-title h4{ margin:0; font-size:13.5px; font-weight:800; color:#fff; letter-spacing:.2px; }
-  .pl-head-title p{ margin:1px 0 0; font-size:10.5px; color:#C9D3E4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pl-head-icon{ font-size:20px; flex-shrink:0; }
+  .pl-head-title h4{ margin:0; font-size:13px; font-weight:800; color:#fff; letter-spacing:.2px; }
+  .pl-head-title p{ margin:1px 0 0; font-size:10px; color:#C9D3E4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .pl-btn-subir{
-    width:34px; height:34px; border-radius:50%; border:1px solid rgba(200,155,60,0.5);
-    background: rgba(200,155,60,0.15); color:#E8CE8F; font-size:15px; cursor:pointer;
+    width:30px; height:30px; border-radius:50%; border:1px solid rgba(200,155,60,0.5);
+    background: rgba(200,155,60,0.15); color:#E8CE8F; font-size:14px; cursor:pointer;
     display:flex; align-items:center; justify-content:center; flex-shrink:0; transition: background .15s;
   }
   .pl-btn-subir:active{ background: rgba(200,155,60,0.32); }
 
-  .pl-tabs{ display:flex; gap:6px; margin-top:14px; overflow-x:auto; position:relative; z-index:1; padding-bottom:2px; }
+  .pl-tabs{ display:flex; gap:6px; margin-top:10px; overflow-x:auto; position:relative; z-index:1; padding-bottom:2px; }
   .pl-tab{
     flex-shrink:0; padding:6px 12px; border-radius:100px; font-size:11px; font-weight:700; cursor:pointer;
     background: rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.14); color:#C9D3E4; white-space:nowrap;
@@ -409,38 +421,58 @@
   }
   .pl-tab.pl-tab-activo{ background: linear-gradient(135deg, #E8CE8F 0%, #C89B3C 100%); color:#142A4D; border-color:transparent; }
 
-  .pl-now-playing{ display:flex; align-items:center; gap:12px; margin-top:14px; position:relative; z-index:1; cursor:pointer; }
+  .pl-now-playing{ display:flex; align-items:center; gap:10px; margin-top:10px; position:relative; z-index:1; cursor:pointer; }
   .pl-chevron{ font-size:14px; color:#B9C3D6; flex-shrink:0; transition: transform .15s; }
+  .pl-vinyl-wrap{ position:relative; flex-shrink:0; }
   .pl-vinyl{
-    width:46px; height:46px; border-radius:50%; flex-shrink:0;
+    width:42px; height:42px; border-radius:50%;
     background: radial-gradient(circle, #C89B3C 0%, #8A6D24 70%, #6B5219 100%);
-    display:flex; align-items:center; justify-content:center; font-size:18px;
+    display:flex; align-items:center; justify-content:center; font-size:16px;
     box-shadow: 0 3px 10px rgba(0,0,0,0.35), inset 0 0 0 3px rgba(20,42,77,0.5);
   }
   .pl-vinyl.pl-spin{ animation: plSpin 4s linear infinite; }
   @keyframes plSpin{ to{ transform: rotate(360deg); } }
+  /* Mini ecualizador: 4 barritas que rebotan a distinto ritmo, solo
+     visibles mientras hay una pista sonando. */
+  .pl-eq{
+    position:absolute; right:-4px; bottom:-4px; display:flex; align-items:flex-end; gap:1.5px;
+    height:12px; padding:2px 3px; border-radius:5px; background:#0B1A33;
+    box-shadow: 0 0 0 2px #142A4D; opacity:0; transform: scale(0.7); transition: opacity .2s, transform .2s;
+  }
+  .pl-eq.pl-eq-activo{ opacity:1; transform: scale(1); }
+  .pl-eq span{ width:2px; background:#E8CE8F; border-radius:1px; animation: plEqBar .9s ease-in-out infinite; }
+  .pl-eq span:nth-child(1){ animation-duration:.7s; }
+  .pl-eq span:nth-child(2){ animation-duration:.9s; animation-delay:.15s; }
+  .pl-eq span:nth-child(3){ animation-duration:.6s; animation-delay:.05s; }
+  .pl-eq span:nth-child(4){ animation-duration:1s; animation-delay:.2s; }
+  @keyframes plEqBar{ 0%,100%{ height:3px; } 50%{ height:11px; } }
   .pl-title{ margin:0; font-size:13px; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .pl-subtitle{ margin:2px 0 0; font-size:10.5px; color:#B9C3D6; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
-  .pl-progress-row{ display:flex; align-items:center; gap:8px; margin-top:12px; position:relative; z-index:1; }
+  .pl-progress-row{ display:flex; align-items:center; gap:8px; margin-top:10px; position:relative; z-index:1; }
   .pl-time{ font-size:10px; color:#B9C3D6; font-variant-numeric: tabular-nums; flex-shrink:0; width:30px; text-align:center; }
   .pl-seek{ flex:1; -webkit-appearance:none; appearance:none; height:4px; border-radius:3px; background: rgba(255,255,255,0.18); outline:none; cursor:pointer; margin:0; }
   .pl-seek::-webkit-slider-thumb{ -webkit-appearance:none; width:13px; height:13px; border-radius:50%; background:#E8CE8F; box-shadow:0 1px 3px rgba(0,0,0,0.4); }
   .pl-seek::-moz-range-thumb{ width:13px; height:13px; border-radius:50%; background:#E8CE8F; border:none; }
 
-  .pl-controls{ display:flex; align-items:center; justify-content:center; gap:14px; margin-top:12px; position:relative; z-index:1; }
+  .pl-controls{ display:flex; align-items:center; justify-content:center; gap:12px; margin-top:10px; position:relative; z-index:1; }
   .pl-ctrl-btn{
     background: rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:#fff;
-    width:38px; height:38px; border-radius:50%; font-size:14px; cursor:pointer;
+    width:36px; height:36px; border-radius:50%; font-size:14px; cursor:pointer;
     display:flex; align-items:center; justify-content:center; transition: background .15s, transform .1s;
   }
   .pl-ctrl-btn:active{ transform: scale(0.93); }
   .pl-ctrl-play{
-    width:48px; height:48px; font-size:17px; border:none;
+    width:46px; height:46px; font-size:17px; border:none;
     background: linear-gradient(135deg, #E8CE8F 0%, #C89B3C 100%); color:#142A4D;
     box-shadow: 0 3px 10px rgba(200,155,60,0.4);
   }
-  .pl-ctrl-cast{ margin-left:4px; }
+  /* Pulso dorado alrededor del botón de Play mientras suena la música. */
+  .pl-card.pl-reproduciendo .pl-ctrl-play{ animation: plPulso 1.6s ease-out infinite; }
+  @keyframes plPulso{
+    0%{ box-shadow: 0 3px 10px rgba(200,155,60,0.4), 0 0 0 0 rgba(232,206,143,0.55); }
+    100%{ box-shadow: 0 3px 10px rgba(200,155,60,0.4), 0 0 0 10px rgba(232,206,143,0); }
+  }
   .pl-ctrl-btn.pl-repeat-activo{ background: rgba(200,155,60,0.28); border-color:#E8CE8F; color:#E8CE8F; }
 
   .pl-tracklist{ margin-top:10px; display:flex; flex-direction:column; gap:4px; max-height:150px; overflow-y:auto; position:relative; z-index:1; }
@@ -453,9 +485,7 @@
   .pl-track-activo .pl-track-nombre{ color:#fff; font-weight:700; }
   .pl-track-tipo{ font-size:11px; flex-shrink:0; }
 
-  .pl-hint{ margin:12px 0 0; font-size:9.5px; color:#8B97AE; text-align:center; position:relative; z-index:1; }
-
-  .pl-subida{ margin-top:12px; padding-top:12px; border-top:1px dashed rgba(255,255,255,0.15); position:relative; z-index:1; }
+  .pl-subida{ margin-top:10px; padding-top:10px; border-top:1px dashed rgba(255,255,255,0.15); position:relative; z-index:1; }
   .pl-subida label{ font-size:11px; font-weight:700; color:#E8CE8F; display:block; margin-bottom:4px; }
   .pl-subida input[type=file]{ width:100%; font-size:11px; color:#DCE3F0; }
   .pl-subida select, .pl-subida input[type=text]{
@@ -1516,10 +1546,13 @@ main.app-content {
           </div>
 
           <div id="playlist_reproductor" class="hidden">
-            <div id="playlist_tabs" class="pl-tabs"></div>
+            <div id="playlist_tabs" class="pl-tabs hidden"></div>
 
             <div class="pl-now-playing" onclick="togglePlaylistLista()">
-              <div class="pl-vinyl" id="playlist_vinyl">🎧</div>
+              <div class="pl-vinyl-wrap">
+                <div class="pl-vinyl" id="playlist_vinyl">🎧</div>
+                <div class="pl-eq" id="playlist_eq"><span></span><span></span><span></span><span></span></div>
+              </div>
               <div style="min-width:0; flex:1;">
                 <p id="playlist_titulo_actual" class="pl-title">—</p>
                 <p id="playlist_tipo_actual" class="pl-subtitle"></p>
@@ -1540,16 +1573,11 @@ main.app-content {
               <button class="pl-ctrl-btn" onclick="playlistSiguiente()" title="Siguiente">⏭</button>
               <button class="pl-ctrl-btn" id="btnPlaylistRepeatAll" onclick="playlistToggleRepeatAll()" title="Repetir toda la lista">🔁</button>
             </div>
-            <div style="text-align:center; margin-top:8px;">
-              <button class="pl-ctrl-btn pl-ctrl-cast hidden" id="btnPlaylistTransmitir" onclick="playlistTransmitirAPantalla()" title="Transmitir a pantalla" style="width:auto; height:auto; padding:5px 12px; border-radius:100px; font-size:11px;">📺 Transmitir a pantalla</button>
-            </div>
 
             <audio id="playlist_audio" style="display:none;"></audio>
             <video id="playlist_video_oculto" style="display:none;" playsinline></video>
 
             <div id="playlist_lista" class="pl-tracklist hidden"></div>
-
-            <p class="pl-hint">🔊 Se reproduce por el altavoz o el Bluetooth que tengas conectado en tu celular.</p>
           </div>
 
           <div id="playlist_subida" class="hidden pl-subida">
@@ -4868,6 +4896,11 @@ async function cargarPlaylistCostaDorada(){
 function playlistRenderTabs(){
   const cont = document.getElementById('playlist_tabs');
   if (!cont) return;
+  // Con una sola playlist, la pestaña es redundante con el título de la
+  // tarjeta (ya dice "Playlist Costa Dorada") -- se oculta para que el
+  // reproductor quede más compacto, y reaparece sola en cuanto haya una
+  // segunda playlist real que elegir.
+  cont.classList.toggle('hidden', playlistCarpetas.length <= 1);
   cont.innerHTML = playlistCarpetas.map((c) => `
     <div class="pl-tab ${c.id === playlistCarpetaActiva ? 'pl-tab-activo' : ''}" onclick="playlistSeleccionarCarpeta('${c.id}', false)">${escapeHtml(c.nombre)}</div>
   `).join('');
@@ -4952,24 +4985,16 @@ function playlistCargarPista(i, autoplay){
   const elTipo = document.getElementById('playlist_tipo_actual');
   const audio = document.getElementById('playlist_audio');
   const video = document.getElementById('playlist_video_oculto');
-  const btnTransmitir = document.getElementById('btnPlaylistTransmitir');
 
   if (elTitulo) elTitulo.textContent = pista.titulo;
 
   // Si el archivo es un video, SOLO se reproduce su audio localmente (el
   // <audio> puede decodificar la pista de sonido de un mp4/webm sin
-  // mostrar el video) -- ver la imagen requiere transmitir a una pantalla,
-  // nunca se muestra el video dentro del celular.
+  // mostrar el video) -- el video nunca se muestra dentro del celular.
   if (audio) { audio.pause(); audio.src = pista.url; if (autoplay) audio.play().catch(() => {}); }
   if (video) { video.pause(); video.src = pista.url; }
 
-  if (pista.tipo === 'video') {
-    if (elTipo) elTipo.textContent = '🎥 Video · reproduciendo solo el audio aquí';
-    if (btnTransmitir) btnTransmitir.classList.remove('hidden');
-  } else {
-    if (elTipo) elTipo.textContent = '🎧 Audio';
-    if (btnTransmitir) btnTransmitir.classList.toggle('hidden', !('remote' in HTMLMediaElement.prototype));
-  }
+  if (elTipo) elTipo.textContent = pista.tipo === 'video' ? '🎥 Video · reproduciendo solo el audio aquí' : '🎧 Audio';
   playlistRenderLista();
   playlistActualizarBotonPlay();
   playlistActualizarBotonesRepeat();
@@ -5034,9 +5059,13 @@ function playlistActualizarBotonPlay(){
   const audio = document.getElementById('playlist_audio');
   const btn = document.getElementById('btnPlaylistPlayPause');
   const vinilo = document.getElementById('playlist_vinyl');
+  const eq = document.getElementById('playlist_eq');
+  const tarjeta = document.getElementById('cardPlaylistCostaDorada');
   const reproduciendo = audio && !audio.paused && !audio.ended;
   if (btn) btn.textContent = reproduciendo ? '⏸' : '▶';
   if (vinilo) vinilo.classList.toggle('pl-spin', !!reproduciendo);
+  if (eq) eq.classList.toggle('pl-eq-activo', !!reproduciendo);
+  if (tarjeta) tarjeta.classList.toggle('pl-reproduciendo', !!reproduciendo);
 }
 
 function playlistTogglePlay(){
@@ -5079,30 +5108,6 @@ function playlistTogglePlay(){
   seek.addEventListener('change', () => { audio.currentTime = Number(seek.value); arrastrando = false; });
   pintarRelleno();
 })();
-
-// Transmitir a pantalla: la Remote Playback API (Chrome/Android, Chromecast)
-// es la unica forma real de "enviar" un elemento de audio/video a otra
-// pantalla desde una pagina web -- no existe una API web para "conectar por
-// Bluetooth" (eso lo maneja el sistema operativo del celular de forma
-// transparente, por eso el audio ya sale por el Bluetooth que tengas
-// emparejado sin código adicional). Si el navegador no soporta la API
-// (ej. iPhone/Safari fuera de AirPlay nativo del reproductor), se avisa en
-// vez de fingir que se transmitió.
-async function playlistTransmitirAPantalla(){
-  const pista = playlistPistas[playlistIndiceActual];
-  if (!pista) return;
-  const el = pista.tipo === 'video' ? document.getElementById('playlist_video_oculto') : document.getElementById('playlist_audio');
-  if (!el || !('remote' in el)) {
-    toast('Tu navegador no soporta transmitir directamente. Usa el "Screen Mirroring" / Cast de tu celular para reflejar la pantalla.');
-    return;
-  }
-  try {
-    await el.remote.prompt();
-    if (pista.tipo === 'video') { document.getElementById('playlist_audio')?.pause(); el.play().catch(() => {}); }
-  } catch (e) {
-    if (e?.name !== 'NotFoundError' && e?.name !== 'AbortError') console.warn('Error al transmitir a pantalla:', e);
-  }
-}
 
 function togglePlaylistSubida(){
   document.getElementById('playlist_subida')?.classList.toggle('hidden');
