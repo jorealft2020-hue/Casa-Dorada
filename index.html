@@ -25,13 +25,16 @@
     --gold: #C89B3C;
     --gold-soft: #E8CE8F;
     --gold-strong: #A67F2E;
-    /* Fondo base recambiado de crema cálido a un gris-azulado frío y
-       minimalista (pedido de Jorge: "tipo corporación inmobiliaria,
-       moderna, minimalista y tecnológica") -- los nombres de variable se
-       mantienen (--cream/--cream-dim) para no tocar las ~18 reglas que ya
-       las usan, solo cambia el tono real detrás de ellas. */
-    --cream: #F1F4F8;
-    --cream-dim: #E5EBF2;
+    /* Fondo base gris-azulado frío y minimalista (pedido de Jorge: "tipo
+       corporación inmobiliaria, moderna, minimalista y tecnológica") -- los
+       nombres de variable se mantienen (--cream/--cream-dim) para no tocar
+       las ~18 reglas que ya las usan, solo cambia el tono real detrás de
+       ellas. Se profundiza un paso más (antes #F1F4F8, a solo ~10 unidades
+       de blanco puro) porque las tarjetas blancas se perdían contra el
+       fondo en pantallas más brillantes -- ahora hay una distancia real
+       (~25 unidades) que se sostiene sin depender del brillo del monitor. */
+    --cream: #E5EAF1;
+    --cream-dim: #D6DEEA;
     --ink: #142A4D;
     --ink-dim: #6B7280;
     --border: #D7E0E9;
@@ -359,8 +362,12 @@
   .card{
     background: linear-gradient(160deg, #ffffff 0%, #FAFBFD 100%);
     border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px;
-    border: 1px solid rgba(20,42,77,0.09);
-    box-shadow: 0 1px 2px rgba(20,42,77,0.04), 0 8px 22px rgba(20,42,77,0.09);
+    /* Borde y sombra reforzados -- antes (0.09 de opacidad + sombra muy
+       tenue) la tarjeta dependía casi solo del contraste con el fondo para
+       notarse, y en pantallas brillantes ese borde prácticamente
+       desaparecía. Ahora la tarjeta se define por sí misma. */
+    border: 1px solid rgba(20,42,77,0.14);
+    box-shadow: 0 1px 3px rgba(20,42,77,0.05), 0 10px 26px rgba(20,42,77,0.11);
     transition: transform 0.18s ease, box-shadow 0.18s ease;
     animation: tarjetaAparecer 0.25s ease-out;
     position: relative;
@@ -598,7 +605,12 @@
   .toast.show{ opacity:1; transform:translateX(-50%) translateY(-6px); }
 
   .hidden{ display:none !important; }
-  .spinner{ width:22px; height:22px; border:3px solid rgba(255,255,255,0.3); border-top-color:#fff; border-radius:50%; animation:spin 0.7s linear infinite; margin:0 auto; }
+  /* Antes el spinner era blanco sobre blanco translúcido -- pensado para un
+     fondo oscuro, pero se usa casi siempre dentro de tarjetas/paneles claros
+     mientras cargan datos, donde era prácticamente invisible. Ahora usa la
+     identidad de marca (pista navy tenue, borde dorado) y se ve en
+     cualquier fondo claro de la app. */
+  .spinner{ width:22px; height:22px; border:3px solid rgba(20,42,77,0.14); border-top-color: var(--gold); border-radius:50%; animation:spin 0.7s linear infinite; margin:0 auto; }
   @keyframes spin{ to{ transform: rotate(360deg); } }
 
   .field input[type="checkbox"]{ width: auto !important; height: auto !important; margin: 0; }
