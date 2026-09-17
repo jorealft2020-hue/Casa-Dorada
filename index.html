@@ -3157,6 +3157,9 @@ main.app-content {
       <div id="eu_aviso_solo_superadmin" class="hidden" style="background:#FFF3E0; border:1px solid #FFE0B2; border-radius:10px; padding:10px; margin:12px 0; font-size:12px; color:#E65100;">
         🔒 <b>Permisos protegidos:</b> La configuración detallada de permisos en check es exclusiva del SuperAdmin.
       </div>
+      <div id="eu_aviso_bypass_superadmin" class="hidden" style="background:#EFF6FF; border:1px solid #BFDBFE; border-radius:10px; padding:10px; margin:12px 0; font-size:12px; color:#1E40AF;">
+        ℹ️ <b>Este colaborador es SuperAdmin:</b> siempre tiene acceso total a todos los módulos sin importar estos checks. Cambiar permisos aquí no le restringirá nada mientras conserve el rol SuperAdmin.
+      </div>
 
       <div id="eu_contenedor_permisos"></div>
 
@@ -3336,6 +3339,9 @@ main.app-content {
       <!-- AVISO DE SOLO SUPERADMIN -->
       <div id="pa_aviso_solo_superadmin" class="hidden" style="background:#FFF3E0; border:1px solid #FFE0B2; border-radius:10px; padding:10px; margin:12px 0; font-size:12px; color:#E65100;">
         🔒 <b>Permisos protegidos:</b> La configuración detallada de permisos en check es exclusiva del SuperAdmin.
+      </div>
+      <div id="pa_aviso_bypass_superadmin" class="hidden" style="background:#EFF6FF; border:1px solid #BFDBFE; border-radius:10px; padding:10px; margin:12px 0; font-size:12px; color:#1E40AF;">
+        ℹ️ <b>Este colaborador es SuperAdmin:</b> siempre tiene acceso total a todos los módulos sin importar estos checks.
       </div>
 
       <div id="pa_contenedor_permisos"></div>
@@ -4576,7 +4582,7 @@ function actualizarSelectorRoles(selectId, rolActual = 'usuario'){
   sel.innerHTML = opciones.map(o => `<option value="${o.val}" ${o.val === rolActual ? 'selected' : ''}>${escapeHtml(o.label)}</option>`).join('');
 }
 
-function renderizarBloquePermisos(prefix, permisosActuales = {}){
+function renderizarBloquePermisos(prefix, permisosActuales = {}, rolDelUsuarioEditado = null){
   const cont = document.getElementById(prefix + '_contenedor_permisos');
   if (!cont) return;
 
@@ -4584,6 +4590,16 @@ function renderizarBloquePermisos(prefix, permisosActuales = {}){
   const avisoSA = document.getElementById(prefix + '_aviso_solo_superadmin');
   if (avisoSA) {
     avisoSA.classList.toggle('hidden', esSA);
+  }
+
+  // tienePermiso() siempre devuelve true para un SuperAdmin sin mirar sus
+  // "permisos" guardados (bypass intencional) -- editar este checklist para
+  // un usuario SuperAdmin no cambia nada visible en su sesión. Sin este
+  // aviso, un SuperAdmin desmarcando permisos "para probar" concluía que la
+  // edición de permisos simplemente no se estaba guardando.
+  const avisoBypass = document.getElementById(prefix + '_aviso_bypass_superadmin');
+  if (avisoBypass) {
+    avisoBypass.classList.toggle('hidden', rolDelUsuarioEditado !== 'superadmin');
   }
 
   const grupos = {};
@@ -6938,10 +6954,24 @@ async function cargarUsuariosAdmin(){
       </div>
       <div class="card-actions" style="margin-top:10px;">
         <button class="chip-btn gold" onclick="abrirEditarUsuario('${u.id}')">✏️ Editar ficha y permisos</button>
+        ${u.id !== currentUser.id ? `<button class="chip-btn" style="${u.activo === false ? 'color:#2E7D32; border-color:#2E7D32;' : 'color:var(--danger); border-color:var(--danger);'}" onclick="toggleActivoUsuario('${u.id}', ${u.activo === false}, '${(u.nombre || u.email).replace(/'/g,"\\\\'")}');">${u.activo === false ? '✅ Activar' : '🚫 Desactivar'}</button>` : ''}
         ${u.id !== currentUser.id ? `<button class="chip-btn" style="color:var(--danger); border-color:var(--danger);" onclick="eliminarUsuarioActivo('${u.id}', '${(u.nombre || u.email).replace(/'/g,"\\\\'")}');">🗑️ Eliminar</button>` : ''}
       </div>
     </div>
   `).join('');
+}
+
+// Activar/desactivar directo desde la tarjeta -- antes solo se podia cambiar
+// abriendo "Editar ficha y permisos" y buscando el select "Estado de la
+// cuenta", sin ninguna accion rapida visible en la lista de usuarios.
+async function toggleActivoUsuario(id, nuevoEstadoActivo, nombre){
+  const verbo = nuevoEstadoActivo ? 'activar' : 'desactivar';
+  if (!confirm(`¿Deseas ${verbo} a ${nombre || 'este colaborador'}?${!nuevoEstadoActivo ? '\n\nSe cerrará su sesión y no podrá volver a entrar hasta que lo reactives.' : ''}`)) return;
+
+  const { error } = await sb.from('usuarios').update({ activo: nuevoEstadoActivo }).eq('id', id);
+  if (error) { toast('Error al ' + verbo + ': ' + error.message); console.error(error); return; }
+  toast(`Colaborador ${nuevoEstadoActivo ? 'activado' : 'desactivado'} ✓`);
+  cargarUsuariosAdmin();
 }
 
 async function abrirEditarUsuario(id){
@@ -6970,7 +7000,7 @@ async function abrirEditarUsuario(id){
 
   const perm = fusionarPermisosConCatalogo(data.permisos);
   window._permisosCompletosEnEdicion = perm;
-  renderizarBloquePermisos('eu', perm);
+  renderizarBloquePermisos('eu', perm, data.rol);
 
   openModal('modalEditarUsuario');
 }
@@ -8624,7 +8654,7 @@ async function abrirDetalleCuotas(separacionId){
   // la hoja de cálculo externa: los pagos cobrados por WhatsApp nunca
   // actualizaban el saldo). Solo administración registra pagos -- coincide
   // con el permiso ya exigido por la RPC registrar_pago_cuota en la base.
-  const puedeRegistrarPago = ['admin', 'superadmin'].includes(currentProfile?.rol);
+  const puedeRegistrarPago = tienePermiso('gestionar_cobranzas');
   const siguienteCuota = (pagos && pagos.length ? pagos[pagos.length - 1].numero_cuota : 0) + 1;
   const registrarPagoHtml = (puedeRegistrarPago && sep.condicion === 'financiado' && (sep.cuotas_pendientes ?? 0) > 0) ? `
     <div class="card" style="background:#F0FDF4; border:1px solid #86EFAC; margin-top:12px;">
@@ -12378,60 +12408,65 @@ async function cargarPendientesInicio(){
   const elSub = document.getElementById('pi_subtitulo_fecha');
   if (elSub) elSub.textContent = `${fmtFecha(hoy)} · Prioridades operativas y pendientes`;
 
-  try {
-    // 1. Tareas no completadas: de HOY y de DÍAS ANTERIORES (atrasadas)
-    const { data: acts } = await sb.from('actividades')
-      .select('*')
-      .eq('usuario_id', currentUser.id)
-      .eq('archivada', false)
-      .eq('completada', false)
+  // Antes, las 4 consultas + la de jornada efectiva vivian dentro de un solo
+  // try/catch secuencial: si UNA fallaba (red, RLS, o cualquier excepcion),
+  // toda la funcion se abortaba silenciosamente y la tarjeta se quedaba con
+  // el spinner y los "0" iniciales del HTML para siempre, sin ningun aviso.
+  // Cada fuente de datos ahora corre de forma independiente (Promise.allSettled)
+  // asi una que falle no bloquea a las demas, y un error real se muestra en
+  // pantalla en vez de dejar el spinner colgado indefinidamente.
+  const resultados = await Promise.allSettled([
+    sb.from('actividades').select('*')
+      .eq('usuario_id', currentUser.id).eq('archivada', false).eq('completada', false)
       .lte('fecha_programada', hoy)
       .order('fecha_programada', { ascending: true })
-      .order('hora_inicio', { ascending: true, nullsFirst: false });
-
-    const tareasPendientes = acts || [];
-
-    // 2. Citas de agenda pendientes (de hoy o anteriores sin resolver)
-    const { data: citas } = await sb.from('agenda')
-      .select('*')
+      .order('hora_inicio', { ascending: true, nullsFirst: false }),
+    sb.from('agenda').select('*')
       .eq('usuario_id', currentUser.id)
       .lte('fecha_inicio', hoy + 'T23:59:59')
-      .order('fecha_inicio', { ascending: true });
+      .order('fecha_inicio', { ascending: true }),
+    sb.from('solicitudes').select('*')
+      .eq('usuario_id', currentUser.id).eq('estado', 'pendiente')
+      .order('created_at', { ascending: false }),
+    sb.from('actividades').select('*')
+      .eq('usuario_id', currentUser.id).eq('fecha_programada', hoy).eq('estado', 'completada'),
+  ]);
 
-    const citasPendientes = (citas || []).filter(c => c.estado !== 'realizada' && c.estado !== 'cancelada');
+  const [resActs, resCitas, resSols, resActsHoy] = resultados;
+  const nombresConsulta = ['actividades pendientes', 'agenda', 'solicitudes', 'actividades de hoy'];
+  resultados.forEach((r, i) => {
+    if (r.status === 'rejected') console.error(`Error cargando ${nombresConsulta[i]} en Inicio:`, r.reason);
+    else if (r.value?.error) console.error(`Error cargando ${nombresConsulta[i]} en Inicio:`, r.value.error);
+  });
 
-    // 3. Solicitudes pendientes del usuario
-    const { data: sols } = await sb.from('solicitudes')
-      .select('*')
-      .eq('usuario_id', currentUser.id)
-      .eq('estado', 'pendiente')
-      .order('created_at', { ascending: false });
-    
-    const solicitudesPendientes = sols || [];
+  const tareasPendientes = (resActs.status === 'fulfilled' ? resActs.value.data : null) || [];
+  const citas = (resCitas.status === 'fulfilled' ? resCitas.value.data : null) || [];
+  const solicitudesPendientes = (resSols.status === 'fulfilled' ? resSols.value.data : null) || [];
+  const actsHoy = (resActsHoy.status === 'fulfilled' ? resActsHoy.value.data : null) || [];
 
-    // 4. Clientes en riesgo (>7 días sin contacto)
-    const clientesEnRiesgoLista = (clientesCache || []).filter(c => clienteEnRiesgo(c));
+  const citasPendientes = citas.filter(c => c.estado !== 'realizada' && c.estado !== 'cancelada');
 
-    // 5. Separaciones por vencer hoy o vencidas
-    const sepPorVencer = (separacionesPorVencerCache || []).filter(s => {
-      return s.fecha_vencimiento && s.fecha_vencimiento <= hoy;
-    });
+  // Clientes en riesgo (>7 días sin contacto)
+  const clientesEnRiesgoLista = (clientesCache || []).filter(c => clienteEnRiesgo(c));
 
-    const totalAlertas = tareasPendientes.length + citasPendientes.length + solicitudesPendientes.length + sepPorVencer.length;
+  // Separaciones por vencer hoy o vencidas
+  const sepPorVencer = (separacionesPorVencerCache || []).filter(s => {
+    return s.fecha_vencimiento && s.fecha_vencimiento <= hoy;
+  });
 
-    // 6. Actividades y citas de agenda REALIZADAS hoy, para la barra de
-    // Jornada Efectiva -- actualizarBarraJornadaEfectiva() ya calculaba esto
-    // correctamente pero nunca se llamaba desde ningún lado, así que la
-    // barra se quedaba fija en 0.0/8.0 hrs sin importar lo que se registrara.
-    // Suma exclusivamente actividades completadas + agendas realizadas.
-    const { data: actsHoy } = await sb.from('actividades')
-      .select('*')
-      .eq('usuario_id', currentUser.id)
-      .eq('fecha_programada', hoy)
-      .eq('estado', 'completada');
-    const citasHoy = (citas || []).filter(c => c.estado === 'realizada' && (c.fecha_inicio || '').split('T')[0] === hoy);
+  const totalAlertas = tareasPendientes.length + citasPendientes.length + solicitudesPendientes.length + sepPorVencer.length;
+
+  // Actividades y citas de agenda REALIZADAS hoy, para la barra de Jornada
+  // Efectiva -- un error aquí (o en actualizarBarraJornadaEfectiva) ya no
+  // puede impedir que se pinten los contadores/lista de arriba.
+  try {
+    const citasHoy = citas.filter(c => c.estado === 'realizada' && (c.fecha_inicio || '').split('T')[0] === hoy);
     actualizarBarraJornadaEfectiva(actsHoy, citasHoy);
+  } catch (eBarra) {
+    console.error('Error actualizando la barra de jornada efectiva:', eBarra);
+  }
 
+  try {
     const elNumT = document.getElementById('pi_num_tareas');
     if (elNumT) elNumT.textContent = tareasPendientes.length;
     const elNumC = document.getElementById('pi_num_citas');
@@ -12541,6 +12576,14 @@ async function cargarPendientesInicio(){
     cont.innerHTML = itemsHtml.join('');
   } catch (e) {
     console.error('Error cargando pendientes inicio:', e);
+    // Antes esto dejaba el spinner inicial del HTML girando para siempre sin
+    // ningún aviso -- ahora al menos se ve que algo falló, con un botón para
+    // reintentar en vez de un estado congelado indistinguible de "cargando".
+    cont.innerHTML = `
+      <div style="background:#FEF2F2; border:1px solid #FCA5A5; border-radius:12px; padding:14px; text-align:center;">
+        <p style="font-weight:700; color:#991B1B; margin:0 0 4px; font-size:12.5px;">⚠️ No se pudieron cargar tus pendientes</p>
+        <button class="chip-btn" onclick="cargarPendientesInicio()" style="margin-top:6px; font-size:11px;">Reintentar</button>
+      </div>`;
   }
 }
 
