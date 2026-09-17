@@ -3112,7 +3112,13 @@ main.app-content {
       <input type="hidden" id="eu_id">
       
       <div class="field"><label>Nombre completo</label><input type="text" id="eu_nombre"></div>
-      <div class="field"><label>Correo de Google</label><input type="text" id="eu_email" disabled></div>
+      <div class="field">
+        <label>Correo de Google (acceso al sistema)</label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="eu_email" disabled style="flex:1;">
+          <button type="button" class="chip-btn" style="flex:0 0 auto;" onclick="abrirCambiarCorreoUsuario()">✏️ Cambiar</button>
+        </div>
+      </div>
       <div class="field"><label>Número de DNI</label><input type="text" id="eu_dni" placeholder="DNI del colaborador"></div>
       <div class="field"><label>Celular / WhatsApp</label><input type="tel" id="eu_celular" placeholder="Número para alertas"></div>
       
@@ -6816,13 +6822,29 @@ async function cargarPreautorizados(){
           ${p.celular ? `<p class="card-sub">📱 WhatsApp: ${escapeHtml(p.celular)}</p>` : ''}
           ${p.area ? `<p class="card-sub">🏢 Área: ${escapeHtml(p.area)}</p>` : ''}
         </div>
+        <span class="badge ${p.activo === false ? 'badge-vencida' : 'badge-completada'}">${p.activo === false ? 'Inactivo' : 'Pendiente'}</span>
       </div>
       <div class="card-actions" style="margin-top:10px;">
         <button class="chip-btn gold" onclick="abrirEditarPreautorizado('${p.email.replace(/'/g,"\\\\'")}');">✏️ Editar ficha y permisos</button>
+        <button class="chip-btn" style="${p.activo === false ? 'color:#2E7D32; border-color:#2E7D32;' : 'color:var(--danger); border-color:var(--danger);'}" onclick="toggleActivoPreautorizado('${p.email.replace(/'/g,"\\\\'")}', ${p.activo === false}, '${(p.nombre || p.email).replace(/'/g,"\\\\'")}');">${p.activo === false ? '✅ Activar' : '🚫 Desactivar'}</button>
         <button class="chip-btn" style="color:var(--danger); border-color:var(--danger);" onclick="eliminarPreautorizado('${p.email.replace(/'/g,"\\\\'")}');">🗑️ Eliminar</button>
       </div>
     </div>
   `).join('');
+}
+
+// Revoca (o restaura) una invitación pendiente sin borrar el perfil/permisos
+// ya cargados -- antes "Eliminar" era la única forma de bloquear a alguien
+// que todavía no inició sesión, perdiendo todo lo ya configurado si después
+// había que volver a invitarlo.
+async function toggleActivoPreautorizado(email, nuevoEstadoActivo, nombre){
+  const verbo = nuevoEstadoActivo ? 'activar' : 'desactivar';
+  if (!confirm(`¿Deseas ${verbo} la invitación de ${nombre || email}?${!nuevoEstadoActivo ? '\n\nNo podrá completar su primer ingreso hasta que la reactives.' : ''}`)) return;
+
+  const { error } = await sb.from('usuarios_preautorizados').update({ activo: nuevoEstadoActivo }).eq('email', email);
+  if (error) { toast('Error al ' + verbo + ': ' + error.message); console.error(error); return; }
+  toast(`Invitación ${nuevoEstadoActivo ? 'activada' : 'desactivada'} ✓`);
+  cargarPreautorizados();
 }
 
 async function abrirEditarPreautorizado(email){
@@ -6834,7 +6856,6 @@ async function abrirEditarPreautorizado(email){
   document.getElementById('btnGuardarPreautorizado').textContent = 'Guardar cambios';
   document.getElementById('pa_nombre').value = p.nombre || '';
   document.getElementById('pa_email').value = p.email;
-  document.getElementById('pa_email').disabled = true;
   document.getElementById('pa_dni').value = p.dni || '';
   document.getElementById('pa_celular').value = p.celular || '';
   
@@ -6860,7 +6881,11 @@ async function eliminarPreautorizado(email){
 
 document.getElementById('btnGuardarPreautorizado').addEventListener('click', async () => {
   const nombre = document.getElementById('pa_nombre').value.trim();
-  const email = (editandoEmailPreautorizado || document.getElementById('pa_email').value).trim().toLowerCase();
+  // Se lee siempre del campo (antes, al editar, se ignoraba lo que el
+  // admin escribiera aquí y se reusaba el correo original sin cambios --
+  // por eso no se podía corregir un correo mal tipeado en una invitación
+  // pendiente).
+  const email = document.getElementById('pa_email').value.trim().toLowerCase();
   const dni = document.getElementById('pa_dni').value.trim();
   const celular = document.getElementById('pa_celular').value.trim();
   const area = document.getElementById('pa_area').value;
@@ -6924,9 +6949,14 @@ document.getElementById('btnGuardarPreautorizado').addEventListener('click', asy
 
     if (error) { toast('Error al guardar: ' + error.message); console.error(error); return; }
     // Sincronizar también con la tabla usuarios si el colaborador ya inició sesión previamente.
+    // Busca por el correo ORIGINAL (con el que existiría esa fila, si existe)
+    // y también actualiza el correo ahí si se corrigió -- si nunca inició
+    // sesión, esto simplemente no encuentra ninguna fila y no hace nada.
     // No bloquea el resto del guardado si falla: ya se persistió lo importante (usuarios_preautorizados).
-    if (email) {
+    const emailOriginal = editandoEmailPreautorizado || email;
+    if (emailOriginal) {
       const { error: errorUsuario } = await sb.from('usuarios').update({
+        email,
         nombre,
         dni: dni || null,
         celular: celular || null,
@@ -6936,7 +6966,7 @@ document.getElementById('btnGuardarPreautorizado').addEventListener('click', asy
         cargo,
         rol,
         permisos
-      }).eq('email', email);
+      }).eq('email', emailOriginal);
       if (errorUsuario) console.warn('No se pudo sincronizar usuarios:', errorUsuario.message);
     }
 
@@ -7062,6 +7092,37 @@ async function abrirEditarUsuario(id){
   renderizarBloquePermisos('eu', perm, data.rol);
 
   openModal('modalEditarUsuario');
+}
+
+// El campo "Correo de Google" queda deshabilitado a propósito (ver arriba):
+// es el correo con el que esa persona INICIA SESIÓN, así que cambiarlo no es
+// un simple UPDATE de la fila -- hay que actualizar también su cuenta en
+// Supabase Auth, lo que requiere el service_role key (por eso pasa por la
+// función admin-actualizar-email en vez de hacerse directo desde aquí).
+async function abrirCambiarCorreoUsuario(){
+  const id = document.getElementById('eu_id').value;
+  const correoActual = document.getElementById('eu_email').value;
+  if (!id) return;
+
+  const nuevoEmail = prompt(`Nuevo correo de acceso para reemplazar:\n${correoActual}`, '');
+  if (!nuevoEmail) return;
+  const limpio = nuevoEmail.trim().toLowerCase();
+  if (!limpio || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(limpio)) { toast('Ingresa un correo válido'); return; }
+  if (limpio === correoActual.trim().toLowerCase()) { toast('Ese ya es su correo actual'); return; }
+  if (!confirm(`¿Cambiar el correo de acceso a ${limpio}?\n\nA partir de ahora deberá iniciar sesión con esa cuenta de Google.`)) return;
+
+  toast('Actualizando correo…');
+  try {
+    const resp = await invocarEdgeFunction('admin-actualizar-email', { body: { usuarioId: id, nuevoEmail: limpio } });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok || !data.ok) throw new Error(data.error || 'No se pudo actualizar el correo.');
+    document.getElementById('eu_email').value = limpio;
+    toast('Correo actualizado ✓');
+    cargarUsuariosAdmin();
+  } catch (e) {
+    toast('Error: ' + (e.message || e));
+    console.error(e);
+  }
 }
 
 document.getElementById('btnGuardarUsuario').addEventListener('click', async () => {
