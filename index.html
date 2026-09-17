@@ -2296,6 +2296,18 @@ main.app-content {
     </div>
   </div>
 
+  <!-- MODAL: detalle de cuotas de una separación financiada -->
+  <div class="modal-backdrop" id="modalDetalleCuotas">
+    <div class="modal-sheet" style="display:flex; flex-direction:column; max-height:85vh;">
+      <h3 id="detalleCuotasTitulo" style="margin-bottom:2px;">Cliente</h3>
+      <p class="card-sub" id="detalleCuotasSubtitulo" style="margin:0 0 10px;"></p>
+      <div id="detalleCuotasBody" style="flex:1; overflow-y:auto; padding:4px 2px;"></div>
+      <div class="modal-actions">
+        <button class="btn-secondary" data-close="modalDetalleCuotas">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: nueva actividad realizada (Tareas) -->
   <div class="modal-backdrop" id="modalActividad">
     <div class="modal-sheet">
@@ -2778,8 +2790,8 @@ main.app-content {
           <option value="Interesado">Interesado en lote</option>
           <option value="Cita agendada">Cita agendada</option>
           <option value="Visita realizada">Visita realizada en campo</option>
-          <option value="Evaluación crediticia">Evaluación de financiamiento</option>
           <option value="Separado">Separó lote</option>
+          <option value="Venta cerrada">Venta cerrada</option>
           <option value="No interesado">No interesado</option>
         </select>
       </div>
@@ -2841,6 +2853,7 @@ main.app-content {
         <div class="field"><label>Manzana</label><select id="cot_manzana"></select></div>
         <div class="field"><label>Lote</label><input type="text" id="cot_lote" placeholder="Número de lote"></div>
       </div>
+      <p id="cot_lote_estado_inventario" style="font-size:11px; margin:4px 0 0;"></p>
 
       <!-- VALOR TOTAL ANTES QUE VALOR M2 (SOLICITUD EXPRESA) -->
       <div class="field">
@@ -2946,6 +2959,7 @@ main.app-content {
             <option value="7">Lote 7 (+S/ 2,500 adicional)</option>
             <option value="8">Lote 8 (+S/ 2,500 adicional)</option>
           </select>
+          <p id="cot_escala_lote_nota" style="font-size:10.5px; color:#3A5372; margin:4px 0 0;">Calculando según tus separaciones de este mes…</p>
         </div>
 
         <div style="background:#fff; border:1px solid #C2DCFA; border-radius:8px; padding:10px; margin-top:8px;">
@@ -3144,6 +3158,9 @@ main.app-content {
       <div id="eu_aviso_solo_superadmin" class="hidden" style="background:#FFF3E0; border:1px solid #FFE0B2; border-radius:10px; padding:10px; margin:12px 0; font-size:12px; color:#E65100;">
         🔒 <b>Permisos protegidos:</b> La configuración detallada de permisos en check es exclusiva del SuperAdmin.
       </div>
+      <div id="eu_aviso_bypass_superadmin" class="hidden" style="background:#EFF6FF; border:1px solid #BFDBFE; border-radius:10px; padding:10px; margin:12px 0; font-size:12px; color:#1E40AF;">
+        ℹ️ <b>Este colaborador es SuperAdmin:</b> siempre tiene acceso total a todos los módulos sin importar estos checks. Cambiar permisos aquí no le restringirá nada mientras conserve el rol SuperAdmin.
+      </div>
 
       <div id="eu_contenedor_permisos"></div>
 
@@ -3323,6 +3340,9 @@ main.app-content {
       <!-- AVISO DE SOLO SUPERADMIN -->
       <div id="pa_aviso_solo_superadmin" class="hidden" style="background:#FFF3E0; border:1px solid #FFE0B2; border-radius:10px; padding:10px; margin:12px 0; font-size:12px; color:#E65100;">
         🔒 <b>Permisos protegidos:</b> La configuración detallada de permisos en check es exclusiva del SuperAdmin.
+      </div>
+      <div id="pa_aviso_bypass_superadmin" class="hidden" style="background:#EFF6FF; border:1px solid #BFDBFE; border-radius:10px; padding:10px; margin:12px 0; font-size:12px; color:#1E40AF;">
+        ℹ️ <b>Este colaborador es SuperAdmin:</b> siempre tiene acceso total a todos los módulos sin importar estos checks.
       </div>
 
       <div id="pa_contenedor_permisos"></div>
@@ -4055,6 +4075,21 @@ main.app-content {
     <div class="modal-sheet" style="text-align:center;">
       <button class="modal-x-close" data-close="modalPreReservaQR">✕</button>
       <h3 style="margin-top:0; color:var(--navy);">⚡ Congelar Lote por 48 Horas</h3>
+
+      <div class="field" style="text-align:left;">
+        <label>Nombre del cliente:</label>
+        <input type="text" id="qr_cliente_nombre" placeholder="Nombre completo del cliente">
+      </div>
+      <div style="display:flex; gap:8px;">
+        <div class="field" style="text-align:left; flex:1;">
+          <label>Manzana:</label>
+          <select id="qr_manzana"></select>
+        </div>
+        <div class="field" style="text-align:left; flex:1;">
+          <label>Lote:</label>
+          <input type="text" id="qr_lote" placeholder="Ej. 12">
+        </div>
+      </div>
       <p id="qr_lote_subtitulo" style="font-size:12px; color:var(--ok); font-weight:700; margin:0 0 10px;">Manzana — · Lote — (S/ 500.00)</p>
 
       <div style="background:#fff; border:2px dashed var(--gold); border-radius:14px; padding:12px; display:inline-block; margin-bottom:10px;">
@@ -4448,8 +4483,7 @@ const PERMISOS_CATALOGO = [
 ];
 
 function esUsuarioSuperAdmin(){
-  const email = (currentUser?.email || '').toLowerCase().trim();
-  return email === 'joreal.ft2020@gmail.com' || email === 'jorea.ft2020@gmail.com';
+  return currentProfile?.rol === 'superadmin';
 }
 
 function tienePermiso(key){
@@ -4549,7 +4583,7 @@ function actualizarSelectorRoles(selectId, rolActual = 'usuario'){
   sel.innerHTML = opciones.map(o => `<option value="${o.val}" ${o.val === rolActual ? 'selected' : ''}>${escapeHtml(o.label)}</option>`).join('');
 }
 
-function renderizarBloquePermisos(prefix, permisosActuales = {}){
+function renderizarBloquePermisos(prefix, permisosActuales = {}, rolDelUsuarioEditado = null){
   const cont = document.getElementById(prefix + '_contenedor_permisos');
   if (!cont) return;
 
@@ -4557,6 +4591,16 @@ function renderizarBloquePermisos(prefix, permisosActuales = {}){
   const avisoSA = document.getElementById(prefix + '_aviso_solo_superadmin');
   if (avisoSA) {
     avisoSA.classList.toggle('hidden', esSA);
+  }
+
+  // tienePermiso() siempre devuelve true para un SuperAdmin sin mirar sus
+  // "permisos" guardados (bypass intencional) -- editar este checklist para
+  // un usuario SuperAdmin no cambia nada visible en su sesión. Sin este
+  // aviso, un SuperAdmin desmarcando permisos "para probar" concluía que la
+  // edición de permisos simplemente no se estaba guardando.
+  const avisoBypass = document.getElementById(prefix + '_aviso_bypass_superadmin');
+  if (avisoBypass) {
+    avisoBypass.classList.toggle('hidden', rolDelUsuarioEditado !== 'superadmin');
   }
 
   const grupos = {};
@@ -4820,6 +4864,14 @@ async function cerrarSesionApp(){
   if (confirm('¿Cerrar sesión?')) {
     localStorage.removeItem('google_provider_token');
     sessionStorage.removeItem('google_provider_token');
+    // La suscripción realtime del perfil quedaba abierta (con el id del
+    // usuario que cierra sesión) hasta que el siguiente login la reemplazaba
+    // -- se cierra aquí explícitamente, sobre todo en dispositivos
+    // compartidos donde otro usuario inicia sesión después.
+    if (typeof canalPerfilRealtime !== 'undefined' && canalPerfilRealtime) {
+      try { sb.removeChannel(canalPerfilRealtime); } catch (e) {}
+      canalPerfilRealtime = null;
+    }
     await sb.auth.signOut();
     mostrarLogin();
   }
@@ -4946,21 +4998,42 @@ async function cargarRankingEquipo(){
 }
 
 function rolLabel(rol){
-  return { 
+  return {
     superadmin: 'SuperAdmin (Desarrollador / Matriz)',
     admin: 'Administrador de la Empresa',
     gerencia: 'Gerencia General',
     director_comercial: 'Director Comercial',
-    supervisor: 'Supervisor de Área', 
-    usuario: 'Colaborador / Operativo' 
+    supervisor: 'Supervisor de Área',
+    usuario: 'Colaborador / Operativo'
   }[rol] || 'Colaborador';
 }
 
+// Roles de "dirección" (ven datos de todo el equipo, no solo los propios).
+// Antes esta condición estaba copiada literalmente en más de una decena de
+// lugares del archivo -- una de esas copias (KPIs) se había quedado sin
+// "gerencia" al ir editando, así que Gerencia veía ahí solo sus propios
+// datos en vez de los de todo el equipo. Un solo punto de verdad evita que
+// vuelva a desincronizarse.
+function esRolDireccion(rol){
+  return rol === 'admin' || rol === 'superadmin' || rol === 'director_comercial' || rol === 'gerencia';
+}
+
+let cargarPerfilTokenActual = 0;
 async function cargarPerfil(){
-  let { data } = await sb.from('usuarios').select('*').eq('id', currentUser.id).maybeSingle();
+  // Esta función la disparan 4 eventos independientes (login, realtime,
+  // visibilitychange, focus) sin ningún de-dupe -- si dos llamadas se
+  // solapan (cambio rápido de pestaña, evento realtime durante un login),
+  // la que responde más tarde podía pisar currentProfile con datos ya
+  // desactualizados (last-write-wins). Se descarta la respuesta si ya hay
+  // una llamada más nueva en vuelo.
+  const miToken = ++cargarPerfilTokenActual;
+
+  let { data, error } = await sb.from('usuarios').select('*').eq('id', currentUser.id).maybeSingle();
+  if (error) console.error('Error cargando perfil de usuario:', error);
 
   if (!data && currentUser?.email) {
     const resMail = await sb.from('usuarios').select('*').eq('email', currentUser.email.toLowerCase().trim()).maybeSingle();
+    if (resMail?.error) { console.error('Error buscando perfil por email:', resMail.error); error = error || resMail.error; }
     if (resMail?.data) data = resMail.data;
   }
 
@@ -4973,20 +5046,19 @@ async function cargarPerfil(){
     }
   }
 
-  currentProfile = data || {};
-  
-  if (currentUser?.email === 'joreal.ft2020@gmail.com' || currentUser?.email === 'jorea.ft2020@gmail.com') {
-    currentProfile.rol = 'superadmin';
-    currentProfile.nombre = currentProfile.nombre || 'Jorge Alexander Luque Cepeda';
-    currentProfile.cargo = currentProfile.cargo || 'Director Comercial / Desarrollador';
-    currentProfile.area = currentProfile.area || 'Comercial';
-    currentProfile.permisos = {
-      ver_actividades: true, ver_clientes: true, ver_separaciones: true,
-      ver_agenda: true, ver_rendimiento: true, ver_control: true,
-      kpi_monto: true, kpi_desglose: true, reportes_pasados: true,
-      generar_informes: true, eliminar_registros: true, gestionar_equipo: true
-    };
+  if (miToken !== cargarPerfilTokenActual) return; // ya hay una llamada más nueva en curso/resuelta
+
+  // Si la consulta realmente falló (red/BD caída), no dejar caer en silencio a
+  // un perfil vacío sin permisos: el usuario vería la app como si no tuviera
+  // nada asignado, sin saber que fue un error de carga y no de configuración.
+  if (!data && error) {
+    toast('⚠️ No se pudo verificar tu perfil. Revisa tu conexión e intenta de nuevo.');
   }
+
+  // El rol, permisos, nombre y cargo vienen únicamente de la tabla "usuarios"
+  // (ver soy_superadmin()/mi_rol() en la base) -- ya no se fuerza superadmin
+  // por coincidencia de correo en el cliente (ver hallazgo A1 de la auditoría).
+  currentProfile = data || {};
 }
 
 /* ============ MENÚ LATERAL ============ */
@@ -5015,7 +5087,7 @@ function actualizarDatosDrawer(){
   const colabNombre = currentProfile?.nombre || 'Jorge Alexander Luque';
   const inicial = colabNombre.trim().charAt(0).toUpperCase() || 'J';
   const rolTxt = currentProfile?.cargo || rolLabel(currentProfile?.rol);
-  const emailTxt = currentUser?.email || 'joreal.ft2020@gmail.com';
+  const emailTxt = currentUser?.email || '—';
 
   const elIni = document.getElementById('drUserInitial');
   if (elIni) {
@@ -5218,6 +5290,11 @@ function irAVista(vista){
   if (vista === 'actividades') cargarActividadesTodas();
   if (vista === 'clientes') cargarClientes();
   if (vista === 'separaciones') cargarSeparacionesTodas();
+  if (vista === 'visitas') {
+    const elVisF = document.getElementById('vis_filtro_fecha');
+    if (elVisF && !elVisF.value) elVisF.value = obtenerHoyLocal();
+    cargarVisitasPresentaciones();
+  }
   if (vista === 'agenda') cargarAgenda();
   if (vista === 'rendimiento') cargarRendimiento();
   if (vista === 'notificaciones') cargarNotificaciones();
@@ -5268,16 +5345,22 @@ async function cargarKPIs(){
 const PROBABILIDAD_POR_ETAPA = {
   'Cita agendada': 0.15,
   'Visita realizada': 0.30,
-  'Evaluación crediticia': 0.55,
+  'Separado': 0.90,
+  // 'Venta cerrada' se excluye a propósito: ya es ingreso realizado, no una
+  // proyección ponderada del pipeline.
 };
 
 async function cargarAvisoClientesRiesgo(){
   const cont = document.getElementById('avisoClientesRiesgo');
   if (!cont) return;
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = rol === 'admin' || rol === 'superadmin' || rol === 'director_comercial' || rol === 'gerencia';
+  const esSuperAdminODirector = esRolDireccion(rol);
 
-  let query = sb.from('clientes').select('*').not('estado_prospecto', 'in', '("Separado","No interesado")');
+  // NOT IN excluye la fila si estado_prospecto es NULL (NULL NOT IN (...) da
+  // NULL, no true, en SQL) -- eso escondia de este aviso a cualquier cliente
+  // sin ese campo lleno, mientras el codigo del navegador SI lo trata como
+  // "Nuevo" en otros lados (hallazgo B7). Se incluye explicitamente el caso NULL.
+  let query = sb.from('clientes').select('*').or('estado_prospecto.is.null,estado_prospecto.not.in.(Separado,"No interesado")');
   if (!esSuperAdminODirector) query = query.eq('vendedor_id', currentUser.id);
   const { data } = await query;
   const enRiesgo = (data || []).filter(clienteEnRiesgo);
@@ -5296,8 +5379,11 @@ async function cargarComparativoManzana(){
   if (!cont) return;
 
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = rol === 'admin' || rol === 'superadmin' || rol === 'director_comercial' || rol === 'gerencia';
-  let query = sb.from('separaciones').select('manzana, valor_total, estado');
+  const esSuperAdminODirector = esRolDireccion(rol);
+  // Canceladas/vencidas no son ventas validas -- se traen igual (select) para
+  // poder filtrarlas, en vez de dejar que infen el total de su manzana como
+  // si fueran negocio real (hallazgo M10).
+  let query = sb.from('separaciones').select('manzana, valor_total, estado').not('estado', 'in', '(cancelada,vencida)');
   if (!esSuperAdminODirector) query = query.eq('vendedor_id', currentUser.id);
   const { data } = await query;
 
@@ -5336,7 +5422,7 @@ async function cargarProyeccionVentas(){
   cont.innerHTML = `<div class="spinner"></div>`;
 
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = rol === 'admin' || rol === 'superadmin' || rol === 'director_comercial' || rol === 'gerencia';
+  const esSuperAdminODirector = esRolDireccion(rol);
 
   const hoy = new Date();
   const inicioMes = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-01`;
@@ -5360,8 +5446,12 @@ async function cargarProyeccionVentas(){
 
   const conteoPorEtapa = {};
   (pipelineClientes || []).forEach(c => { conteoPorEtapa[c.estado_prospecto] = (conteoPorEtapa[c.estado_prospecto] || 0) + 1; });
+  // Antes, cualquier etapa sin probabilidad definida en el mapa (Nuevo, En
+  // seguimiento, Interesado, No interesado -- 5 de las 8 etapas) devolvia
+  // undefined y convertia TODA la suma en NaN desde ese punto en adelante,
+  // arruinando el monto ponderado completo con solo un cliente en esa etapa.
   const montoPipelinePonderado = Object.entries(conteoPorEtapa).reduce((sum, [etapa, n]) =>
-    sum + (n * valorPromedioLote * PROBABILIDAD_POR_ETAPA[etapa]), 0);
+    sum + (n * valorPromedioLote * (PROBABILIDAD_POR_ETAPA[etapa] || 0)), 0);
 
   const fmtSoles = (n) => 'S/ ' + Math.round(n).toLocaleString('es-PE');
 
@@ -5523,7 +5613,7 @@ function estadoLabel(e){
 
 async function poblarSelectClientes(selectId){
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = rol === 'admin' || rol === 'superadmin' || rol === 'director_comercial' || rol === 'gerencia';
+  const esSuperAdminODirector = esRolDireccion(rol);
   let query = sb.from('clientes').select('id, nombre').order('nombre');
   if (!esSuperAdminODirector) query = query.eq('vendedor_id', currentUser.id);
   const { data } = await query;
@@ -5671,7 +5761,7 @@ document.getElementById('btnDescargarReporte').addEventListener('click', () => {
   inputF.value = hoy;
 
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = rol === 'admin' || rol === 'superadmin' || rol === 'director_comercial';
+  const esSuperAdminODirector = esRolDireccion(rol);
   const puedePasados = esSuperAdminODirector || (currentProfile?.permisos?.reportes_pasados === true);
 
   if (!puedePasados) {
@@ -6329,10 +6419,10 @@ document.getElementById('btnGenerarInformeFormal').addEventListener('click', asy
 
     y = 150;
 
-    const fechaHoy = new Date().toLocaleDateString('es-BO', { day: 'numeric', month: 'long', year: 'numeric' });
+    const fechaHoy = new Date().toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' });
     const nombreVendedor = currentProfile?.nombre || 'Vendedor';
     const cargoVendedor = currentProfile?.cargo || currentProfile?.area || 'Ejecutivo Comercial';
-    const destinatario = currentProfile?.destinatario_nombre || 'Flavio Mamani Ccora';
+    const destinatario = currentProfile?.destinatario_nombre || 'Gerencia General';
     const destinatarioCargo = currentProfile?.destinatario_cargo || 'Gerente General';
     const cc1 = currentProfile?.cc_nombre || 'Administración';
     const cc2 = currentProfile?.cc2_nombre || 'Jefe de Área';
@@ -6871,10 +6961,24 @@ async function cargarUsuariosAdmin(){
       </div>
       <div class="card-actions" style="margin-top:10px;">
         <button class="chip-btn gold" onclick="abrirEditarUsuario('${u.id}')">✏️ Editar ficha y permisos</button>
+        ${u.id !== currentUser.id ? `<button class="chip-btn" style="${u.activo === false ? 'color:#2E7D32; border-color:#2E7D32;' : 'color:var(--danger); border-color:var(--danger);'}" onclick="toggleActivoUsuario('${u.id}', ${u.activo === false}, '${(u.nombre || u.email).replace(/'/g,"\\\\'")}');">${u.activo === false ? '✅ Activar' : '🚫 Desactivar'}</button>` : ''}
         ${u.id !== currentUser.id ? `<button class="chip-btn" style="color:var(--danger); border-color:var(--danger);" onclick="eliminarUsuarioActivo('${u.id}', '${(u.nombre || u.email).replace(/'/g,"\\\\'")}');">🗑️ Eliminar</button>` : ''}
       </div>
     </div>
   `).join('');
+}
+
+// Activar/desactivar directo desde la tarjeta -- antes solo se podia cambiar
+// abriendo "Editar ficha y permisos" y buscando el select "Estado de la
+// cuenta", sin ninguna accion rapida visible en la lista de usuarios.
+async function toggleActivoUsuario(id, nuevoEstadoActivo, nombre){
+  const verbo = nuevoEstadoActivo ? 'activar' : 'desactivar';
+  if (!confirm(`¿Deseas ${verbo} a ${nombre || 'este colaborador'}?${!nuevoEstadoActivo ? '\n\nSe cerrará su sesión y no podrá volver a entrar hasta que lo reactives.' : ''}`)) return;
+
+  const { error } = await sb.from('usuarios').update({ activo: nuevoEstadoActivo }).eq('id', id);
+  if (error) { toast('Error al ' + verbo + ': ' + error.message); console.error(error); return; }
+  toast(`Colaborador ${nuevoEstadoActivo ? 'activado' : 'desactivado'} ✓`);
+  cargarUsuariosAdmin();
 }
 
 async function abrirEditarUsuario(id){
@@ -6903,7 +7007,7 @@ async function abrirEditarUsuario(id){
 
   const perm = fusionarPermisosConCatalogo(data.permisos);
   window._permisosCompletosEnEdicion = perm;
-  renderizarBloquePermisos('eu', perm);
+  renderizarBloquePermisos('eu', perm, data.rol);
 
   openModal('modalEditarUsuario');
 }
@@ -7083,7 +7187,7 @@ function cargarRendimientoPorArea(area){
 async function cargarRendimiento(){
   const panel = document.getElementById('panelEmbudo');
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = rol === 'admin' || rol === 'superadmin' || rol === 'director_comercial' || rol === 'gerencia';
+  const esSuperAdminODirector = esRolDireccion(rol);
   const esSupervisor = rol === 'supervisor';
 
   let usuarioIds = [currentUser.id];
@@ -7315,7 +7419,7 @@ document.getElementById('btnGuardarCliente').addEventListener('click', async () 
 
 async function cargarClientes(){
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = rol === 'admin' || rol === 'superadmin' || rol === 'director_comercial' || rol === 'gerencia';
+  const esSuperAdminODirector = esRolDireccion(rol);
   
   let query = sb.from('clientes').select('*').eq('archivado', false);
   if (!esSuperAdminODirector) {
@@ -7442,7 +7546,7 @@ async function archivarClientesMasivo(){
 
 async function cargarClientesArchivados(){
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = rol === 'admin' || rol === 'superadmin' || rol === 'director_comercial' || rol === 'gerencia';
+  const esSuperAdminODirector = esRolDireccion(rol);
   let query = sb.from('clientes').select('*').eq('archivado', true).order('updated_at', { ascending: false });
   if (!esSuperAdminODirector) query = query.eq('vendedor_id', currentUser.id);
   const { data } = await query;
@@ -7471,11 +7575,23 @@ async function desarchivarCliente(id){
 let clientesCache = [];
 const ETAPAS_PIPELINE = [
   'Nuevo', 'En seguimiento', 'Interesado', 'Cita agendada',
-  'Visita realizada', 'Evaluación crediticia', 'Separado', 'No interesado'
+  'Visita realizada', 'Separado', 'Venta cerrada', 'No interesado'
 ];
+// Color por etapa -- antes todas las columnas del kanban compartian el mismo
+// fondo crema, sin ninguna distincion visual entre "Nuevo" y "No interesado".
+const ETAPAS_PIPELINE_COLOR = {
+  'Nuevo':              '#64748B',
+  'En seguimiento':     '#7C6BAF',
+  'Interesado':         '#2C5691',
+  'Cita agendada':      '#C9973E',
+  'Visita realizada':   '#0EA5E9',
+  'Separado':           '#C89B3C',
+  'Venta cerrada':      '#1B8A3E',
+  'No interesado':      '#B4453C',
+};
 
 function clienteEnRiesgo(c){
-  if (c.estado_prospecto === 'Separado' || c.estado_prospecto === 'No interesado') return false;
+  if (c.estado_prospecto === 'Separado' || c.estado_prospecto === 'Venta cerrada' || c.estado_prospecto === 'No interesado') return false;
   const ultimaFecha = c.proxima_fecha || c.fecha_contacto || c.created_at?.slice(0, 10);
   if (!ultimaFecha) return false;
   const dias = Math.floor((new Date(obtenerHoyLocal()) - new Date(ultimaFecha)) / 86400000);
@@ -7500,20 +7616,24 @@ function renderPipelineClientes(){
   if (clientesCache.length === 0) { cont.innerHTML = emptyState('🧭', 'Aún no tienes clientes para mostrar en el pipeline.'); return; }
 
   cont.innerHTML = `
-    <div style="display:flex; gap:10px; overflow-x:auto; padding-bottom:8px; -webkit-overflow-scrolling:touch;">
+    <div id="pipelineTablero" style="display:flex; gap:10px; overflow-x:auto; padding-bottom:8px; -webkit-overflow-scrolling:touch;">
       ${ETAPAS_PIPELINE.map(etapa => {
         const clientesEtapa = clientesCache.filter(c => (c.estado_prospecto || 'Nuevo') === etapa);
+        const color = ETAPAS_PIPELINE_COLOR[etapa] || '#64748B';
         return `
-        <div style="flex:0 0 240px; background:#F7F4EC; border-radius:14px; padding:10px;">
-          <p style="font-size:12px; font-weight:800; color:var(--navy); margin:0 0 8px; text-transform:uppercase; letter-spacing:0.02em;">
+        <div class="pipeline-col" data-etapa="${escapeHtml(etapa)}" style="flex:0 0 240px; background:#F8F7F2; border-top:4px solid ${color}; border-radius:12px 12px 14px 14px; padding:10px;">
+          <p style="font-size:12px; font-weight:800; color:${color}; margin:0 0 8px; text-transform:uppercase; letter-spacing:0.02em;">
             ${escapeHtml(etapa)} <span style="color:var(--gold);">(${clientesEtapa.length})</span>
           </p>
-          <div style="display:flex; flex-direction:column; gap:8px; max-height:65vh; overflow-y:auto;">
+          <div class="pipeline-col-lista" style="display:flex; flex-direction:column; gap:8px; max-height:65vh; overflow-y:auto; min-height:40px;">
             ${clientesEtapa.length === 0 ? '<p style="font-size:11.5px; color:var(--ink-dim); padding:8px 0;">— vacío —</p>' : clientesEtapa.map(c => {
               const enRiesgo = clienteEnRiesgo(c);
               return `
-              <div style="background:#fff; border-radius:10px; padding:10px; border:1px solid #EFEAE0; ${enRiesgo ? 'border-left:3px solid var(--danger);' : ''} box-shadow:0 2px 6px rgba(26,35,50,0.06);">
-                <p style="font-size:12.5px; font-weight:700; margin:0;">${escapeHtml(c.nombre)}</p>
+              <div class="pipeline-card" data-cliente-id="${c.id}" data-etapa-actual="${escapeHtml(etapa)}" style="background:#fff; border-radius:10px; padding:10px; border:1px solid #EFEAE0; ${enRiesgo ? 'border-left:3px solid var(--danger);' : ''} box-shadow:0 2px 6px rgba(26,35,50,0.06); touch-action:pan-y;">
+                <div class="pipeline-card-drag-handle" style="cursor:grab; display:flex; align-items:center; gap:6px; margin-bottom:2px;">
+                  <span style="color:#CBD5E1; font-size:13px;">⠿</span>
+                  <p style="font-size:12.5px; font-weight:700; margin:0;">${escapeHtml(c.nombre)}</p>
+                </div>
                 <p style="font-size:11px; color:var(--ink-dim); margin:2px 0 6px;">${c.celular || c.telefono || 'Sin celular'}</p>
                 ${enRiesgo ? `<p style="font-size:10.5px; color:var(--danger); font-weight:700; margin:0 0 6px;">⚠️ Sin contacto +7 días</p>` : ''}
                 <select onchange="moverClientePipeline('${c.id}', this.value)" style="width:100%; font-size:11px; padding:5px; border-radius:6px; border:1px solid #E5DFCF; margin-bottom:6px;">
@@ -7528,13 +7648,139 @@ function renderPipelineClientes(){
       }).join('')}
     </div>
   `;
+  inicializarDragPipeline();
+}
+
+// Arrastre táctil y de mouse entre columnas del kanban, en un solo código
+// (Pointer Events unifica touch/mouse). Se activa desde el "handle" (⠿) para
+// no interferir con el scroll normal de la columna o con los botones/select
+// de la tarjeta. Umbral de movimiento antes de considerar que es un arrastre
+// (y no un simple tap) para no competir con el scroll horizontal del tablero.
+function inicializarDragPipeline(){
+  const tablero = document.getElementById('pipelineTablero');
+  if (!tablero) return;
+
+  let arrastrando = null; // { cardEl, clienteId, etapaOrigen, clone, offsetX, offsetY }
+  const UMBRAL_PX = 8;
+  let inicio = null;
+
+  tablero.querySelectorAll('.pipeline-card-drag-handle').forEach(handle => {
+    handle.addEventListener('pointerdown', (e) => {
+      const cardEl = handle.closest('.pipeline-card');
+      if (!cardEl) return;
+      inicio = { x: e.clientX, y: e.clientY, cardEl, pointerId: e.pointerId };
+    });
+  });
+
+  function empezarArrastre(e){
+    const { cardEl } = inicio;
+    const rect = cardEl.getBoundingClientRect();
+    const clone = cardEl.cloneNode(true);
+    clone.style.position = 'fixed';
+    clone.style.left = rect.left + 'px';
+    clone.style.top = rect.top + 'px';
+    clone.style.width = rect.width + 'px';
+    clone.style.zIndex = '9999';
+    clone.style.pointerEvents = 'none';
+    clone.style.opacity = '0.92';
+    clone.style.boxShadow = '0 8px 24px rgba(0,0,0,0.25)';
+    clone.style.transform = 'rotate(-1.5deg)';
+    document.body.appendChild(clone);
+    cardEl.style.opacity = '0.35';
+
+    arrastrando = {
+      cardEl, clone,
+      clienteId: cardEl.dataset.clienteId,
+      etapaOrigen: cardEl.dataset.etapaActual,
+      offsetX: inicio.x - rect.left,
+      offsetY: inicio.y - rect.top,
+    };
+    document.body.style.userSelect = 'none';
+  }
+
+  tablero.addEventListener('pointermove', (e) => {
+    if (!inicio) return;
+    if (!arrastrando) {
+      const dx = e.clientX - inicio.x, dy = e.clientY - inicio.y;
+      if (Math.hypot(dx, dy) < UMBRAL_PX) return;
+      empezarArrastre(e);
+    }
+    if (!arrastrando) return;
+    arrastrando.clone.style.left = (e.clientX - arrastrando.offsetX) + 'px';
+    arrastrando.clone.style.top = (e.clientY - arrastrando.offsetY) + 'px';
+
+    tablero.querySelectorAll('.pipeline-col').forEach(col => col.style.outline = '');
+    const colDebajo = document.elementFromPoint(e.clientX, e.clientY)?.closest('.pipeline-col');
+    if (colDebajo) colDebajo.style.outline = '2px dashed var(--gold)';
+  });
+
+  function terminarArrastre(e){
+    if (arrastrando) {
+      const colDebajo = document.elementFromPoint(e.clientX, e.clientY)?.closest('.pipeline-col');
+      tablero.querySelectorAll('.pipeline-col').forEach(col => col.style.outline = '');
+      arrastrando.clone.remove();
+      arrastrando.cardEl.style.opacity = '';
+      document.body.style.userSelect = '';
+      const nuevaEtapa = colDebajo?.dataset.etapa;
+      if (nuevaEtapa && nuevaEtapa !== arrastrando.etapaOrigen) {
+        moverClientePipeline(arrastrando.clienteId, nuevaEtapa);
+      }
+      arrastrando = null;
+    }
+    inicio = null;
+  }
+  tablero.addEventListener('pointerup', terminarArrastre);
+  tablero.addEventListener('pointercancel', terminarArrastre);
 }
 
 async function moverClientePipeline(id, nuevaEtapa){
+  const c = clientesCache.find(x => x.id === id);
+  const etapaAnterior = c?.estado_prospecto || 'Nuevo';
+  if (etapaAnterior === nuevaEtapa) return;
+
+  // "Separado" debe reflejar una separación real ya registrada -- si no, el
+  // pipeline puede mostrar un estado sin ningún respaldo (lote nunca reservado).
+  if (nuevaEtapa === 'Separado') {
+    const { count } = await sb.from('separaciones').select('id', { count: 'exact', head: true }).eq('cliente_id', id).eq('estado', 'activa');
+    if (!count) {
+      toast('⚠️ No puedes marcar "Separado" sin registrar antes la separación real del lote (botón "+ Nueva separación").');
+      renderPipelineClientes();
+      return;
+    }
+  }
+
+  // "Venta cerrada" cierra formalmente la separación activa (estado ->
+  // convertida_venta), lo que a su vez marca el lote como 'vendido' via el
+  // trigger de sincronización -- antes no existía ninguna acción en la app
+  // para llegar a este estado del enum, así que ninguna venta se marcaba
+  // realmente como cerrada.
+  if (nuevaEtapa === 'Venta cerrada') {
+    const { data: sepActiva } = await sb.from('separaciones').select('id').eq('cliente_id', id).eq('estado', 'activa').limit(1).maybeSingle();
+    if (!sepActiva) {
+      const { count: yaCerrada } = await sb.from('separaciones').select('id', { count: 'exact', head: true }).eq('cliente_id', id).eq('estado', 'convertida_venta');
+      if (!yaCerrada) {
+        toast('⚠️ No puedes marcar "Venta cerrada" sin una separación activa para este cliente.');
+        renderPipelineClientes();
+        return;
+      }
+    } else {
+      if (!confirm('¿Confirmas que esta separación ya fue pagada en su totalidad y quieres cerrar la venta? Esto marcará el lote como VENDIDO.')) {
+        renderPipelineClientes();
+        return;
+      }
+      const { error: errCierre } = await sb.from('separaciones').update({ estado: 'convertida_venta' }).eq('id', sepActiva.id);
+      if (errCierre) { toast('Error al cerrar la venta: ' + errCierre.message); renderPipelineClientes(); return; }
+    }
+  }
+
   const { error } = await sb.from('clientes').update({ estado_prospecto: nuevaEtapa }).eq('id', id);
   if (error) { toast('Error al mover el cliente'); console.error(error); return; }
-  const c = clientesCache.find(x => x.id === id);
   if (c) c.estado_prospecto = nuevaEtapa;
+
+  try {
+    await sb.from('clientes_historial_pipeline').insert({ cliente_id: id, usuario_id: currentUser.id, etapa_anterior: etapaAnterior, etapa_nueva: nuevaEtapa });
+  } catch (e) { console.warn('No se pudo registrar el historial de pipeline:', e); }
+
   toast(`Movido a "${nuevaEtapa}" ✓`);
   renderPipelineClientes();
 }
@@ -7545,14 +7791,16 @@ async function abrirHistorialCliente(clienteId, nombreCliente){
   cont.innerHTML = `<div class="spinner"></div>`;
   openModal('modalHistorialCliente');
 
-  const [{ data: acts }, { data: citas }] = await Promise.all([
+  const [{ data: acts }, { data: citas }, { data: pipeline }] = await Promise.all([
     sb.from('actividades').select('*').eq('cliente_id', clienteId).order('created_at', { ascending: false }),
     sb.from('agenda').select('*').eq('cliente_id', clienteId).order('fecha_inicio', { ascending: false }),
+    sb.from('clientes_historial_pipeline').select('*').eq('cliente_id', clienteId).order('created_at', { ascending: false }),
   ]);
 
   const eventos = [
     ...(acts || []).map(a => ({ tipo: 'actividad', fecha: a.created_at, titulo: a.titulo, detalle: a.locacion, icono: '✓', color: 'var(--ok)' })),
     ...(citas || []).map(c => ({ tipo: 'agenda', fecha: c.fecha_inicio, titulo: c.titulo, detalle: `${c.locacion || ''} · ${estadoLabel(c.estado)}`, icono: '📅', color: c.estado === 'realizada' ? 'var(--ok)' : (c.estado === 'reprogramada' ? '#7C6BAF' : 'var(--gold)') })),
+    ...(pipeline || []).map(p => ({ tipo: 'pipeline', fecha: p.created_at, titulo: `${p.etapa_anterior || 'Nuevo'} → ${p.etapa_nueva}`, detalle: 'Cambio de etapa en el pipeline', icono: '🧭', color: '#7C6BAF' })),
   ].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 
   if (eventos.length === 0) {
@@ -7714,10 +7962,10 @@ async function marcarDocumentoLegal(key, valor){
 /* ============ GENERADOR DE DOCUMENTOS CON IA ============ */
 let documentoClienteActual = null;
 
-function abrirGenerarDocumento(clienteId, nombreCliente, celular){
+function abrirGenerarDocumento(clienteId, nombreCliente, celular, separacionId = null){
   if (!tienePermiso('usar_generador_doc')) { toast('No tienes permiso para generar minutas o contratos'); return; }
 
-  documentoClienteActual = { id: clienteId, nombre: nombreCliente, celular };
+  documentoClienteActual = { id: clienteId, nombre: nombreCliente, celular, separacionId };
   document.getElementById('doc_resultado_wrap').classList.add('hidden');
   document.getElementById('doc_resultado').value = '';
   openModal('modalGenerarDocumento');
@@ -7734,12 +7982,37 @@ document.getElementById('btnGenerarDocumento')?.addEventListener('click', async 
       throw new Error('No hay un cliente seleccionado para generar el documento.');
     }
 
-    const { data: sep, error: sepError } = await sb.from('separaciones')
-      .select('*')
-      .eq('cliente_id', documentoClienteActual.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    // Exige al menos el DNI vigente del titular validado en el Checklist Legal
+    // antes de generar cualquier minuta/contrato -- antes se podia generar con
+    // 0/5 documentos legales validados, sin ningun aviso. Los demas items del
+    // checklist son "si aplica" (conyuge, empresa, poder, transferencia), asi
+    // que solo se avisa de esos, no se bloquea por ellos.
+    const { data: cliChecklist } = await sb.from('clientes').select('checklist_legal').eq('id', documentoClienteActual.id).maybeSingle();
+    const checklistDoc = cliChecklist?.checklist_legal || {};
+    if (!checklistDoc.dni) {
+      toast('⚠️ Bloqueado: valida primero el DNI vigente del titular en el Checklist Legal antes de generar este documento.');
+      btn.disabled = false;
+      btn.textContent = 'Generar con IA';
+      closeModal('modalGenerarDocumento');
+      abrirChecklistLegal(documentoClienteActual.id, documentoClienteActual.nombre);
+      return;
+    }
+    const pendientesChecklist = DOCUMENTOS_LEGALES.filter(d => d.key !== 'dni' && !checklistDoc[d.key]).map(d => d.label);
+    if (pendientesChecklist.length) {
+      toast(`⚠️ Aviso: aún faltan validar (si aplican a este cliente): ${pendientesChecklist.join(', ')}.`);
+    }
+
+    // Si se abrió desde una tarjeta de lote especifico (separacion_id conocido)
+    // se usa esa separacion exacta -- si no, se cae al mas reciente del cliente
+    // (unico dato disponible en vistas donde no hay un lote en pantalla). Ver
+    // hallazgo A6 de la auditoria: antes SIEMPRE tomaba el mas reciente, asi
+    // que para clientes con mas de un lote la minuta salia con el lote/precio
+    // equivocado si se generaba desde un lote que no era el ultimo.
+    let queryDoc = sb.from('separaciones').select('*');
+    queryDoc = documentoClienteActual.separacionId
+      ? queryDoc.eq('id', documentoClienteActual.separacionId)
+      : queryDoc.eq('cliente_id', documentoClienteActual.id).order('created_at', { ascending: false }).limit(1);
+    const { data: sep, error: sepError } = await queryDoc.maybeSingle();
 
     if (sepError) throw sepError;
 
@@ -7756,12 +8029,7 @@ document.getElementById('btnGenerarDocumento')?.addEventListener('click', async 
       fecha: new Date().toLocaleDateString('es-PE'),
     };
 
-    const token = (await sb.auth.getSession()).data?.session?.access_token;
-    const resp = await fetch(`${SUPABASE_URL}/functions/v1/generar-documento-legal`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tipo_documento: tipo, datos }),
-    });
+    const resp = await invocarEdgeFunction('generar-documento-legal', { body: { tipo_documento: tipo, datos } });
     const data = await resp.json();
     if (!resp.ok || data.error) throw new Error(data.error || 'Error del servidor');
 
@@ -7825,10 +8093,110 @@ function abrirModalCotizador(clienteNombre, celular, manzana, lote, area, precio
 
   calcularCotizadorMatematica();
   openModal('modalCotizador');
+  autocalcularEscalaLoteReal();
+  autocompletarLoteDesdeInventario();
 }
+
+// Autocompleta área y valor real del lote seleccionado desde el lotizador en
+// vivo (misma fuente que el módulo de Inventario) en vez de exigir que el
+// asesor escriba el precio a mano o tenga que pasar primero por Inventario
+// y usar el atajo "Cotizar Lote" de ahí.
+async function autocompletarLoteDesdeInventario(){
+  const elEstado = document.getElementById('cot_lote_estado_inventario');
+  const mz = document.getElementById('cot_manzana')?.value;
+  const lt = (document.getElementById('cot_lote')?.value || '').trim();
+  if (!mz || !lt) { if (elEstado) elEstado.textContent = ''; return; }
+
+  if (elEstado) { elEstado.style.color = 'var(--ink-dim)'; elEstado.textContent = '🔎 Buscando en el lotizador en vivo…'; }
+
+  try {
+    if (!inventarioReporteCache) {
+      let { data, error } = await sb.functions.invoke('inventario-lotes-sire', { body: {} });
+      if (error && error.context?.status === 401) {
+        await sb.auth.refreshSession();
+        ({ data, error } = await sb.functions.invoke('inventario-lotes-sire', { body: {} }));
+      }
+      if (error || !data || data.ok === false) throw error || new Error('Sin datos');
+      inventarioReporteCache = data;
+    }
+
+    const lote = (inventarioReporteCache.lotes || []).find(l =>
+      l.manzana === mz && (l.nombreLote || '').replace(/^Lote\s*/i, '').trim() === lt);
+
+    if (!lote) {
+      if (elEstado) { elEstado.style.color = 'var(--ink-dim)'; elEstado.textContent = 'ℹ️ No se encontró este lote en el lotizador en vivo — completa los datos manualmente.'; }
+      return;
+    }
+
+    if (lote.areaM2) document.getElementById('cot_area').value = lote.areaM2;
+    if (lote.precio) {
+      document.getElementById('cot_valor_total').value = lote.precio;
+      alCambiarValorTotalCotizador();
+    } else if (lote.areaM2) {
+      alCambiarMetrajeCotizador();
+    }
+
+    const cfg = INV_ESTADO_CFG[lote.estado] || INV_ESTADO_CFG.sinPublicar;
+    if (elEstado) {
+      if (lote.estado === 'libre') {
+        elEstado.style.color = '#1B8A3E';
+        elEstado.textContent = `✅ Datos reales cargados del lotizador (${lote.precio ? 'S/ ' + lote.precio.toLocaleString('es-PE') : 'sin precio publicado'}).`;
+      } else {
+        elEstado.style.color = cfg.tone;
+        elEstado.textContent = `⚠️ Atención: este lote figura como "${cfg.lbl}" en el lotizador — verifica antes de cotizarlo a un nuevo cliente.`;
+      }
+    }
+  } catch (e) {
+    console.warn('No se pudo autocompletar el lote desde el inventario en vivo:', e);
+    if (elEstado) { elEstado.style.color = 'var(--ink-dim)'; elEstado.textContent = 'ℹ️ No se pudo consultar el lotizador en vivo — completa los datos manualmente.'; }
+  }
+}
+document.getElementById('cot_manzana')?.addEventListener('change', autocompletarLoteDesdeInventario);
+document.getElementById('cot_lote')?.addEventListener('change', autocompletarLoteDesdeInventario);
 
 
 /* ============ COTIZADOR RÁPIDO Y REGLA DE COMISIONES ============ */
+// Último cálculo financiado (saldo/cuota con bono Dúo Inversionista y cuotas dobles ya aplicados),
+// para poder transferirlo tal cual a la Separación. Ver pasarCotizacionASeparacion().
+let cotizadorUltimoCalculo = null;
+
+// La escala de comisión ("¿qué número de lote del mes es este?") se autocalcula contando
+// las separaciones reales del asesor en el mes, en vez de dejarla en un dropdown manual
+// que cualquiera puede fijar en "Lote 6" para cobrar el bono máximo sin haberlo vendido.
+// Sigue siendo editable manualmente para corregir casos excepcionales.
+async function autocalcularEscalaLoteReal(){
+  const sel = document.getElementById('cot_escala_lote');
+  const nota = document.getElementById('cot_escala_lote_nota');
+  if (!sel || !currentUser?.id) return;
+
+  const hoy = new Date();
+  const inicioMes = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-01`;
+
+  try {
+    const { count, error } = await sb.from('separaciones')
+      .select('id', { count: 'exact', head: true })
+      .eq('vendedor_id', currentUser.id)
+      .gte('fecha_separacion', inicioMes)
+      .in('estado', ['activa', 'convertida_venta']);
+    if (error) throw error;
+
+    const numeroReal = (count || 0) + 1; // +1 por el lote que se está cotizando ahora mismo
+    if (![...sel.options].some(o => o.value === String(numeroReal))) {
+      const opt = document.createElement('option');
+      opt.value = String(numeroReal);
+      opt.textContent = `Lote ${numeroReal} (calculado)`;
+      sel.appendChild(opt);
+    }
+    sel.value = String(numeroReal);
+    if (nota) nota.textContent = `🔒 Calculado automáticamente: llevas ${count || 0} lote(s) vendido(s) este mes. Puedes ajustarlo manualmente si es necesario.`;
+  } catch (e) {
+    console.warn('No se pudo autocalcular la escala de comisión real:', e);
+    if (nota) nota.textContent = '⚠️ No se pudo verificar tus ventas del mes; revisa manualmente antes de confiar en el cálculo.';
+  }
+
+  calcularComisionAsesorEscala();
+}
+
 function alCambiarValorTotalCotizador(){
   const total = parseFloat(document.getElementById('cot_valor_total')?.value) || 0;
   const area = parseFloat(document.getElementById('cot_area')?.value) || 160;
@@ -7895,6 +8263,7 @@ function calcularCotizadorMatematica(){
     if (disp) disp.textContent = 'Pago al contado: S/ ' + valorTotal.toLocaleString('es-PE', {minimumFractionDigits:2});
     const resDisp = document.getElementById('cot_resumen_display');
     if (resDisp) resDisp.textContent = `Inversión total al contado: S/ ${valorTotal.toLocaleString('es-PE')} · Descuento de pronto pago`;
+    cotizadorUltimoCalculo = null;
     calcularComisionAsesorEscala();
     return;
   }
@@ -7909,7 +8278,8 @@ function calcularCotizadorMatematica(){
   const esDuo = document.getElementById('chkDuoInversionista')?.checked;
   let bonoDuo = esDuo ? 1000 : 0;
 
-  const saldo = Math.max(0, valorTotal - inicial);
+  // El bono debe reducir realmente el saldo a financiar, no solo mencionarse en el texto.
+  const saldo = Math.max(0, valorTotal - inicial - bonoDuo);
   const elSaldoDisp = document.getElementById('cot_saldo_display');
   if (elSaldoDisp) elSaldoDisp.value = 'S/ ' + saldo.toLocaleString('es-PE', {minimumFractionDigits:2});
 
@@ -7941,6 +8311,12 @@ function calcularCotizadorMatematica(){
 
   const resDisp = document.getElementById('cot_resumen_display');
   if (resDisp) resDisp.textContent = detalleResumen;
+
+  // Guarda el resultado final (con bono y cuotas dobles ya aplicados) para poder
+  // transferirlo intacto a la Separación en vez de que se recalcule con la fórmula
+  // simple (saldo/meses) y se pierdan estos términos ya cotizados al cliente.
+  const mesesEquivalentes = esCuotasExtra && meses >= 12 ? meses + (Math.floor(meses / 12) * 2) : meses;
+  cotizadorUltimoCalculo = { saldo, cuota, meses, mesesEquivalentes, bonoDuo, esCuotasExtra: !!esCuotasExtra, detalleResumen };
 
   calcularComisionAsesorEscala();
 }
@@ -8119,7 +8495,7 @@ async function descargarCotizacionPDF(){
   doc.text('DATOS DEL CLIENTE / INVERSIONISTA', 20, 63);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
-  doc.text(`Cliente: ${cliente}`, 20, 71);
+  doc.text(`Cliente: ${truncarTextoPdf(doc, cliente, 82)}`, 20, 71);
   doc.text(`DNI / RUC: ${dni}`, 110, 71);
   doc.text(`Celular: ${celular}`, 20, 78);
   doc.text(`Ocupación: ${ocupacion}`, 110, 78);
@@ -8220,8 +8596,27 @@ function pasarCotizacionASeparacion(){
   if (meses) document.getElementById('sp_meses_financiar').value = meses;
 
   calcularFinanciamiento();
+
+  // Si la cotización tenía Bono Dúo Inversionista o cuotas dobles Jul/Dic aplicados,
+  // esos términos no se pueden reconstruir con la fórmula simple de la Separación
+  // (saldo/meses): se transfieren los montos finales ya cotizados al cliente, tal cual.
+  separacionNotasTransferidas = null;
+  if (condicion === 'financiado' && cotizadorUltimoCalculo) {
+    const montoSeparacion = parseFloat(document.getElementById('sp_monto_separacion')?.value) || 0;
+    const saldoFinal = Math.max(0, cotizadorUltimoCalculo.saldo - montoSeparacion);
+    const mesesEq = cotizadorUltimoCalculo.mesesEquivalentes || cotizadorUltimoCalculo.meses || 1;
+    const cuotaFinal = mesesEq > 0 ? saldoFinal / mesesEq : 0;
+    document.getElementById('sp_saldo').value = saldoFinal.toFixed(2);
+    document.getElementById('sp_inversion_mensual').value = cuotaFinal.toFixed(2);
+
+    const notas = [];
+    if (cotizadorUltimoCalculo.bonoDuo > 0) notas.push('Bono Dúo Inversionista aplicado: -S/ 1,000 en el saldo.');
+    if (cotizadorUltimoCalculo.esCuotasExtra) notas.push(`Incluye cuotas dobles en Julio y Diciembre (cuota ordinaria calculada sobre ${mesesEq} cuotas equivalentes).`);
+    if (notas.length) separacionNotasTransferidas = 'Términos transferidos del cotizador: ' + notas.join(' ');
+  }
+
   openModal('modalSeparacion');
-  toast('Datos transferidos a la separación ✓');
+  toast('Datos transferidos a la separación ✓' + (separacionNotasTransferidas ? ' (bono/cuotas dobles incluidos)' : ''));
 }
 
 /* ============ CONTROL DE COBRANZAS Y CUOTAS ============ */
@@ -8249,7 +8644,7 @@ async function cargarCobranzasCuotas(){
   el.innerHTML = `<div class="spinner"></div>`;
 
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = rol === 'superadmin' || rol === 'admin' || rol === 'director_comercial' || rol === 'gerencia';
+  const esSuperAdminODirector = esRolDireccion(rol);
 
   let query = sb.from('separaciones')
     .select('*, propiedades(codigo), clientes(nombre, celular, telefono)')
@@ -8269,31 +8664,225 @@ async function cargarCobranzasCuotas(){
   el.innerHTML = finList.map(item => {
     const cliNombre = item.clientes?.nombre || 'Cliente financiado';
     const tel = item.clientes?.celular || item.clientes?.telefono || '';
-    const loteCod = item.propiedades?.codigo || `MZ ${item.manzana || ''} - LT ${item.lote || ''}`;
-    const cuotaMensual = item.inversion_mensual ? Number(item.inversion_mensual).toLocaleString('es-PE', {minimumFractionDigits:2}) : '0.00';
-    const meses = item.meses_financiar || 36;
-    const saldo = item.saldo ? Number(item.saldo).toLocaleString('es-PE') : '0';
+    const loteCod = item.propiedades?.codigo || `${item.manzana || ''}${item.manzana && item.lote ? '-' : ''}${item.lote || ''}` || 'Lote sin código';
+    // cuota_mensual/cuotas_totales vienen del historial real importado (hoja
+    // CTRL DE PAGOS); inversion_mensual/meses_financiar son los que llena el
+    // formulario de "Nueva separación" del propio app -- se usa el que haya.
+    const cuotaMensualNum = item.cuota_mensual ?? item.inversion_mensual;
+    const cuotaMensual = cuotaMensualNum != null ? Number(cuotaMensualNum).toLocaleString('es-PE', {minimumFractionDigits:2}) : null;
+    // Sin cuotas_totales ni meses_financiar no se sabe el plazo real -- antes
+    // caia en 36 como si fuera un dato real, en vez de avisar que falta
+    // definirlo (hallazgo B8).
+    const mesesNum = item.cuotas_totales ?? item.meses_financiar ?? null;
+    const meses = mesesNum ?? '¿?';
+    const valorTotal = item.valor_total != null ? Number(item.valor_total).toLocaleString('es-PE', {minimumFractionDigits:2}) : '0.00';
+    const valorInicial = item.valor_inicial != null ? Number(item.valor_inicial).toLocaleString('es-PE', {minimumFractionDigits:2}) : '0.00';
+    const saldo = item.saldo != null ? Number(item.saldo).toLocaleString('es-PE', {minimumFractionDigits:2}) : '0.00';
+
+    let badgeAtraso;
+    if (item.meses_atraso > 0) badgeAtraso = `<span class="badge" style="background:#FFEAEA; color:#D32F2F; border:1px solid #FFCDD2;">🔴 ${item.meses_atraso} ${item.meses_atraso === 1 ? 'mes' : 'meses'} de atraso</span>`;
+    else if (item.cuotas_pendientes === 0) badgeAtraso = `<span class="badge" style="background:#E8F5E9; color:#2E7D32; border:1px solid #C8E6C9;">✅ Plan completado</span>`;
+    else badgeAtraso = `<span class="badge badge-activa">🟢 Al día</span>`;
+
+    // meses_atraso es un valor guardado (lo actualiza el import externo o registrar_pago_cuota);
+    // si nadie lo recalculó y la fecha de próximo pago ya venció, avisar en vez de mostrar "Al día"
+    // indefinidamente por un dato desactualizado (no se sobreescribe el valor, solo se avisa).
+    const hoyPeruCob = ghlYmdPeruHoy(0);
+    const avisoAtrasoDesactualizado = (!(item.meses_atraso > 0) && item.cuotas_pendientes > 0 && item.fecha_proximo_pago && item.fecha_proximo_pago < hoyPeruCob)
+      ? `<p class="card-sub" style="color:var(--danger); font-weight:700; margin-top:3px;">⚠️ El próximo pago (${fmtFecha(item.fecha_proximo_pago)}) ya venció pero el sistema no registra atraso — verificar con cobranzas.</p>`
+      : '';
 
     return `
-      <div class="card" style="border-left: 4px solid var(--gold);">
+      <div class="card" style="border-left: 4px solid var(--gold); cursor:pointer;" onclick="abrirDetalleCuotas('${item.id}')">
         <div class="card-row">
           <div>
             <p class="card-title">👤 ${escapeHtml(cliNombre)}</p>
-            <p class="card-sub">📍 Lote: ${escapeHtml(loteCod)} · Saldo: S/ ${saldo}</p>
+            <p class="card-sub">📍 ${escapeHtml(loteCod)} · Total: S/ ${valorTotal} · Inicial: S/ ${valorInicial}</p>
             <p class="card-sub" style="color:var(--navy); font-weight:700; margin-top:3px;">
-              💵 Letra mensual: S/ ${cuotaMensual} (${meses} meses)
+              ${cuotaMensual ? `💵 S/ ${cuotaMensual} / mes` : `⚠️ Cuota mensual no definida`} · ${meses} cuotas · Saldo: S/ ${saldo}
             </p>
+            ${item.cuotas_totales ? `<p class="card-sub" style="margin-top:2px;">${item.cuotas_pagadas ?? 0} de ${item.cuotas_totales} cuotas pagadas</p>` : ''}
+            ${avisoAtrasoDesactualizado}
           </div>
-          <span class="badge badge-activa">Financiado</span>
+          ${badgeAtraso}
         </div>
-        <div class="card-actions" style="margin-top:10px;">
-          ${tel ? `<button class="chip-btn gold" onclick="enviarRecordatorioCuotaWhatsApp('${cliNombre.replace(/'/g,"\\\\'")}','${tel}','${loteCod.replace(/'/g,"\\\\\\'")}','${cuotaMensual}')">💬 Recordatorio WhatsApp</button>` : ''}
+        <div class="card-actions" style="margin-top:10px;" onclick="event.stopPropagation()">
+          <button class="chip-btn" style="color:var(--gold); border-color:var(--gold);" onclick="abrirDetalleCuotas('${item.id}')">📋 Ver cuotas</button>
+          ${tel && cuotaMensual ? `<button class="chip-btn gold" onclick="enviarRecordatorioCuotaWhatsApp('${cliNombre.replace(/'/g,"\\\\'")}','${tel}','${loteCod.replace(/'/g,"\\\\\\'")}','${cuotaMensual}')">💬 Recordatorio WhatsApp</button>` : ''}
+          ${tel && !cuotaMensual ? `<span class="chip-btn" style="opacity:.6; cursor:not-allowed;" title="No se puede enviar: falta definir la cuota mensual de este cliente">💬 Cuota no definida</span>` : ''}
           ${tel ? `<a class="chip-btn" href="tel:${tel}">📞 Llamar</a>` : ''}
-          <button class="chip-btn" onclick="toast('Pago de cuota registrado ✓')">✓ Registrar Abono</button>
         </div>
       </div>
     `;
   }).join('');
+}
+
+// Suma de meses a una fecha "YYYY-MM-DD", devuelve otra "YYYY-MM-DD".
+// setMonth() desborda cuando el dia de origen (29-31) no existe en el mes
+// destino (ej. 31 de enero + 1 mes = 3 de marzo en vez de fin de febrero)
+// -- se fija el dia al minimo entre el original y los dias del mes destino
+// (hallazgo A8).
+function sumarMesesFecha(fechaStr, n){
+  const [y, m, d] = fechaStr.split('-').map(Number);
+  const idxMes = (m - 1) + n;
+  const anioDestino = y + Math.floor(idxMes / 12);
+  const mesDestino = ((idxMes % 12) + 12) % 12;
+  const ultimoDiaMesDestino = new Date(anioDestino, mesDestino + 1, 0).getDate();
+  const dd = new Date(anioDestino, mesDestino, Math.min(d, ultimoDiaMesDestino));
+  return `${dd.getFullYear()}-${String(dd.getMonth() + 1).padStart(2, '0')}-${String(dd.getDate()).padStart(2, '0')}`;
+}
+
+// Modal de detalle de una separación financiada: historial real de cuotas
+// pagadas (fecha + comprobante, desde separacion_cuotas) y el calendario de
+// las cuotas que aún faltan, calculado a partir de cuota_mensual/
+// cuotas_pendientes/fecha_proximo_pago -- estas ultimas no se guardan en la
+// base, se generan al vuelo porque son solo una proyección.
+async function abrirDetalleCuotas(separacionId){
+  openModal('modalDetalleCuotas');
+  const bodyEl = document.getElementById('detalleCuotasBody');
+  bodyEl.innerHTML = `<div class="spinner"></div>`;
+
+  const { data: sep, error: errSep } = await sb.from('separaciones')
+    .select('*, propiedades(codigo), clientes(nombre)')
+    .eq('id', separacionId)
+    .maybeSingle();
+  if (errSep || !sep) { bodyEl.innerHTML = emptyState('⚠️', 'No se pudo cargar el detalle.'); return; }
+
+  const { data: pagos } = await sb.from('separacion_cuotas')
+    .select('numero_cuota, fecha_pago, comprobante')
+    .eq('separacion_id', separacionId)
+    .order('numero_cuota', { ascending: true });
+
+  const loteCod = sep.propiedades?.codigo || `${sep.manzana || ''}${sep.manzana && sep.lote ? '-' : ''}${sep.lote || ''}`;
+  document.getElementById('detalleCuotasTitulo').textContent = sep.clientes?.nombre || 'Cliente';
+  document.getElementById('detalleCuotasSubtitulo').textContent = `📍 ${loteCod}`;
+
+  const valorTotal = sep.valor_total != null ? Number(sep.valor_total).toLocaleString('es-PE', {minimumFractionDigits:2}) : '0.00';
+  const valorInicial = sep.valor_inicial != null ? Number(sep.valor_inicial).toLocaleString('es-PE', {minimumFractionDigits:2}) : '0.00';
+  const saldo = sep.saldo != null ? Number(sep.saldo).toLocaleString('es-PE', {minimumFractionDigits:2}) : '0.00';
+  const montoPagado = sep.monto_pagado != null ? Number(sep.monto_pagado).toLocaleString('es-PE', {minimumFractionDigits:2}) : valorInicial;
+  const cuotaMensual = sep.cuota_mensual != null ? Number(sep.cuota_mensual).toLocaleString('es-PE', {minimumFractionDigits:2}) : null;
+
+  const resumenHtml = `
+    <div class="card" style="background:#F7F3EA;">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px 16px;">
+        <div><p class="card-sub" style="margin:0;">Valor total</p><p style="margin:0; font-weight:700;">S/ ${valorTotal}</p></div>
+        <div><p class="card-sub" style="margin:0;">Inicial</p><p style="margin:0; font-weight:700;">S/ ${valorInicial}</p></div>
+        <div><p class="card-sub" style="margin:0;">Pagado a la fecha</p><p style="margin:0; font-weight:700; color:#2E7D32;">S/ ${montoPagado}</p></div>
+        <div><p class="card-sub" style="margin:0;">Saldo pendiente</p><p style="margin:0; font-weight:700; color:var(--danger);">S/ ${saldo}</p></div>
+      </div>
+      ${cuotaMensual ? `<p class="card-sub" style="margin:10px 0 0; border-top:1px solid var(--border); padding-top:8px;">💵 Cuota mensual: <b>S/ ${cuotaMensual}</b> · ${sep.cuotas_pagadas ?? 0} de ${sep.cuotas_totales ?? '-'} cuotas pagadas${sep.meses_atraso > 0 ? ` · <span style="color:var(--danger); font-weight:700;">${sep.meses_atraso} ${sep.meses_atraso === 1 ? 'mes' : 'meses'} de atraso</span>` : ''}</p>` : ''}
+    </div>
+  `;
+
+  // El resumen (cuotas_pagadas) y el historial real (separacion_cuotas) son
+  // dos fuentes independientes que antes podian desincronizarse sin ningun
+  // aviso -- ej. un pago extra/adelantado de la hoja original que el resumen
+  // nunca reflejo (hallazgo M9). Se avisa en pantalla en vez de mostrar
+  // numeros contradictorios sin explicacion.
+  const mismatchHtml = (pagos && sep.cuotas_pagadas != null && pagos.length !== sep.cuotas_pagadas)
+    ? `<p class="card-sub" style="color:var(--danger); font-weight:700; margin-top:8px;">⚠️ El resumen dice ${sep.cuotas_pagadas} cuotas pagadas pero el historial real tiene ${pagos.length} pago(s) registrado(s). Revisar con el equipo de cobranzas.</p>`
+    : '';
+
+  const pagadasHtml = (pagos && pagos.length)
+    ? `<h4 style="margin:14px 0 6px;">Historial de pagos</h4>` + pagos.map(p => `
+        <div class="card-row" style="padding:6px 0; border-bottom:1px solid var(--border);">
+          <span>Cuota ${p.numero_cuota} · ${fmtFecha(p.fecha_pago)}</span>
+          <span class="card-sub" style="margin:0;">${escapeHtml(p.comprobante || '')}</span>
+        </div>
+      `).join('')
+    : '';
+
+  // Proyección de cuotas pendientes (no guardadas en BD -- se calculan aqui).
+  // El monto mensual puede faltar (lotes sin plan de cuotas claro en la hoja
+  // original) -- eso no debe ocultar la lista, solo el monto de cada cuota.
+  let pendientesHtml = '';
+  if (sep.cuotas_pendientes > 0) {
+    if (!cuotaMensual) {
+      pendientesHtml = `<h4 style="margin:14px 0 6px;">Cuotas pendientes</h4>
+        <p class="card-sub" style="color:var(--danger); font-weight:700;">⚠️ Este cliente tiene ${sep.cuotas_pendientes} cuota(s) pendiente(s) pero no tiene un monto mensual definido en el sistema. Revisar manualmente con el equipo de cobranzas.</p>`;
+    } else if (!sep.fecha_proximo_pago) {
+      // Sin fecha base guardada no hay forma real de proyectar un calendario
+      // -- inventar "hoy" como punto de partida hacia mostraba fechas que
+      // cambiaban cada vez que alguien abria este detalle en un dia distinto
+      // (hallazgo A9). Se muestra la cantidad real de cuotas pendientes sin
+      // fechas inventadas.
+      const ultimaPagada = pagos && pagos.length ? pagos[pagos.length - 1].numero_cuota : 0;
+      const filas = [];
+      for (let i = 0; i < sep.cuotas_pendientes; i++) {
+        filas.push(`
+          <div class="card-row" style="padding:6px 0; border-bottom:1px solid var(--border);">
+            <span>Cuota ${ultimaPagada + i + 1} · fecha por confirmar</span>
+            <span class="badge" style="background:#F0F0F0; color:var(--ink-dim); border:1px solid var(--border);">Pendiente</span>
+          </div>
+        `);
+      }
+      pendientesHtml = `<h4 style="margin:14px 0 6px;">Cuotas pendientes</h4>
+        <p class="card-sub">⚠️ No hay una fecha de próximo pago guardada para este cliente -- las fechas de las cuotas pendientes quedan por confirmar con el equipo de cobranzas.</p>` + filas.join('');
+    } else {
+      const ultimaPagada = pagos && pagos.length ? pagos[pagos.length - 1].numero_cuota : 0;
+      const fechaBase = sep.fecha_proximo_pago;
+      const hoyPeru = ghlYmdPeruHoy(0);
+      const filas = [];
+      for (let i = 0; i < sep.cuotas_pendientes; i++) {
+        const fecha = i === 0 ? fechaBase : sumarMesesFecha(fechaBase, i);
+        const vencida = fecha < hoyPeru;
+        filas.push(`
+          <div class="card-row" style="padding:6px 0; border-bottom:1px solid var(--border);">
+            <span>Cuota ${ultimaPagada + i + 1} · ${fmtFecha(fecha)}</span>
+            <span class="badge" style="${vencida ? 'background:#FFEAEA; color:#D32F2F; border:1px solid #FFCDD2;' : 'background:#F0F0F0; color:var(--ink-dim); border:1px solid var(--border);'}">${vencida ? 'Vencida' : 'Pendiente'}</span>
+          </div>
+        `);
+      }
+      pendientesHtml = `<h4 style="margin:14px 0 6px;">Cuotas pendientes</h4>` + filas.join('');
+    }
+  }
+
+  // Registrar un pago desde la app (antes esto solo se podía hacer importando
+  // la hoja de cálculo externa: los pagos cobrados por WhatsApp nunca
+  // actualizaban el saldo). Solo administración registra pagos -- coincide
+  // con el permiso ya exigido por la RPC registrar_pago_cuota en la base.
+  const puedeRegistrarPago = tienePermiso('gestionar_cobranzas');
+  const siguienteCuota = (pagos && pagos.length ? pagos[pagos.length - 1].numero_cuota : 0) + 1;
+  const registrarPagoHtml = (puedeRegistrarPago && sep.condicion === 'financiado' && (sep.cuotas_pendientes ?? 0) > 0) ? `
+    <div class="card" style="background:#F0FDF4; border:1px solid #86EFAC; margin-top:12px;">
+      <p class="card-title" style="margin-bottom:8px;">💰 Registrar pago de cuota</p>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+        <div class="field"><label>N° de cuota</label><input type="number" id="pc_numero_cuota" min="1" value="${siguienteCuota}"></div>
+        <div class="field"><label>Fecha de pago</label><input type="date" id="pc_fecha_pago" value="${obtenerHoyLocal()}"></div>
+      </div>
+      <div class="field"><label>Comprobante / referencia (opcional)</label><input type="text" id="pc_comprobante" placeholder="N° operación, voucher..."></div>
+      <button class="btn-primary" style="width:100%; margin-top:6px;" onclick="guardarPagoCuota('${separacionId}')">Guardar pago</button>
+    </div>
+  ` : '';
+
+  bodyEl.innerHTML = resumenHtml + mismatchHtml + pagadasHtml + pendientesHtml + registrarPagoHtml;
+}
+
+async function guardarPagoCuota(separacionId){
+  const numeroCuota = parseInt(document.getElementById('pc_numero_cuota')?.value);
+  const fechaPago = document.getElementById('pc_fecha_pago')?.value;
+  const comprobante = document.getElementById('pc_comprobante')?.value.trim() || null;
+
+  if (!numeroCuota || numeroCuota < 1) { toast('⚠️ Indica un número de cuota válido'); return; }
+  if (!fechaPago) { toast('⚠️ Indica la fecha de pago'); return; }
+
+  toast('Registrando pago…');
+  try {
+    const { error } = await sb.rpc('registrar_pago_cuota', {
+      p_separacion_id: separacionId,
+      p_numero_cuota: numeroCuota,
+      p_fecha_pago: fechaPago,
+      p_comprobante: comprobante
+    });
+    if (error) throw error;
+    toast('Pago registrado ✓ Saldo actualizado');
+    abrirDetalleCuotas(separacionId);
+    cargarCobranzasCuotas();
+  } catch (e) {
+    toast('Error al registrar el pago: ' + (e.message || ''));
+    console.error(e);
+  }
 }
 
 function enviarRecordatorioCuotaWhatsApp(cliente, tel, lote, monto){
@@ -8784,6 +9373,10 @@ async function eliminarItemPortafolio(id){
 }
 
 /* ============ SEPARACIONES ============ */
+// Notas de términos especiales (bono Dúo Inversionista, cuotas dobles) transferidos
+// desde el cotizador. Ver pasarCotizacionASeparacion().
+let separacionNotasTransferidas = null;
+
 document.getElementById('btnAbrirNuevaSeparacion').addEventListener('click', () => {
   prepararModalSeparacion();
   openModal('modalSeparacion');
@@ -8822,6 +9415,8 @@ function prepararModalSeparacion(){
   document.getElementById('secCli').classList.remove('collapsed');
   document.getElementById('secLote').classList.add('collapsed');
   document.getElementById('secPago').classList.add('collapsed');
+
+  separacionNotasTransferidas = null;
 }
 
 document.getElementById('sp_tiene_conyuge').addEventListener('change', (e) => {
@@ -8880,12 +9475,14 @@ document.getElementById('btnGuardarSeparacion').addEventListener('click', async 
       console.warn('No se pudo generar el código correlativo de cliente:', e);
     }
 
-    const { data: nuevoCliente, error: errCliente } = await sb.from('clientes').insert({
+    const dniSep = document.getElementById('sp_cliente_dni').value.trim() || null;
+    const celularSep = document.getElementById('sp_cliente_celular').value.trim() || null;
+    const datosCliente = {
       vendedor_id: currentUser.id,
       nombre,
-      dni: document.getElementById('sp_cliente_dni').value.trim() || null,
-      celular: document.getElementById('sp_cliente_celular').value.trim() || null,
-      telefono: document.getElementById('sp_cliente_celular').value.trim() || null,
+      dni: dniSep,
+      celular: celularSep,
+      telefono: celularSep,
       direccion: document.getElementById('sp_cliente_direccion').value.trim() || null,
       correo: document.getElementById('sp_cliente_correo').value.trim() || null,
       email: document.getElementById('sp_cliente_correo').value.trim() || null,
@@ -8894,7 +9491,25 @@ document.getElementById('btnGuardarSeparacion').addEventListener('click', async 
       conyuge_celular: document.getElementById('sp_conyuge_celular').value.trim() || null,
       conyuge_direccion: document.getElementById('sp_conyuge_direccion').value.trim() || null,
       codigo_correlativo: codigoGenerado || null
-    }).select().single();
+    };
+
+    // Reutiliza al prospecto ya existente (por DNI o celular) en vez de crear
+    // siempre un cliente nuevo -- antes cada separación duplicaba el registro
+    // del cliente y el pipeline original nunca se enteraba de la separación.
+    let clienteExistenteId = null;
+    if (dniSep || celularSep) {
+      let qExist = sb.from('clientes').select('id');
+      qExist = dniSep ? qExist.eq('dni', dniSep) : qExist.eq('celular', celularSep);
+      const { data: existData } = await qExist.limit(1).maybeSingle();
+      clienteExistenteId = existData?.id || null;
+    }
+
+    let nuevoCliente, errCliente;
+    if (clienteExistenteId) {
+      ({ data: nuevoCliente, error: errCliente } = await sb.from('clientes').update(datosCliente).eq('id', clienteExistenteId).select().single());
+    } else {
+      ({ data: nuevoCliente, error: errCliente } = await sb.from('clientes').insert(datosCliente).select().single());
+    }
     if (errCliente) { toast('Error al registrar cliente'); console.error(errCliente); return; }
 
     const codigoPropiedad = `MZ${manzana}-LT${lote}`;
@@ -8929,7 +9544,7 @@ document.getElementById('btnGuardarSeparacion').addEventListener('click', async 
       estado: 'activa',
       n_cotizacion: document.getElementById('sp_cotizacion').value.trim() || null,
       socio: document.getElementById('sp_socio').value.trim() || null,
-      manzana, lote,
+      manzana, lote: parseInt(lote, 10) || null,
       area_m2: parseFloat(document.getElementById('sp_area').value) || null,
       valor_total: valorTotal,
       condicion,
@@ -8939,10 +9554,35 @@ document.getElementById('btnGuardarSeparacion').addEventListener('click', async 
       inversion_mensual: condicion === 'financiado' ? (parseFloat(document.getElementById('sp_inversion_mensual').value) || null) : null,
       medio_pago: document.getElementById('sp_medio_pago').value.trim() || null,
       n_operacion: document.getElementById('sp_n_operacion').value.trim() || null,
-      voucher_url: voucherUrl
+      voucher_url: voucherUrl,
+      notas: separacionNotasTransferidas || null
     }).select().single();
 
-    if (errSep) { toast('Error al guardar separación'); console.error(errSep); return; }
+    if (errSep) {
+      // 23505 = unique_violation: el indice unico (separaciones.propiedad_id WHERE estado='activa')
+      // impide dos separaciones activas sobre el mismo lote (condicion de carrera entre asesores).
+      if (errSep.code === '23505') {
+        toast('⚠️ Este lote ya fue separado (posiblemente por otro asesor en este instante). Actualiza la lista e intenta con otro lote.');
+      } else {
+        toast('Error al guardar separación');
+      }
+      console.error(errSep);
+      return;
+    }
+
+    // Sincroniza el pipeline: una separación real siempre mueve al cliente a
+    // "Separado", en vez de dejar que la tarjeta del kanban se quede en una
+    // etapa anterior mientras ya existe una separación activa para ese lote.
+    const etapaAnteriorCliente = clientesCache.find(c => c.id === nuevoCliente.id)?.estado_prospecto || 'Nuevo';
+    try {
+      await sb.from('clientes').update({ estado_prospecto: 'Separado' }).eq('id', nuevoCliente.id);
+      await sb.from('clientes_historial_pipeline').insert({
+        cliente_id: nuevoCliente.id, usuario_id: currentUser.id,
+        etapa_anterior: etapaAnteriorCliente, etapa_nueva: 'Separado'
+      });
+    } catch (errPipe) {
+      console.warn('No se pudo sincronizar el pipeline tras la separación:', errPipe);
+    }
 
     toast(`Separación creada con éxito ✓`);
     closeModal('modalSeparacion');
@@ -8964,7 +9604,7 @@ document.getElementById('btnGuardarSeparacion').addEventListener('click', async 
 
 async function cargarSeparacionesPorVencer(){
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = rol === 'admin' || rol === 'superadmin' || rol === 'director_comercial' || rol === 'gerencia';
+  const esSuperAdminODirector = esRolDireccion(rol);
 
   let query = sb.from('vista_separaciones_por_vencer').select('*');
   if (!esSuperAdminODirector) {
@@ -8996,9 +9636,20 @@ async function cargarSeparacionesPorVencer(){
 
 async function cargarSeparacionesTodas(){
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = rol === 'admin' || rol === 'superadmin' || rol === 'director_comercial' || rol === 'gerencia';
+  const esSuperAdminODirector = esRolDireccion(rol);
 
-  let query = sb.from('separaciones').select('*, propiedades(codigo), clientes(nombre)');
+  // Esta pestaña se llama "Separaciones Activas": solo debe mostrar
+  // separaciones con estado 'activa' que todavia no vencieron -- las ya
+  // convertidas en venta, canceladas o vencidas no pertenecen aqui (las
+  // convertidas viven en "Control de Cobranzas y Cuotas", con su propio
+  // historial de pagos).
+  // Hora de Peru, no UTC -- con toISOString() una separacion que vence hoy
+  // desaparecia de esta lista entre las 7pm y medianoche (hallazgo A7).
+  const hoyStr = ghlYmdPeruHoy(0);
+  let query = sb.from('separaciones')
+    .select('*, propiedades(codigo), clientes(nombre)')
+    .eq('estado', 'activa')
+    .gte('fecha_vencimiento', hoyStr);
   if (!esSuperAdminODirector) {
     query = query.eq('vendedor_id', currentUser.id);
   }
@@ -9038,7 +9689,7 @@ async function cargarSeparacionesTodas(){
         </div>
         <div class="card-actions" style="margin-top:8px;">
           ${celCliente ? `<button class="chip-btn gold" onclick="abrirModalWhatsAppRapido('${escapeHtml(nomCliente).replace(/'/g, "\'")}', '${celCliente}')">💬 WhatsApp</button>` : ''}
-          <button class="chip-btn" style="color:var(--gold); border-color:var(--gold);" onclick="abrirGenerarDocumento('${s.cliente_id}', '${escapeHtml(nomCliente).replace(/'/g, "\'")}', '${celCliente}')">📝 Minuta</button>
+          <button class="chip-btn" style="color:var(--gold); border-color:var(--gold);" onclick="abrirGenerarDocumento('${s.cliente_id}', '${escapeHtml(nomCliente).replace(/'/g, "\'")}', '${celCliente}', '${s.id}')">📝 Minuta</button>
           <button class="chip-btn" style="color:#2C5691; border-color:#2C5691;" onclick="abrirChecklistLegal('${s.cliente_id}', '${escapeHtml(nomCliente).replace(/'/g, "\'")}')">📋 Legal</button>
           ${puedeEliminar ? `<button class="chip-btn" style="color:var(--danger); border-color:var(--danger);" onclick="eliminarSeparacion('${s.id}')">🗑️</button>` : ''}
         </div>
@@ -9048,10 +9699,13 @@ async function cargarSeparacionesTodas(){
 }
 
 async function eliminarSeparacion(id){
-  if (!confirm('¿Eliminar esta separación? Esta acción no se puede deshacer.')) return;
-  const { error } = await sb.from('separaciones').delete().eq('id', id);
-  if (error) { toast('Error al eliminar'); console.error(error); return; }
-  toast('Separación eliminada');
+  if (!confirm('¿Cancelar esta separación? El lote quedará disponible nuevamente para otros clientes.')) return;
+  // Cancelacion logica (no delete fisico): un trigger en la base de datos libera
+  // automaticamente el lote (propiedades.estado -> 'disponible') cuando ya no
+  // queda ninguna separacion 'activa' apuntando a el.
+  const { error } = await sb.from('separaciones').update({ estado: 'cancelada' }).eq('id', id);
+  if (error) { toast('Error al cancelar la separación'); console.error(error); return; }
+  toast('Separación cancelada; el lote quedó disponible ✓');
   cargarSeparacionesTodas(); cargarSeparacionesPorVencer(); cargarKPIs();
 }
 
@@ -9118,13 +9772,7 @@ async function obtenerTokenGoogleFresco(){
   try {
     const { data: { session } } = await sb.auth.getSession();
     if (!session) { ultimoErrorTokenGoogle = 'No hay sesión activa de Supabase.'; return null; }
-    const resp = await fetch(`${SUPABASE_URL}/functions/v1/refrescar-token-google`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`
-      }
-    });
+    const resp = await invocarEdgeFunction('refrescar-token-google');
     const result = await resp.json();
     if (result.ok && result.access_token) {
       ultimoErrorTokenGoogle = null;
@@ -9142,6 +9790,11 @@ async function obtenerTokenGoogleFresco(){
     return null;
   }
 }
+
+// IDs de eventos de agenda con una sincronizacion a Google Calendar en
+// vuelo -- evita disparar la misma sincronizacion dos veces en paralelo si
+// cargarAgenda() se vuelve a llamar antes de que termine (hallazgo M8).
+const eventosSincronizandoCalendar = new Set();
 
 async function sincronizarEventoCalendar(ev){
   const googleToken = await obtenerTokenGoogleFresco();
@@ -9643,7 +10296,7 @@ async function cargarAgenda(){
   if (!currentUser) return;
 
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = esUsuarioSuperAdmin();
+  const esSuperAdminODirector = esRolDireccion(rol);
   const esSupervisor = rol === 'supervisor';
 
   try {
@@ -9672,9 +10325,16 @@ async function cargarAgenda(){
     actualizarTituloNavCal();
     renderizarVistaActiva();
 
+    // cargarAgenda() puede dispararse otra vez (cambiar de pestaña y volver
+    // rapido) antes de que termine de sincronizar un evento pendiente con
+    // Google Calendar -- sin este guard, la misma cita en pendientesPropios
+    // se volvia a sincronizar en paralelo y creaba el evento duplicado
+    // (hallazgo M8).
     const pendientesPropios = (data || []).filter(ev => ev.usuario_id === currentUser.id && !ev.google_calendar_event_id && (ev.sync_calendar_intentos || 0) < 3);
     for (const ev of pendientesPropios) {
-      sincronizarEventoCalendar(ev);
+      if (eventosSincronizandoCalendar.has(ev.id)) continue;
+      eventosSincronizandoCalendar.add(ev.id);
+      sincronizarEventoCalendar(ev).finally(() => eventosSincronizandoCalendar.delete(ev.id));
     }
   } catch (err) {
     console.error('Error cargando agenda:', err);
@@ -9699,12 +10359,15 @@ function semaforoAgenda(fechaInicio){
 }
 
 /* ============ CHECKLIST PERSISTENTE ============ */
-async function cargarChecklist(){
-  const { data } = await sb.from('agenda')
-    .select('*')
-    .eq('usuario_id', currentUser.id)
-    .eq('estado', 'programada')
-    .order('fecha_inicio', { ascending: true });
+// Esta pestaña vive dentro de la vista de Agenda (ver cambiarVistaCalendario),
+// así que calEstado.eventos ya está cargado por cargarAgenda() antes de que el
+// usuario pueda llegar aquí. Antes esta función repetía su propia consulta a
+// "agenda" en paralelo -- dos copias independientes de los mismos datos que
+// podían desincronizarse. Se filtra en el cliente en vez de volver a pedirlo.
+function cargarChecklist(){
+  const data = (calEstado.eventos || [])
+    .filter(ev => ev.usuario_id === currentUser.id && ev.estado === 'programada')
+    .sort((a, b) => new Date(a.fecha_inicio) - new Date(b.fecha_inicio));
 
   const el = document.getElementById('listaChecklist');
   if (!data || data.length === 0) { el.innerHTML = emptyState('✅', 'No tienes actividades pendientes en tu checklist.'); return; }
@@ -10016,7 +10679,7 @@ function alCambiarSolicitanteSelect(){
 /* ============ REPORTE DIARIO DEL EQUIPO ============ */
 async function obtenerIdsEquipo(){
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = rol === 'superadmin' || rol === 'admin' || rol === 'director_comercial' || rol === 'gerencia';
+  const esSuperAdminODirector = esRolDireccion(rol);
   if (esSuperAdminODirector) {
     const { data } = await sb.from('usuarios').select('id, nombre').eq('activo', true).order('nombre');
     return data || [];
@@ -10038,9 +10701,16 @@ async function cargarReporteEquipo(fecha){
   const idsEquipo = equipo.map(u => u.id);
   const nombrePorId = Object.fromEntries(equipo.map(u => [u.id, u.nombre]));
 
+  // fecha_inicio se guarda como instante UTC calculado a partir de la hora local del dispositivo
+  // (new Date(`${fecha}T${hora}:00`).toISOString()). Los límites del día deben calcularse igual
+  // (hora local), no como strings UTC ingenuos, o los eventos de la tarde/noche caen en el día
+  // equivocado del reporte.
+  const inicioDiaLocal = new Date(`${fecha}T00:00:00`);
+  const finDiaLocal = new Date(inicioDiaLocal.getTime() + 24 * 60 * 60 * 1000);
+
   const [{ data: actividades }, { data: agenda }, { data: solicitudes }] = await Promise.all([
     sb.from('actividades').select('*').in('usuario_id', idsEquipo).eq('fecha_programada', fecha).eq('archivada', false),
-    sb.from('agenda').select('*').in('usuario_id', idsEquipo).gte('fecha_inicio', fecha + 'T00:00:00').lt('fecha_inicio', fecha + 'T23:59:59'),
+    sb.from('agenda').select('*').in('usuario_id', idsEquipo).gte('fecha_inicio', inicioDiaLocal.toISOString()).lt('fecha_inicio', finDiaLocal.toISOString()),
     sb.from('solicitudes').select('*').in('asignado_a', idsEquipo).eq('fecha_limite', fecha),
   ]);
 
@@ -10233,6 +10903,25 @@ function ghlCambiarTab(tab){
 function renderGhlMes(m){
   document.getElementById('ghlMesPeriodo').textContent = m.periodLabel || '';
 
+  // Mismo aviso que ya tenia "por rango" cuando contacts/opportunities no
+  // trajo todo el mes (limite de 500 filas de ghlGetAllPages) -- antes el
+  // mes nunca lo mostraba aunque usa el mismo limite (hallazgo M13).
+  const avisoMesEl = document.getElementById('ghlMesPeriodo');
+  if (avisoMesEl) {
+    let badge = document.getElementById('ghlMesAvisoIncompleto');
+    if (m.posibleDatosIncompletos) {
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.id = 'ghlMesAvisoIncompleto';
+        badge.style.cssText = 'display:block; font-size:11px; font-weight:700; color:var(--danger); margin-top:2px;';
+        avisoMesEl.after(badge);
+      }
+      badge.textContent = '⚠️ Datos posiblemente incompletos (fuera de las 500 filas más recientes)';
+    } else {
+      badge?.remove();
+    }
+  }
+
   const kpisEl = document.getElementById('ghlMesKpis');
   kpisEl.innerHTML = [
     { num: m.totals.opp, lbl: 'Oportunidades', ic: '🆕', tone: 'info' },
@@ -10306,8 +10995,47 @@ function renderGhlMes(m){
 
 let ghlFiltroAsesorHoy = null;
 
+// Los leads de GHL viven solo en el CRM externo (via la edge function) y nunca se
+// cruzaban con la tabla local `clientes` -- una misma persona podia existir como
+// lead en GHL y como cliente en la app sin ningun vinculo visible. Se cruza por
+// clientes.ghl_contact_id (vinculo explicito) o, si no existe aun, por celular
+// (coincidencia heuristica que el asesor puede confirmar con el botón Vincular).
+function buscarClienteVinculadoGhl(lead){
+  const lista = clientesCache || [];
+  if (!lista.length) return null;
+  if (lead.contactId) {
+    const porId = lista.find(c => c.ghl_contact_id === lead.contactId);
+    if (porId) return { cliente: porId, exacto: true };
+  }
+  const telLead = (lead.telefono || '').replace(/\D/g, '').slice(-9);
+  if (telLead) {
+    const porTel = lista.find(c => (c.celular || c.telefono || '').replace(/\D/g, '').slice(-9) === telLead);
+    if (porTel) return { cliente: porTel, exacto: false };
+  }
+  return null;
+}
+
+async function vincularLeadGhlACliente(contactId, clienteId){
+  if (!contactId || !clienteId) return;
+  try {
+    const { error } = await sb.from('clientes').update({ ghl_contact_id: contactId }).eq('id', clienteId);
+    if (error) throw error;
+    const idx = (clientesCache || []).findIndex(c => c.id === clienteId);
+    if (idx !== -1) clientesCache[idx].ghl_contact_id = contactId;
+    toast('Lead vinculado al cliente ✓');
+    if (ghlUltimoReporte?.today) ghlRenderLeadsList(document.getElementById('ghlLeadsHoy'), ghlFiltroAsesorHoy ? (ghlUltimoReporte.today.leads || []).filter(l => l.advisor === ghlFiltroAsesorHoy) : (ghlUltimoReporte.today.leads || []), 'Sin leads.');
+  } catch (e) {
+    toast('Error al vincular: ' + (e.message || ''));
+    console.error(e);
+  }
+}
+
 function ghlRenderLeadsList(containerEl, leads, vacioTexto){
   containerEl.innerHTML = (leads || []).length ? leads.map(l => {
+    const vinculo = buscarClienteVinculadoGhl(l);
+    const vinculoBadge = vinculo
+      ? `<p class="card-sub" style="margin:4px 0 0; color:#2E7D32; font-weight:700;">${vinculo.exacto ? '✅' : '🔎'} ${vinculo.exacto ? 'Ya es cliente' : 'Posible cliente ya registrado'}: ${escapeHtml(vinculo.cliente.nombre)}${!vinculo.exacto ? ` <button class="chip-btn" style="font-size:10px; padding:2px 6px; margin-left:4px;" onclick="vincularLeadGhlACliente('${escapeHtml(l.contactId || '')}','${vinculo.cliente.id}')">Confirmar vínculo</button>` : ''}</p>`
+      : '';
     let respBadge;
     if (l.responded) respBadge = `<span class="badge badge-completada">🧑 Asesor: ${ghlFmtHora(l.asesorRespondioEn)} (${ghlFmtDuracion(l.responseMs)})</span>`;
     else if (l.unassigned) respBadge = `<span class="badge badge-vencida">⚠️ Asignar asesor</span>`;
@@ -10338,6 +11066,7 @@ function ghlRenderLeadsList(containerEl, leads, vacioTexto){
             <p class="card-title">${escapeHtml(l.name)}</p>
             <p class="card-sub">${escapeHtml(l.advisor)}${l.advisorVia ? ' <span style="color:var(--ink-dim);">(' + l.advisorVia + ')</span>' : ''} · llegó ${ghlFmtHora(l.createdAt)}${l.stage ? ' · ' + escapeHtml(l.stage) : ''}</p>
             ${l.telefono ? `<p class="card-sub" style="margin:2px 0 0;">${ghlTelefonoLink(l.telefono)}</p>` : ''}
+            ${vinculoBadge}
           </div>
           ${respBadge}
         </div>
@@ -10364,6 +11093,49 @@ function ghlRenderLeadsList(containerEl, leads, vacioTexto){
   });
 }
 
+// Invoca ghl-reporte-dia con reintento automático de sesión: cuando dos
+// pestañas/dispositivos comparten el mismo login, o el celular suspende el
+// timer de auto-refresh mientras la app está en segundo plano, el token
+// guardado puede quedar invalido ("session_not_found" en Supabase Auth) y
+// la función responde 401 aunque el usuario siga con la sesión iniciada.
+// Un simple "reintentar" no lo arregla porque se reenvia el mismo token
+// vencido -- primero hay que refrescar la sesión.
+async function invocarGhlReporte(body){
+  let { data, error } = await sb.functions.invoke('ghl-reporte-dia', { body });
+  if (error && error.context?.status === 401) {
+    await sb.auth.refreshSession();
+    ({ data, error } = await sb.functions.invoke('ghl-reporte-dia', { body }));
+  }
+  return { data, error };
+}
+
+// Mismo patrón de "refrescar sesión y reintentar una vez ante 401" que
+// invocarGhlReporte, generalizado para las demás funciones backend que se
+// llaman con fetch() directo en vez de sb.functions.invoke (MAJO, generador
+// de documentos legales, ingesta de documentos, respaldo manual) -- antes
+// solo GHL tenía el arreglo y las demás mostraban un error genérico o, en
+// el caso de MAJO, caían en una respuesta de respaldo sin avisar (A11).
+async function invocarEdgeFunction(nombreFuncion, { body, extraHeaders = {} } = {}){
+  async function intentar(){
+    const token = (await sb.auth.getSession()).data?.session?.access_token;
+    return fetch(`${SUPABASE_URL}/functions/v1/${nombreFuncion}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+        ...extraHeaders,
+      },
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+  }
+  let resp = await intentar();
+  if (resp.status === 401) {
+    await sb.auth.refreshSession();
+    resp = await intentar();
+  }
+  return resp;
+}
+
 async function verConversacionGhl(contactId, nombreLead){
   if (!contactId) { toast('Este lead no tiene contacto asociado.'); return; }
   document.getElementById('ghlConvTitulo').textContent = nombreLead || 'Conversación';
@@ -10373,7 +11145,7 @@ async function verConversacionGhl(contactId, nombreLead){
   openModal('modalGhlConversacion');
 
   try {
-    const { data, error } = await sb.functions.invoke('ghl-reporte-dia', { body: { verConversacion: contactId } });
+    const { data, error } = await invocarGhlReporte({ verConversacion: contactId });
     if (error) throw error;
     if (!data || data.ok === false) throw new Error(data?.error || 'La función no devolvió datos.');
 
@@ -10523,7 +11295,7 @@ async function cargarGhlDiaFecha(fecha){
       scopeData = ghlUltimoReporte.today;
       asOf = ghlUltimoReporte.asOf;
     } else {
-      const { data, error } = await sb.functions.invoke('ghl-reporte-dia', { body: { desde: fecha, hasta: fecha } });
+      const { data, error } = await invocarGhlReporte({ desde: fecha, hasta: fecha });
       if (error) throw error;
       if (!data || data.ok === false) throw new Error(data?.error || 'La función no devolvió datos.');
       if (!data.rango) throw new Error('No se pudo calcular ese día.');
@@ -10558,7 +11330,7 @@ async function cargarGhlDia(){
   ghlFiltroAsesorHoy = null;
 
   try {
-    const { data, error } = await sb.functions.invoke('ghl-reporte-dia', { body: {} });
+    const { data, error } = await invocarGhlReporte({});
     if (error) throw error;
     if (!data || data.ok === false) throw new Error(data?.error || 'La función no devolvió datos.');
 
@@ -10591,6 +11363,18 @@ async function cargarGhlDia(){
 // de WhatsApp casi siempre traen emojis (ej. "mery🚗🚕", "mg lab dental 🖌️"),
 // asi que se limpian antes de imprimirlos en el PDF. No se usa en pantalla
 // (ahi el navegador si renderiza emojis normalmente).
+// Los nombres peruanos (2 nombres + 2 apellidos) suelen ser largos -- sin un
+// limite de ancho pueden chocar con el dato de al lado (DNI, fecha) o
+// cortarse en el borde de la hoja. Se recorta con "…" al ancho disponible en
+// las unidades del documento (mm por defecto en jsPDF) (hallazgo M7).
+function truncarTextoPdf(doc, texto, anchoMaxUnidades){
+  const original = String(texto ?? '');
+  let t = original;
+  while (t.length > 1 && doc.getTextWidth(t) > anchoMaxUnidades) t = t.slice(0, -1);
+  if (t.length < original.length) t = t.slice(0, Math.max(0, t.length - 1)) + '…';
+  return t;
+}
+
 function quitarEmojis(str){
   if (!str) return '';
   return String(str)
@@ -10767,7 +11551,7 @@ async function generarYCompartirPdfGhl(scopeData, tituloPeriodo, subtituloFecha,
     doc.setTextColor(...cNavy);
     doc.setFontSize(9.5);
     doc.setFont(undefined, 'bold');
-    doc.text(quitarEmojis(l.name) || '(sin nombre)', marginX + 8, yy);
+    doc.text(truncarTextoPdf(doc, quitarEmojis(l.name) || '(sin nombre)', anchoUtil - 16), marginX + 8, yy);
 
     doc.setFontSize(7.5);
     doc.setTextColor(...cDim);
@@ -10919,7 +11703,7 @@ document.getElementById('btnGenerarReporteGhlRango').addEventListener('click', a
   toast('Generando reporte…');
 
   try {
-    const { data, error } = await sb.functions.invoke('ghl-reporte-dia', { body: { desde, hasta } });
+    const { data, error } = await invocarGhlReporte({ desde, hasta });
     if (error) throw error;
     if (!data || data.ok === false) throw new Error(data?.error || 'La función no devolvió datos.');
     if (!data.rango) throw new Error('No se pudo calcular el rango.');
@@ -10942,11 +11726,6 @@ document.getElementById('btnGenerarReporteGhlRango').addEventListener('click', a
 
 /* ============ MAJO ASSISTANT ============ */
 let majoConversacionActual = null;
-
-async function obtenerTokenSesion(){
-  const { data } = await sb.auth.getSession();
-  return data?.session?.access_token || null;
-}
 
 async function iniciarMajoAssistant(){
   const rol = currentProfile?.rol;
@@ -10995,12 +11774,22 @@ function markdownSimpleAHtml(textoEscapado){
   return html;
 }
 
-function renderBurbujaMajo(rol, contenido, fuentes, imagenes){
+function renderBurbujaMajo(rol, contenido, fuentes, imagenes, motor){
   const cont = document.getElementById('majoChatMensajes');
   const esUsuario = rol === 'user';
   const fila = document.createElement('div');
   fila.className = 'majo-burbuja-fila';
   fila.style.justifyContent = esUsuario ? 'flex-end' : 'flex-start';
+
+  // Aviso cuando la respuesta NO vino del motor principal (Gemini) -- antes
+  // esto era indistinguible en pantalla de una respuesta real, ya sea de un
+  // proveedor de respaldo (Groq/Cerebras/Mistral/OpenRouter) o del motor
+  // 100% local que se usa cuando el backend no respondio nada (hallazgo A12).
+  let avisoMotorHtml = '';
+  if (!esUsuario && motor && !motor.startsWith('gemini')) {
+    const esLocal = motor === 'local';
+    avisoMotorHtml = `<div style="font-size:10.5px; font-weight:700; color:#946200; margin-bottom:5px;">⚠️ ${esLocal ? 'Respuesta genérica — el asistente no pudo conectarse al servidor' : `Respuesta de respaldo (${escapeHtml(motor)}), no del motor principal`}</div>`;
+  }
 
   let fuentesHtml = '';
   if (fuentes && fuentes.length > 0) {
@@ -11020,7 +11809,7 @@ function renderBurbujaMajo(rol, contenido, fuentes, imagenes){
 
   fila.innerHTML = `
     ${!esUsuario ? '<div class="majo-mini-avatar">😊</div>' : ''}
-    <div class="majo-burbuja ${esUsuario ? 'majo-burbuja-usuario' : 'majo-burbuja-asistente'}">${contenidoHtml}${imagenesHtml}${fuentesHtml}</div>
+    <div class="majo-burbuja ${esUsuario ? 'majo-burbuja-usuario' : 'majo-burbuja-asistente'}">${avisoMotorHtml}${contenidoHtml}${imagenesHtml}${fuentesHtml}</div>
   `;
   cont.appendChild(fila);
   cont.scrollTop = cont.scrollHeight;
@@ -11043,29 +11832,29 @@ async function enviarMensajeMajo(){
   cont.scrollTop = cont.scrollHeight;
 
   try {
-    const token = await obtenerTokenSesion();
-    const contextoGlobal = await compilarContextoGlobalMAJO();
-    
     let respuestaFinal = null;
     let fuentesFinal = null;
     let imagenesFinal = null;
+    let motorFinal = null;
 
     try {
-      const resp = await fetch(`${SUPABASE_URL}/functions/v1/majo-chat`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          conversacion_id: majoConversacionActual,
-          mensaje,
-          contexto_global: contextoGlobal
-        }),
-      });
+      // majo-chat hace RAG real (embeddings + busqueda por similitud en
+      // pgvector, ver obtenerContextoDocumentos en el edge function) y nunca
+      // lee "contexto_global" -- antes se calculaba igual en cada mensaje
+      // (varias consultas sin filtrar a portafolio_items/manual_ventas/
+      // majo_documentos/majo_sitios), un trabajo desperdiciado en el caso
+      // comun. Ahora solo se arma si el backend no responde (ver abajo).
+      const resp = await invocarEdgeFunction('majo-chat', { body: {
+        conversacion_id: majoConversacionActual,
+        mensaje
+      } });
 
       if (resp.ok) {
         const data = await resp.json();
         respuestaFinal = data.respuesta;
         fuentesFinal = data.fuentes;
         imagenesFinal = data.imagenes;
+        motorFinal = data.motor;
       }
     } catch (errNet) {
       console.warn('Edge Function no disponible, usando motor MAJO local:', errNet);
@@ -11074,15 +11863,17 @@ async function enviarMensajeMajo(){
     document.getElementById('majoEscribiendo')?.remove();
 
     if (!respuestaFinal) {
-      respuestaFinal = generarRespuestaMAJOLocal(mensaje, contextoGlobal);
+      const contextoLocal = await compilarContextoGlobalMAJO();
+      respuestaFinal = generarRespuestaMAJOLocal(mensaje, contextoLocal);
       fuentesFinal = ["Documentación Oficial Costa Dorada", "Portafolio Multimedia", "Manual de Ventas"];
+      motorFinal = 'local';
     }
 
-    renderBurbujaMajo('assistant', respuestaFinal, fuentesFinal, imagenesFinal);
+    renderBurbujaMajo('assistant', respuestaFinal, fuentesFinal, imagenesFinal, motorFinal);
   } catch (e) {
     document.getElementById('majoEscribiendo')?.remove();
     const fallback = generarRespuestaMAJOLocal(mensaje, '');
-    renderBurbujaMajo('assistant', fallback);
+    renderBurbujaMajo('assistant', fallback, null, null, 'local');
   }
 }
 
@@ -11155,12 +11946,8 @@ document.getElementById('btnSubirDocMajo')?.addEventListener('click', async () =
     document.getElementById('majoDocTexto').value = '';
     cargarDocumentosMajo();
 
-    const token = await obtenerTokenSesion();
-    fetch(`${SUPABASE_URL}/functions/v1/majo-ingest-documento`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ documento_id: nuevoDoc.id }),
-    }).then(() => cargarDocumentosMajo()).catch(err => console.error('Error en ingesta:', err));
+    invocarEdgeFunction('majo-ingest-documento', { body: { documento_id: nuevoDoc.id } })
+      .then(() => cargarDocumentosMajo()).catch(err => console.error('Error en ingesta:', err));
     toast('Documento en proceso ✓');
   } catch (e) {
     toast('Error al subir');
@@ -11436,13 +12223,23 @@ document.getElementById('btnGenerarRespaldoAhora')?.addEventListener('click', as
   btn.disabled = true;
   btn.textContent = 'Generando…';
   try {
-    const token = (await sb.auth.getSession()).data?.session?.access_token;
-    const resp = await fetch(`${SUPABASE_URL}/functions/v1/respaldo-diario`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` },
-    });
+    const resp = await invocarEdgeFunction('respaldo-diario');
     if (!resp.ok) throw new Error('Error del servidor');
-    toast('Respaldo generado ✓');
+    const dataResp = await resp.json();
+    // El HTTP 200 no basta -- una tabla individual puede haber fallado al
+    // copiarse y la funcion igual respondia 200 sin avisar (hallazgo B9).
+    // Tampoco basta con que la subida no lance error: el archivo se vuelve a
+    // descargar y releer para confirmar que es un respaldo realmente
+    // restaurable, no solo "subido sin excepción".
+    if (dataResp.ok === false && (dataResp.tablas_con_error || []).length > 0) {
+      toast(`⚠️ Respaldo generado con errores en: ${dataResp.tablas_con_error.join(', ')}`);
+    } else if (dataResp.ok === false && dataResp.verificado === false) {
+      toast(`⚠️ Respaldo subido pero no se pudo verificar que sea restaurable: ${dataResp.motivo_no_verificado || 'revisar manualmente'}`);
+    } else if (dataResp.omitido) {
+      toast(dataResp.motivo || 'Ya hay un respaldo reciente.');
+    } else {
+      toast('Respaldo generado ✓');
+    }
     cargarListaRespaldos();
   } catch (e) {
     toast('Error al generar el respaldo');
@@ -11461,7 +12258,7 @@ async function cargarNotificacionesBadge(){
     totalAlertas += (seps || []).length;
 
     const rol = currentProfile?.rol;
-    const esSuperAdminODirector = rol === 'admin' || rol === 'superadmin' || rol === 'director_comercial' || rol === 'gerencia';
+    const esSuperAdminODirector = esRolDireccion(rol);
 
     let qAg = sb.from('agenda').select('id', { count: 'exact', head: true }).eq('estado', 'programada');
     if (!esSuperAdminODirector) qAg = qAg.eq('usuario_id', currentUser.id);
@@ -11479,7 +12276,7 @@ async function cargarNotificacionesBadge(){
     totalAlertas += (numSol || 0);
 
     let qCli = sb.from('clientes').select('proxima_fecha, fecha_contacto, created_at, estado_prospecto')
-      .not('estado_prospecto', 'in', '("Separado","No interesado")');
+      .or('estado_prospecto.is.null,estado_prospecto.not.in.(Separado,"No interesado")');
     if (!esSuperAdminODirector) qCli = qCli.eq('vendedor_id', currentUser.id);
     const { data: clientesRiesgo } = await qCli;
     totalAlertas += (clientesRiesgo || []).filter(clienteEnRiesgo).length;
@@ -11565,7 +12362,7 @@ async function cargarNotificaciones(asesorIdFiltro){
     });
 
     const rol = currentProfile?.rol;
-    const esSuperAdminODirector = rol === 'admin' || rol === 'superadmin' || rol === 'director_comercial' || rol === 'gerencia';
+    const esSuperAdminODirector = esRolDireccion(rol);
 
     let qAg = sb.from('agenda')
       .select('*, usuarios(nombre)')
@@ -11646,7 +12443,7 @@ async function cargarNotificaciones(asesorIdFiltro){
     });
 
     let qCliNotif = sb.from('clientes').select('*')
-      .not('estado_prospecto', 'in', '("Separado","No interesado")');
+      .or('estado_prospecto.is.null,estado_prospecto.not.in.(Separado,"No interesado")');
     if (idObjetivo !== 'todos') {
       qCliNotif = qCliNotif.eq('vendedor_id', idObjetivo);
     } else if (!esSuperAdminODirector) {
@@ -11799,60 +12596,65 @@ async function cargarPendientesInicio(){
   const elSub = document.getElementById('pi_subtitulo_fecha');
   if (elSub) elSub.textContent = `${fmtFecha(hoy)} · Prioridades operativas y pendientes`;
 
-  try {
-    // 1. Tareas no completadas: de HOY y de DÍAS ANTERIORES (atrasadas)
-    const { data: acts } = await sb.from('actividades')
-      .select('*')
-      .eq('usuario_id', currentUser.id)
-      .eq('archivada', false)
-      .eq('completada', false)
+  // Antes, las 4 consultas + la de jornada efectiva vivian dentro de un solo
+  // try/catch secuencial: si UNA fallaba (red, RLS, o cualquier excepcion),
+  // toda la funcion se abortaba silenciosamente y la tarjeta se quedaba con
+  // el spinner y los "0" iniciales del HTML para siempre, sin ningun aviso.
+  // Cada fuente de datos ahora corre de forma independiente (Promise.allSettled)
+  // asi una que falle no bloquea a las demas, y un error real se muestra en
+  // pantalla en vez de dejar el spinner colgado indefinidamente.
+  const resultados = await Promise.allSettled([
+    sb.from('actividades').select('*')
+      .eq('usuario_id', currentUser.id).eq('archivada', false).eq('completada', false)
       .lte('fecha_programada', hoy)
       .order('fecha_programada', { ascending: true })
-      .order('hora_inicio', { ascending: true, nullsFirst: false });
-
-    const tareasPendientes = acts || [];
-
-    // 2. Citas de agenda pendientes (de hoy o anteriores sin resolver)
-    const { data: citas } = await sb.from('agenda')
-      .select('*')
+      .order('hora_inicio', { ascending: true, nullsFirst: false }),
+    sb.from('agenda').select('*')
       .eq('usuario_id', currentUser.id)
       .lte('fecha_inicio', hoy + 'T23:59:59')
-      .order('fecha_inicio', { ascending: true });
+      .order('fecha_inicio', { ascending: true }),
+    sb.from('solicitudes').select('*')
+      .eq('usuario_id', currentUser.id).eq('estado', 'pendiente')
+      .order('created_at', { ascending: false }),
+    sb.from('actividades').select('*')
+      .eq('usuario_id', currentUser.id).eq('fecha_programada', hoy).eq('estado', 'completada'),
+  ]);
 
-    const citasPendientes = (citas || []).filter(c => c.estado !== 'realizada' && c.estado !== 'cancelada');
+  const [resActs, resCitas, resSols, resActsHoy] = resultados;
+  const nombresConsulta = ['actividades pendientes', 'agenda', 'solicitudes', 'actividades de hoy'];
+  resultados.forEach((r, i) => {
+    if (r.status === 'rejected') console.error(`Error cargando ${nombresConsulta[i]} en Inicio:`, r.reason);
+    else if (r.value?.error) console.error(`Error cargando ${nombresConsulta[i]} en Inicio:`, r.value.error);
+  });
 
-    // 3. Solicitudes pendientes del usuario
-    const { data: sols } = await sb.from('solicitudes')
-      .select('*')
-      .eq('usuario_id', currentUser.id)
-      .eq('estado', 'pendiente')
-      .order('created_at', { ascending: false });
-    
-    const solicitudesPendientes = sols || [];
+  const tareasPendientes = (resActs.status === 'fulfilled' ? resActs.value.data : null) || [];
+  const citas = (resCitas.status === 'fulfilled' ? resCitas.value.data : null) || [];
+  const solicitudesPendientes = (resSols.status === 'fulfilled' ? resSols.value.data : null) || [];
+  const actsHoy = (resActsHoy.status === 'fulfilled' ? resActsHoy.value.data : null) || [];
 
-    // 4. Clientes en riesgo (>7 días sin contacto)
-    const clientesEnRiesgoLista = (clientesCache || []).filter(c => clienteEnRiesgo(c));
+  const citasPendientes = citas.filter(c => c.estado !== 'realizada' && c.estado !== 'cancelada');
 
-    // 5. Separaciones por vencer hoy o vencidas
-    const sepPorVencer = (separacionesPorVencerCache || []).filter(s => {
-      return s.fecha_vencimiento && s.fecha_vencimiento <= hoy;
-    });
+  // Clientes en riesgo (>7 días sin contacto)
+  const clientesEnRiesgoLista = (clientesCache || []).filter(c => clienteEnRiesgo(c));
 
-    const totalAlertas = tareasPendientes.length + citasPendientes.length + solicitudesPendientes.length + sepPorVencer.length;
+  // Separaciones por vencer hoy o vencidas
+  const sepPorVencer = (separacionesPorVencerCache || []).filter(s => {
+    return s.fecha_vencimiento && s.fecha_vencimiento <= hoy;
+  });
 
-    // 6. Actividades y citas de agenda REALIZADAS hoy, para la barra de
-    // Jornada Efectiva -- actualizarBarraJornadaEfectiva() ya calculaba esto
-    // correctamente pero nunca se llamaba desde ningún lado, así que la
-    // barra se quedaba fija en 0.0/8.0 hrs sin importar lo que se registrara.
-    // Suma exclusivamente actividades completadas + agendas realizadas.
-    const { data: actsHoy } = await sb.from('actividades')
-      .select('*')
-      .eq('usuario_id', currentUser.id)
-      .eq('fecha_programada', hoy)
-      .eq('estado', 'completada');
-    const citasHoy = (citas || []).filter(c => c.estado === 'realizada' && (c.fecha_inicio || '').split('T')[0] === hoy);
+  const totalAlertas = tareasPendientes.length + citasPendientes.length + solicitudesPendientes.length + sepPorVencer.length;
+
+  // Actividades y citas de agenda REALIZADAS hoy, para la barra de Jornada
+  // Efectiva -- un error aquí (o en actualizarBarraJornadaEfectiva) ya no
+  // puede impedir que se pinten los contadores/lista de arriba.
+  try {
+    const citasHoy = citas.filter(c => c.estado === 'realizada' && (c.fecha_inicio || '').split('T')[0] === hoy);
     actualizarBarraJornadaEfectiva(actsHoy, citasHoy);
+  } catch (eBarra) {
+    console.error('Error actualizando la barra de jornada efectiva:', eBarra);
+  }
 
+  try {
     const elNumT = document.getElementById('pi_num_tareas');
     if (elNumT) elNumT.textContent = tareasPendientes.length;
     const elNumC = document.getElementById('pi_num_citas');
@@ -11962,6 +12764,14 @@ async function cargarPendientesInicio(){
     cont.innerHTML = itemsHtml.join('');
   } catch (e) {
     console.error('Error cargando pendientes inicio:', e);
+    // Antes esto dejaba el spinner inicial del HTML girando para siempre sin
+    // ningún aviso -- ahora al menos se ve que algo falló, con un botón para
+    // reintentar en vez de un estado congelado indistinguible de "cargando".
+    cont.innerHTML = `
+      <div style="background:#FEF2F2; border:1px solid #FCA5A5; border-radius:12px; padding:14px; text-align:center;">
+        <p style="font-weight:700; color:#991B1B; margin:0 0 4px; font-size:12.5px;">⚠️ No se pudieron cargar tus pendientes</p>
+        <button class="chip-btn" onclick="cargarPendientesInicio()" style="margin-top:6px; font-size:11px;">Reintentar</button>
+      </div>`;
   }
 }
 
@@ -12203,6 +13013,135 @@ function actualizarItemsDockHorizontal(){
 /* ============ CONTROL DE PRESENTACIONES Y MOVILIDAD (14 ASIENTOS) ============ */
 let filtroTipoVisitasActual = 'todas';
 let visitasPresentacionesCache = [];
+
+async function cargarVisitasPresentaciones(){
+  const elFecha = document.getElementById('vis_filtro_fecha');
+  const fecha = elFecha?.value || obtenerHoyLocal();
+  if (elFecha && !elFecha.value) elFecha.value = fecha;
+
+  const cont = document.getElementById('listaVisitasPresentaciones');
+  if (cont) cont.innerHTML = '<div class="spinner"></div>';
+
+  const key = 'cd_visitas_' + fecha;
+  try {
+    const { data, error } = await sb.from('visitas_presentaciones')
+      .select('*')
+      .eq('fecha', fecha)
+      .order('hora', { ascending: true });
+    if (error) throw error;
+    visitasPresentacionesCache = data || [];
+  } catch (e) {
+    console.warn('No se pudo cargar visitas_presentaciones desde Supabase, usando respaldo local:', e);
+    visitasPresentacionesCache = JSON.parse(localStorage.getItem(key) || '[]');
+  }
+
+  actualizarMetricasMovilidad(fecha);
+  renderizarListaVisitas();
+  if (typeof cargarConductorFecha === 'function') cargarConductorFecha(fecha);
+}
+
+// Suma de asientos (tipo Van) ya ocupados en el mismo turno (±15 min) de esa fecha/hora.
+// No incluye asientos de una visita que se esté agendando en este momento (aún no está en cache).
+function calcularAsientosOcupadosEnHorario(fecha, hora, excluirId){
+  const [hR, mR] = (hora || '09:00').split(':').map(Number);
+  if (!Number.isFinite(hR) || !Number.isFinite(mR)) return 0;
+  const minRef = hR * 60 + mR;
+
+  return (visitasPresentacionesCache || [])
+    .filter(v => v.fecha === fecha
+      && (v.tipo === 'visita_proyecto' || v.tipo === 'oficina_visita')
+      && v.estado !== 'cancelada'
+      && v.id !== excluirId)
+    .filter(v => {
+      const [hE, mE] = (v.hora || '09:00').split(':').map(Number);
+      if (!Number.isFinite(hE) || !Number.isFinite(mE)) return false;
+      return Math.abs((hE * 60 + mE) - minRef) <= 15;
+    })
+    .reduce((sum, v) => sum + (parseInt(v.num_asientos) || 2), 0);
+}
+
+function actualizarMetricasMovilidad(fecha){
+  const visitasVan = (visitasPresentacionesCache || []).filter(v =>
+    (v.tipo === 'visita_proyecto' || v.tipo === 'oficina_visita') && v.estado !== 'cancelada');
+
+  // El "ocupado" del día es el turno más cargado (cada turno tiene su propio cupo de 14).
+  let ocupados = 0;
+  visitasVan.forEach(v => {
+    const totalTurno = calcularAsientosOcupadosEnHorario(fecha, v.hora);
+    if (totalTurno > ocupados) ocupados = totalTurno;
+  });
+  const libres = Math.max(0, 14 - ocupados);
+  const pct = Math.min(100, Math.round((ocupados / 14) * 100));
+
+  const elOc = document.getElementById('vis_num_ocupados'); if (elOc) elOc.textContent = ocupados;
+  const elLib = document.getElementById('vis_num_libres'); if (elLib) elLib.textContent = libres;
+  const elPct = document.getElementById('vis_porcentaje_ocupacion'); if (elPct) elPct.textContent = pct + '%';
+  const elBar = document.getElementById('vis_barra_progreso'); if (elBar) elBar.style.width = pct + '%';
+
+  const elBadge = document.getElementById('vis_badge_estado_van');
+  if (elBadge) {
+    if (ocupados === 0) {
+      elBadge.textContent = '🟢 Van Disponible';
+      elBadge.className = 'badge badge-completada';
+    } else if (ocupados < 14) {
+      elBadge.textContent = `🟡 ${libres} asientos libres`;
+      elBadge.className = 'badge badge-pendiente';
+    } else {
+      elBadge.textContent = '🔴 Van Llena (14/14)';
+      elBadge.className = 'badge badge-vencida';
+    }
+  }
+
+  const elAlerta = document.getElementById('vis_alerta_cruce');
+  if (elAlerta) elAlerta.classList.toggle('hidden', ocupados <= 14);
+}
+
+function renderizarListaVisitas(){
+  const cont = document.getElementById('listaVisitasPresentaciones');
+  if (!cont) return;
+
+  const filtroMap = {
+    proyecto: v => v.tipo === 'visita_proyecto',
+    oficina: v => v.tipo === 'oficina' || v.tipo === 'oficina_visita',
+    virtual: v => v.tipo === 'virtual'
+  };
+  const filtroFn = filtroMap[filtroTipoVisitasActual];
+  const visitas = (visitasPresentacionesCache || []).filter(v => !filtroFn || filtroFn(v));
+
+  if (!visitas.length) {
+    cont.innerHTML = '<p style="text-align:center; color:var(--ink-dim); font-size:12.5px; padding:20px 0;">No hay presentaciones registradas para este filtro en la fecha seleccionada.</p>';
+    return;
+  }
+
+  const tipoLabels = {
+    visita_proyecto: '🚗 Visita a Terreno (Van)',
+    oficina_visita: '🏢🚗 Oficina + Terreno (Van)',
+    oficina: '🏢 Oficina Tacna',
+    virtual: '💻 Virtual'
+  };
+  const estadoBadge = {
+    programada: '<span class="badge badge-pendiente">Programada</span>',
+    realizada: '<span class="badge badge-completada">Realizada</span>',
+    cancelada: '<span class="badge badge-vencida">Cancelada</span>'
+  };
+
+  cont.innerHTML = visitas.map(v => `
+    <div class="card" style="border:1px solid #E2E8F0; border-radius:10px; padding:10px 12px; margin-bottom:8px; ${v.estado === 'cancelada' ? 'opacity:0.55;' : ''}">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; flex-wrap:wrap;">
+        <div>
+          <p style="margin:0; font-weight:700; font-size:13px; color:var(--navy);">⏰ ${escapeHtml(v.hora || '')} · ${escapeHtml(v.cliente_nombre || 'Cliente')}</p>
+          <p style="margin:2px 0 0; font-size:11.5px; color:var(--ink-dim);">${tipoLabels[v.tipo] || v.tipo} · 🪑 ${v.num_asientos || 1} asiento(s) · 👤 ${escapeHtml(v.asesor_nombre || '—')}</p>
+        </div>
+        ${estadoBadge[v.estado] || ''}
+      </div>
+      ${v.estado !== 'cancelada' ? `
+      <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">
+        ${v.cliente_celular && v.cliente_celular !== '—' ? `<button class="chip-btn" onclick="abrirModalWhatsAppRapido('${escapeHtml(v.cliente_nombre || '')}', '${escapeHtml(v.cliente_celular)}')" style="font-size:11px; padding:4px 10px;">💬 WhatsApp</button>` : ''}
+        <button class="chip-btn" onclick="eliminarVisitaPresentacion('${v.id}', '${v.fecha}')" style="font-size:11px; padding:4px 10px; color:#991B1B; border-color:#F87171;">🚫 Cancelar</button>
+      </div>` : ''}
+    </div>
+  `).join('');
+}
 
 function cambiarFiltroTipoVisitas(tipo){
   filtroTipoVisitasActual = tipo;
@@ -12535,7 +13474,7 @@ async function guardarNuevaVisita(){
   // Sincronizar automáticamente con Agenda interna solo si la visita quedó guardada en BD.
   if (visitaGuardadaEnSupabase) {
     try {
-      const { error: agendaError } = await sb.from('agenda').insert({
+      const { data: agendaRow, error: agendaError } = await sb.from('agenda').insert({
         usuario_id: currentUser.id,
         titulo: `${tipo === 'visita_proyecto' ? '🚐 Visita a Terreno' : '🤝 Presentación'}: ${clienteNombre}`,
         fecha_inicio: `${fecha}T${hora}:00`,
@@ -12544,8 +13483,12 @@ async function guardarNuevaVisita(){
         lugar: tipo === 'visita_proyecto' || tipo === 'oficina_visita' ? 'Costa Dorada · La Yarada Los Palos' : 'Oficina Tacna',
         notas: `Tipo: ${tipo}. Asientos en Van: ${numAsientos}. ${observaciones}`,
         estado: 'programada'
-      });
+      }).select('id').single();
       if (agendaError) throw agendaError;
+      // Vincular la cita creada con la visita para poder cancelar ambas juntas.
+      if (agendaRow?.id) {
+        await sb.from('visitas_presentaciones').update({ agenda_id: agendaRow.id }).eq('id', nuevaVisita.id);
+      }
     } catch (errAg) {
       console.warn('Error sincronizando con agenda:', errAg);
     }
@@ -12631,23 +13574,32 @@ function enviarReporteObligatorioWhatsApp(){
 }
 
 async function eliminarVisitaPresentacion(id, fecha){
-  if (!confirm('¿Eliminar esta presentación / visita?')) return;
+  if (!confirm('¿Cancelar esta presentación / visita? El cupo en la Van quedará liberado.')) return;
 
-  let eliminadoEnSupabase = false;
+  let canceladoEnSupabase = false;
   try {
-    const { error } = await sb.from('visitas_presentaciones').delete().eq('id', id);
+    const { data: visitaActual } = await sb.from('visitas_presentaciones').select('agenda_id').eq('id', id).maybeSingle();
+    const { error } = await sb.from('visitas_presentaciones').update({ estado: 'cancelada' }).eq('id', id);
     if (error) throw error;
-    eliminadoEnSupabase = true;
+    canceladoEnSupabase = true;
+    // Cascada: cancelar también la cita vinculada en Agenda para no dejarla huérfana.
+    if (visitaActual?.agenda_id) {
+      try {
+        await sb.from('agenda').update({ estado: 'cancelada', motivo: 'Visita/presentación cancelada' }).eq('id', visitaActual.agenda_id);
+      } catch (errAg) {
+        console.warn('No se pudo cancelar la cita vinculada en Agenda:', errAg);
+      }
+    }
   } catch (e) {
-    console.error('No se pudo eliminar la visita en Supabase:', e);
+    console.error('No se pudo cancelar la visita en Supabase:', e);
   }
 
   const key = 'cd_visitas_' + fecha;
   let listaLocal = JSON.parse(localStorage.getItem(key) || '[]');
-  listaLocal = listaLocal.filter(v => v.id !== id);
+  listaLocal = listaLocal.map(v => v.id === id ? { ...v, estado: 'cancelada' } : v);
   localStorage.setItem(key, JSON.stringify(listaLocal));
 
-  toast(eliminadoEnSupabase ? 'Visita eliminada ✓' : 'Visita eliminada del respaldo local; revisa la sincronización');
+  toast(canceladoEnSupabase ? 'Visita cancelada; cupo liberado ✓' : 'No se pudo cancelar en el servidor; revisa la sincronización');
   cargarVisitasPresentaciones();
 }
 
@@ -12759,7 +13711,7 @@ function filtrarClientesEnVivo(texto){
   if (!el || !clientesCache) return;
 
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = rol === 'admin' || rol === 'superadmin' || rol === 'director_comercial' || rol === 'gerencia';
+  const esSuperAdminODirector = esRolDireccion(rol);
 
   let filtrados = clientesCache.filter(c => {
     if (textoBusquedaClienteActivo) {
@@ -12811,22 +13763,11 @@ async function notificarAdminConductorSilencioso(datosCita){
       metadata: datosCita
     });
 
-    // 2. Disparo silencioso en segundo plano (Edge Function o Webhook)
-    const linkDirecto = `https://jorealft2020-hue.github.io/Casa-Dorada/?vista=visitas&fecha=${fecha}&accion=designar_conductor`;
-    fetch('https://nboikojylmkujdxinztj.supabase.co/functions/v1/enviar-whatsapp-admin', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
-      body: JSON.stringify({
-        telefonoDestino: NUMERO_WHATSAPP_ADMINISTRACION,
-        fecha,
-        hora,
-        tipoVisita,
-        clienteNombre,
-        asesorNombre,
-        numAsientos: totalAsientos,
-        linkDirecto
-      })
-    }).catch(e => console.warn('Disparo background procesado:', e));
+    // El aviso de WhatsApp a Administración que llamaba a "enviar-whatsapp-admin"
+    // se quitó: esa función nunca se desplegó (no hay integración con una
+    // API de WhatsApp Business en este proyecto), así que el fetch siempre
+    // fallaba en silencio y el mensaje nunca salía (hallazgo M11). El canal
+    // real de este aviso urgente es la notificación in-app insertada arriba.
   } catch(err) {
     console.warn('Error en notificación silenciosa:', err);
   }
@@ -12954,7 +13895,9 @@ function suscribirCambiosPerfilEnTiempoReal(){
         table: 'usuarios', 
         filter: `id=eq.${currentUser.id}` 
       }, async (payload) => {
-        console.log('⚡ Perfil o permisos actualizados en tiempo real:', payload.new);
+        // No se loguea payload.new -- trae el rol y los permisos completos del
+        // usuario a la consola del navegador en cada actualizacion (hallazgo B6).
+        console.log('⚡ Perfil o permisos actualizados en tiempo real');
         await cargarPerfil();
 
         // Si lo desactivaron mientras tenía la sesión abierta, se lo saca
@@ -13216,8 +14159,8 @@ function abrirConvertidorParaInicial(moneda){
 function calcularScoreCliente(c){
   let score = 50;
   const estado = c.estado_prospecto || '';
-  if (estado === 'Separado') score += 45;
-  else if (estado === 'Evaluación crediticia' || estado === 'Visita realizada') score += 35;
+  if (estado === 'Separado' || estado === 'Venta cerrada') score += 45;
+  else if (estado === 'Visita realizada') score += 35;
   else if (estado === 'Cita agendada') score += 25;
   else if (estado === 'Contactado') score += 10;
   else if (estado === 'No interesado') score = 15;
@@ -13233,7 +14176,7 @@ function calcularScoreCliente(c){
   // Factor de actualización
   const ms = Date.now() - new Date(c.updated_at || c.created_at || Date.now()).getTime();
   const dias = Math.floor(ms / (1000 * 60 * 60 * 24));
-  if (dias > 12 && estado !== 'Separado') score -= 14;
+  if (dias > 12 && estado !== 'Separado' && estado !== 'Venta cerrada') score -= 14;
   else if (dias <= 3) score += 6;
 
   score = Math.max(12, Math.min(99, score));
@@ -13395,70 +14338,85 @@ async function buscarPropietarioPorDocumento(){
     }
 
     const c = clientes[0];
-    // Buscar separaciones o compras del cliente
+    // Buscar TODAS las separaciones/lotes del cliente -- puede tener mas de
+    // uno (bastante comun: 26 de los 156 clientes reales importados poseen
+    // >1 lote), y cada una con su propio avance de pagos real.
     const { data: separaciones } = await sb.from('separaciones')
-      .select('*')
+      .select('*, propiedades(codigo)')
       .eq('cliente_id', c.id)
       .order('created_at', { ascending: false });
 
-    const sep = (separaciones && separaciones.length > 0) ? separaciones[0] : null;
-    const vTotal = Number(sep?.valor_total || 38000);
-    const inicial = Number(sep?.monto_inicial || sep?.monto_separacion || 10000);
-    const saldo = Math.max(0, vTotal - inicial);
-    const cuotasPagadas = sep ? (sep.estado === 'convertida_venta' ? 8 : 1) : 1;
-    const cuotasTotales = 36;
-    const progreso = Math.min(100, Math.round(((cuotasPagadas * (saldo / cuotasTotales) + inicial) / vTotal) * 100));
+    const seps = separaciones || [];
+    const vTotalAcumulado = seps.reduce((acc, s) => acc + Number(s.valor_total || 0), 0);
+    const saldoAcumulado = seps.reduce((acc, s) => acc + Number(s.saldo || 0), 0);
 
-    propietarioActualData = { cliente: c, separacion: sep, progreso, vTotal, inicial, saldo };
+    propietarioActualData = { cliente: c, separaciones: seps, vTotalAcumulado, saldoAcumulado };
+
+    if (seps.length === 0) {
+      cont.innerHTML = `
+        <div class="card" style="border-left:5px solid var(--gold);">
+          <h4 style="margin:0; font-size:15px; color:var(--navy);">${escapeHtml(c.nombre)}</h4>
+          <p class="card-sub" style="margin-top:2px;">Documento: ${escapeHtml(c.dni || doc)} · 📱 WhatsApp: ${escapeHtml(c.celular || '—')}</p>
+          <p class="card-sub" style="margin-top:10px;">Este cliente no tiene lotes ni separaciones registradas.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const lotesHtml = seps.map(sep => {
+      const loteCod = sep.propiedades?.codigo || `${sep.manzana || ''}${sep.manzana && sep.lote ? '-' : ''}${sep.lote || ''}`;
+      const vTotal = Number(sep.valor_total || 0);
+      const inicial = Number(sep.valor_inicial || 0);
+      const saldo = Number(sep.saldo || 0);
+      const cuotaMensual = sep.cuota_mensual != null ? Number(sep.cuota_mensual).toLocaleString('es-PE', {minimumFractionDigits:2}) : null;
+      const progreso = vTotal > 0 ? Math.min(100, Math.round(((vTotal - saldo) / vTotal) * 100)) : 0;
+
+      let badgeEstado;
+      if (sep.meses_atraso > 0) badgeEstado = `<span class="badge" style="background:#FFEAEA; color:#D32F2F; border:1px solid #FFCDD2;">🔴 ${sep.meses_atraso} ${sep.meses_atraso === 1 ? 'mes' : 'meses'} de atraso</span>`;
+      else if (sep.cuotas_pendientes === 0 && sep.cuotas_totales) badgeEstado = `<span class="badge" style="background:#E8F5E9; color:#2E7D32; border:1px solid #C8E6C9;">✅ Plan completado</span>`;
+      else badgeEstado = `<span class="badge badge-completada">Al día</span>`;
+
+      return `
+        <div class="card" style="border-left:5px solid var(--gold); margin-bottom:14px; cursor:pointer;" onclick="abrirDetalleCuotas('${sep.id}')">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+              <span style="font-size:11px; color:var(--ink-dim); font-weight:700;">LOTE</span>
+              <div style="font-size:14px; font-weight:800; color:var(--navy);">${escapeHtml(loteCod)}</div>
+            </div>
+            ${badgeEstado}
+          </div>
+
+          <div style="background:#F7F4EC; border-radius:10px; padding:10px 12px; margin:12px 0; display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+            <div><span style="font-size:11px; color:var(--ink-dim); font-weight:700;">VALOR TOTAL</span><div style="font-size:14px; font-weight:800; color:var(--gold);">S/ ${vTotal.toLocaleString('es-PE', {minimumFractionDigits:2})}</div></div>
+            <div><span style="font-size:11px; color:var(--ink-dim); font-weight:700;">INICIAL</span><div style="font-size:14px; font-weight:800;">S/ ${inicial.toLocaleString('es-PE', {minimumFractionDigits:2})}</div></div>
+            <div><span style="font-size:11px; color:var(--ink-dim); font-weight:700;">SALDO PENDIENTE</span><div style="font-size:14px; font-weight:800; color:var(--danger);">S/ ${saldo.toLocaleString('es-PE', {minimumFractionDigits:2})}</div></div>
+            ${cuotaMensual ? `<div><span style="font-size:11px; color:var(--ink-dim); font-weight:700;">CUOTA MENSUAL</span><div style="font-size:14px; font-weight:800;">S/ ${cuotaMensual}</div></div>` : ''}
+          </div>
+
+          <div style="margin-bottom:4px;">
+            <div style="display:flex; justify-content:space-between; font-size:11.5px; margin-bottom:4px;">
+              <span style="font-weight:700; color:var(--navy);">Avance de pago:</span>
+              <span style="font-weight:800; color:var(--ok);">${progreso}% pagado${sep.cuotas_totales ? ` · ${sep.cuotas_pagadas ?? 0}/${sep.cuotas_totales} cuotas` : ''}</span>
+            </div>
+            <div style="background:#E5DFCF; border-radius:100px; height:8px; overflow:hidden;">
+              <div style="background:linear-gradient(90deg, var(--gold) 0%, var(--ok) 100%); height:100%; width:${progreso}%;"></div>
+            </div>
+          </div>
+          <p class="card-sub" style="margin:6px 0 0;">👆 Toca para ver el historial de cuotas pagadas</p>
+        </div>
+      `;
+    }).join('');
 
     cont.innerHTML = `
-      <div class="card" style="border-left:5px solid var(--gold); margin-bottom:14px;">
-        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-          <div>
-            <h4 style="margin:0; font-size:15px; color:var(--navy);">${escapeHtml(c.nombre)}</h4>
-            <p class="card-sub" style="margin-top:2px;">Documento: ${escapeHtml(c.dni || doc)} · 📱 WhatsApp: ${escapeHtml(c.celular || '—')}</p>
-          </div>
-          <span class="badge badge-completada">Propietario Activo</span>
-        </div>
-
-        <div style="background:#F7F4EC; border-radius:10px; padding:10px 12px; margin:12px 0; display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-          <div>
-            <span style="font-size:11px; color:var(--ink-dim); font-weight:700;">LOTE ASIGNADO</span>
-            <div style="font-size:14px; font-weight:800; color:var(--navy);">Manzana ${sep?.manzana || 'B'} - Lote ${sep?.lote || '12'}</div>
-          </div>
-          <div>
-            <span style="font-size:11px; color:var(--ink-dim); font-weight:700;">VALOR TOTAL PATRIMONIAL</span>
-            <div style="font-size:14px; font-weight:800; color:var(--gold);">S/ ${vTotal.toLocaleString('es-PE')}</div>
-          </div>
-        </div>
-
-        <!-- BARRA DE AMORTIZACIÓN Y PROGRESO -->
-        <div style="margin-bottom:12px;">
-          <div style="display:flex; justify-content:space-between; font-size:11.5px; margin-bottom:4px;">
-            <span style="font-weight:700; color:var(--navy);">Avance de Amortización:</span>
-            <span style="font-weight:800; color:var(--ok);">${progreso}% completado</span>
-          </div>
-          <div style="background:#E5DFCF; border-radius:100px; height:8px; overflow:hidden;">
-            <div style="background:linear-gradient(90deg, var(--gold) 0%, var(--ok) 100%); height:100%; width:${progreso}%;"></div>
-          </div>
-        </div>
-
-        <!-- HITOS DE AVANCE DEL PROYECTO (CLUB COSTA DORADA) -->
-        <div style="background:#fff; border:1px solid #E5DFCF; border-radius:10px; padding:10px 12px; margin-top:12px;">
-          <p style="font-size:11.5px; font-weight:800; color:var(--navy); margin:0 0 8px;">🏗️ Avance Técnico en Terreno (La Yarada Los Palos):</p>
-          <div style="display:flex; flex-direction:column; gap:6px; font-size:11px;">
-            <div style="display:flex; justify-content:space-between;"><span>🏛️ Pórtico Monumental de Entrada</span><b style="color:var(--ok);">✓ 100% Concluido</b></div>
-            <div style="display:flex; justify-content:space-between;"><span>🚜 Trazado y Afirmado de Vías</span><b style="color:var(--ok);">✓ 85% Concluido</b></div>
-            <div style="display:flex; justify-content:space-between;"><span>🌴 Áreas Verdes y Parque Principal</span><b style="color:var(--gold);">▶ 60% En Ejecución</b></div>
-            <div style="display:flex; justify-content:space-between;"><span>📑 Habilitación Urbana & Sunarp</span><b style="color:var(--gold);">▶ En trámite formal</b></div>
-          </div>
-        </div>
-
-        <div class="card-actions" style="margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;">
+      <div class="card" style="border-left:5px solid var(--navy); margin-bottom:14px;">
+        <h4 style="margin:0; font-size:15px; color:var(--navy);">${escapeHtml(c.nombre)}</h4>
+        <p class="card-sub" style="margin-top:2px;">Documento: ${escapeHtml(c.dni || doc)} · 📱 WhatsApp: ${escapeHtml(c.celular || '—')}</p>
+        <p class="card-sub" style="margin-top:8px;">${seps.length} ${seps.length === 1 ? 'lote' : 'lotes'} · Patrimonio total: S/ ${vTotalAcumulado.toLocaleString('es-PE', {minimumFractionDigits:2})} · Saldo total: S/ ${saldoAcumulado.toLocaleString('es-PE', {minimumFractionDigits:2})}</p>
+        <div class="card-actions" style="margin-top:12px;">
           <button type="button" class="chip-btn gold" onclick="emitirEstadoCuentaWhatsApp()" style="flex:1; justify-content:center; padding:8px 12px; font-weight:700;">📲 Enviar Estado de Cuenta WhatsApp</button>
-          <button type="button" class="chip-btn" onclick="abrirModalPlusvalia(${vTotal}, '${sep?.manzana||'B'}', '${sep?.lote||'12'}', 160)" style="padding:8px 12px; border-color:var(--gold); color:var(--navy); font-weight:700;">📈 Plusvalía</button>
         </div>
       </div>
+      ${lotesHtml}
     `;
   } catch(err) {
     console.error('Error en portal de propietario:', err);
@@ -13468,25 +14426,25 @@ async function buscarPropietarioPorDocumento(){
 
 function emitirEstadoCuentaWhatsApp(){
   if (!propietarioActualData) return;
-  const { cliente, separacion, progreso, vTotal, inicial, saldo } = propietarioActualData;
+  const { cliente, separaciones, vTotalAcumulado, saldoAcumulado } = propietarioActualData;
   const cel = (cliente.celular || '').replace(/\D/g, '');
+
+  const lotesTexto = (separaciones || []).map(sep => {
+    const loteCod = sep.propiedades?.codigo || `Manzana ${sep.manzana || '-'} - Lote ${sep.lote || '-'}`;
+    const vTotal = Number(sep.valor_total || 0);
+    const saldo = Number(sep.saldo || 0);
+    const atraso = sep.meses_atraso > 0 ? ` ⚠️ ${sep.meses_atraso} ${sep.meses_atraso === 1 ? 'mes' : 'meses'} de atraso` : '';
+    return `🏡 *${loteCod}*\n   Valor: S/ ${vTotal.toLocaleString('es-PE', {minimumFractionDigits:2})} · Saldo: S/ ${saldo.toLocaleString('es-PE', {minimumFractionDigits:2})}${atraso}`;
+  }).join('\n\n');
+
   const texto = `Hola ${cliente.nombre}, te saludamos de *Constructora e Inmobiliaria Casa Dorada*.
 
 Adjuntamos tu *ESTADO DE CUENTA PATRIMONIAL · CLUB COSTA DORADA*:
 ━━━━━━━━━━━━━━━━━━━
-🏡 *Lote:* Manzana ${separacion?.manzana || 'B'} - Lote ${separacion?.lote || '12'}
-📐 *Proyecto:* Costa Dorada · La Yarada Los Palos, Tacna
-💰 *Valor Total:* S/ ${vTotal.toLocaleString('es-PE')}
-🏷️ *Inicial Abonada:* S/ ${inicial.toLocaleString('es-PE')}
-📉 *Saldo Pendiente:* S/ ${saldo.toLocaleString('es-PE')}
-📊 *Amortización:* ${progreso}% completado
-Estado: *AL DÍA Y CONFORME* ✓
-
+${lotesTexto}
 ━━━━━━━━━━━━━━━━━━━
-🏗️ *Avance de Obras en Terreno:*
-✓ Pórtico monumental: 100%
-✓ Trazado de vías: 85%
-✓ Parque central: 60%
+💰 *Valor total patrimonial:* S/ ${vTotalAcumulado.toLocaleString('es-PE', {minimumFractionDigits:2})}
+📉 *Saldo pendiente total:* S/ ${saldoAcumulado.toLocaleString('es-PE', {minimumFractionDigits:2})}
 
 ¡Gracias por consolidar el patrimonio de tu familia junto a Casa Dorada!`;
 
@@ -13580,7 +14538,14 @@ async function cargarInventarioLotes(){
   document.getElementById('inv_etapa_tabs').innerHTML = '';
 
   try {
-    const { data, error } = await sb.functions.invoke('inventario-lotes-sire', { body: {} });
+    // Mismo patrón de reintento con sesión refrescada que ghl-reporte-dia
+    // (hallazgo A11) -- antes un 401 por sesión vencida solo mostraba el
+    // error genérico del catch de abajo.
+    let { data, error } = await sb.functions.invoke('inventario-lotes-sire', { body: {} });
+    if (error && error.context?.status === 401) {
+      await sb.auth.refreshSession();
+      ({ data, error } = await sb.functions.invoke('inventario-lotes-sire', { body: {} }));
+    }
     if (error) throw error;
     if (!data || data.ok === false) throw new Error(data?.error || 'La función no devolvió datos.');
 
@@ -13870,7 +14835,8 @@ async function cargarBilleteraComisiones(){
   cont.innerHTML = `<div class="spinner"></div>`;
 
   try {
-    const esAdminSA = esUsuarioSuperAdmin() || currentProfile?.rol === 'admin' || currentProfile?.rol === 'director_comercial';
+    const rolCom = currentProfile?.rol;
+    const esAdminSA = rolCom === 'superadmin' || rolCom === 'admin' || rolCom === 'director_comercial' || rolCom === 'gerencia';
     let query = sb.from('separaciones')
       .select('*, clientes(nombre), usuarios(nombre)')
       .order('created_at', { ascending: false });
@@ -14633,15 +15599,39 @@ async function procesarDictadoConIA() {
 /* 3. PRE-SEPARACIÓN DIGITAL CON QR IN SITU (RESPALDO OFFLINE) */
 let preReservaData = null;
 
-function abrirModalPreReservaEnTerreno(manzana = 'B', lote = '12', monto = 500) {
+function actualizarQRPreReserva() {
+  const manzana = document.getElementById('qr_manzana')?.value || 'B';
+  const lote = document.getElementById('qr_lote')?.value.trim() || '12';
+  const monto = preReservaData?.monto || 500;
   preReservaData = { manzana, lote, monto };
   const sub = document.getElementById('qr_lote_subtitulo');
   if (sub) sub.textContent = `Manzana ${manzana} · Lote ${lote} (S/ ${monto}.00)`;
   const qrData = encodeURIComponent(`PAGO COSTA DORADA - MZ ${manzana} LT ${lote} - MONTO S/${monto}`);
   const img = document.getElementById('qr_imagen_pago');
   if (img) img.src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${qrData}`;
+}
+
+function abrirModalPreReservaEnTerreno(manzana = 'B', lote = '12', monto = 500) {
+  preReservaData = { manzana, lote, monto };
+
+  const selManzana = document.getElementById('qr_manzana');
+  if (selManzana && selManzana.options.length === 0) {
+    const opciones = [];
+    for (let i = 0; i < 26; i++) opciones.push(String.fromCharCode(65 + i));
+    for (let i = 0; i < 26; i++) opciones.push(String.fromCharCode(65 + i) + '1');
+    selManzana.innerHTML = opciones.map(o => `<option value="${o}">${o}</option>`).join('');
+  }
+  if (selManzana) selManzana.value = manzana;
+  const elLote = document.getElementById('qr_lote');
+  if (elLote) elLote.value = lote;
+  const elCliente = document.getElementById('qr_cliente_nombre');
+  if (elCliente) elCliente.value = '';
+
+  actualizarQRPreReserva();
   openModal('modalPreReservaQR');
 }
+document.getElementById('qr_manzana')?.addEventListener('change', actualizarQRPreReserva);
+document.getElementById('qr_lote')?.addEventListener('input', actualizarQRPreReserva);
 
 function descargarQRParaCliente() {
   const link = document.createElement('a');
@@ -14652,17 +15642,34 @@ function descargarQRParaCliente() {
 }
 
 async function confirmarPreReservaEnTerreno() {
+  const nombreCliente = document.getElementById('qr_cliente_nombre')?.value.trim();
+  if (!nombreCliente) { toast('⚠️ Ingresa el nombre del cliente antes de congelar el lote'); return; }
+  if (!preReservaData?.manzana || !preReservaData?.lote) { toast('⚠️ Indica manzana y lote'); return; }
+
   toast('Registrando congelamiento por 48 horas…');
   try {
     if (!currentUser?.id) throw new Error('Sesión de usuario no disponible.');
-    if (!preReservaData?.manzana || !preReservaData?.lote) throw new Error('No hay lote seleccionado.');
+
+    const { data: nuevoCliente, error: errCliente } = await sb.from('clientes').insert({
+      vendedor_id: currentUser.id,
+      nombre: nombreCliente
+    }).select().single();
+    if (errCliente) throw errCliente;
+
+    const codigoPropiedad = `MZ${preReservaData.manzana}-LT${preReservaData.lote}`;
+    const { data: propiedad, error: errProp } = await sb.from('propiedades')
+      .upsert({ codigo: codigoPropiedad, proyecto: 'Costa Dorada', tipo: 'lote', precio: 55400, estado: 'separado' }, { onConflict: 'codigo' })
+      .select().single();
+    if (errProp) throw errProp;
 
     const dVence = new Date();
     dVence.setHours(dVence.getHours() + 48);
     const { error: reservaError } = await sb.from('separaciones').insert({
+      propiedad_id: propiedad.id,
+      cliente_id: nuevoCliente.id,
       vendedor_id: currentUser.id,
-      manzana: preReservaData?.manzana || 'B',
-      lote: preReservaData?.lote || '12',
+      manzana: preReservaData.manzana,
+      lote: parseInt(preReservaData.lote, 10) || null,
       monto_separacion: preReservaData?.monto || 500,
       valor_total: 55400,
       fecha_separacion: obtenerHoyLocal(),
@@ -14670,13 +15677,21 @@ async function confirmarPreReservaEnTerreno() {
       condicion: 'contado',
       estado: 'activa'
     });
-    if (reservaError) throw reservaError;
+    if (reservaError) {
+      // 23505 = unique_violation: ya existe una separacion activa para este lote.
+      if (reservaError.code === '23505') {
+        toast('⚠️ Este lote ya fue separado (posiblemente por otro asesor). Elige otro lote.');
+        return;
+      }
+      throw reservaError;
+    }
     toast('🎉 ¡LOTE CONGELADO POR 48 HORAS!');
     closeModal('modalPreReservaQR');
     cargarSeparacionesTodas();
     cargarPendientesInicio();
   } catch (e) {
     toast('Error al registrar separación');
+    console.error(e);
   }
 }
 
@@ -14798,7 +15813,7 @@ function descargarHojaResumen1PaginaPDF() {
     doc.text('HOJA RESUMEN DE CONDICIONES Y FINANCIAMIENTO', 14, 38);
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Cliente: ${cli}   ·   DNI/RUC: ${dni}`, 14, 48);
+    doc.text(`Cliente: ${truncarTextoPdf(doc, cli, 130)}   ·   DNI/RUC: ${dni}`, 14, 48);
     doc.text(`Ubicación: Manzana ${mz} - Lote ${lt}   ·   Fecha: ${new Date().toLocaleDateString('es-PE')} (Validez: 48h)`, 14, 54);
     doc.text(`Valor Total del Lote: S/ ${Number(total).toLocaleString('es-PE')}`, 14, 60);
     doc.text(`Cuota Inicial Pactada: S/ ${Number(inicial).toLocaleString('es-PE')}`, 14, 66);
@@ -15240,6 +16255,18 @@ function abrirMinutaDesdeCotizador() {
   if (document.getElementById('min_lote_meses')) document.getElementById('min_lote_meses').value = meses;
 }
 
+// El canvas de firma no tiene forma nativa de saber "esta vacio" -- se
+// revisa el canal alpha de cada pixel; si todos son transparentes, nadie
+// firmo todavia.
+function esCanvasFirmaVacio() {
+  if (!canvasFirma || !ctxFirma) return true;
+  const { data } = ctxFirma.getImageData(0, 0, canvasFirma.width, canvasFirma.height);
+  for (let i = 3; i < data.length; i += 4) {
+    if (data[i] !== 0) return false;
+  }
+  return true;
+}
+
 function descargarMinutaLegalPDF() {
   const { jsPDF } = window.jspdf || {};
   if (!jsPDF) {
@@ -15247,20 +16274,33 @@ function descargarMinutaLegalPDF() {
     return;
   }
 
-  const nombre = document.getElementById('min_comprador_nombre')?.value.trim() || 'CLIENTE COMPRADOR';
-  const dni = document.getElementById('min_comprador_dni')?.value.trim() || '—';
+  const nombre = document.getElementById('min_comprador_nombre')?.value.trim() || '';
+  const dni = document.getElementById('min_comprador_dni')?.value.trim() || '';
   const estadoCivil = document.getElementById('min_comprador_civil')?.value || 'Soltero(a)';
   const domicilio = document.getElementById('min_comprador_domicilio')?.value.trim() || 'Tacna, Perú';
   const mz = document.getElementById('min_lote_mz')?.value.trim() || 'B';
   const lote = document.getElementById('min_lote_num')?.value.trim() || '12';
   const area = document.getElementById('min_lote_area')?.value || '150';
-  const precio = parseFloat(document.getElementById('min_lote_precio')?.value) || 22000;
-  const inicial = parseFloat(document.getElementById('min_lote_inicial')?.value) || 2000;
-  const meses = parseInt(document.getElementById('min_lote_meses')?.value) || 36;
+  const precio = parseFloat(document.getElementById('min_lote_precio')?.value);
+  const inicial = parseFloat(document.getElementById('min_lote_inicial')?.value);
+  const meses = parseInt(document.getElementById('min_lote_meses')?.value, 10);
+
+  // Este documento sale firmado y listo para el cliente -- no debe poder
+  // generarse con los datos de ejemplo que trae el formulario en blanco
+  // (nombre "CLIENTE COMPRADOR", precio S/ 22,000, etc; ver hallazgo A5 de
+  // la auditoría).
+  if (!nombre) { toast('Falta el nombre del comprador'); return; }
+  if (!dni) { toast('Falta el DNI del comprador'); return; }
+  if (!precio || precio <= 0) { toast('Falta el precio del lote'); return; }
+  if (isNaN(inicial) || inicial < 0) { toast('Falta la inicial abonada'); return; }
+  if (!meses || meses <= 0) { toast('Falta el plazo en meses'); return; }
+  if (esCanvasFirmaVacio()) { toast('Falta la firma táctil del comprador'); return; }
+
   const saldo = Math.max(0, precio - inicial);
   const cuota = meses > 0 ? (saldo / meses) : 0;
 
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const pageHeight = doc.internal.pageSize.getHeight();
   const fechaHoy = new Date().toLocaleDateString('es-PE', { day:'2-digit', month:'long', year:'numeric' });
 
   // PÁGINA 1: CONTRATO LEGAL
@@ -15293,6 +16333,11 @@ function descargarMinutaLegalPDF() {
 
   let y = 40 + (linesP1.length * 4.2) + 4;
 
+  // Salto de pagina defensivo antes de cada clausula (mismo patron que usan
+  // los demas generadores de PDF de la app) -- un nombre/domicilio muy largo
+  // puede alargar el parrafo inicial lo suficiente como para que una clausula
+  // se dibuje fuera de la pagina sin que jsPDF avise (hallazgo A5).
+  if (y > pageHeight - 40) { doc.addPage(); y = 22; }
   doc.setFont('helvetica', 'bold');
   doc.text('CLÁUSULA PRIMERA: ANTECEDENTES Y PARTIDA MATRIZ', 16, y); y += 4.5;
   doc.setFont('helvetica', 'normal');
@@ -15300,6 +16345,7 @@ function descargarMinutaLegalPDF() {
   let lC1 = doc.splitTextToSize(c1, 178);
   doc.text(lC1, 16, y); y += (lC1.length * 4.2) + 3;
 
+  if (y > pageHeight - 40) { doc.addPage(); y = 22; }
   doc.setFont('helvetica', 'bold');
   doc.text('CLÁUSULA SEGUNDA: IDENTIFICACIÓN DEL INMUEBLE', 16, y); y += 4.5;
   doc.setFont('helvetica', 'normal');
@@ -15307,6 +16353,7 @@ function descargarMinutaLegalPDF() {
   let lC2 = doc.splitTextToSize(c2, 178);
   doc.text(lC2, 16, y); y += (lC2.length * 4.2) + 3;
 
+  if (y > pageHeight - 50) { doc.addPage(); y = 22; }
   doc.setFont('helvetica', 'bold');
   doc.text('CLÁUSULA TERCERA: PRECIO Y FINANCIAMIENTO DIRECTO SIN BANCOS', 16, y); y += 4.5;
   doc.setFont('helvetica', 'normal');
@@ -15316,6 +16363,7 @@ b) Saldo a Financiar: S/ ${saldo.toLocaleString('es-PE', {minimumFractionDigits:
   let lC3 = doc.splitTextToSize(c3, 178);
   doc.text(lC3, 16, y); y += (lC3.length * 4.2) + 3;
 
+  if (y > pageHeight - 40) { doc.addPage(); y = 22; }
   doc.setFont('helvetica', 'bold');
   doc.text('CLÁUSULA CUARTA: HABILITACIÓN URBANA Y POSESIÓN', 16, y); y += 4.5;
   doc.setFont('helvetica', 'normal');
