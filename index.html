@@ -10305,7 +10305,7 @@ function montoEnLetras(monto){
 // capturada en el canvas, que aquí se estampa sobre la línea de EL
 // CLIENTE). Un solo formato de documento sin importar por cuál de los dos
 // flujos se generó, que es justo lo que Jorge reportó que faltaba.
-function construirReciboAdelantoInicialPDF(datos){
+async function construirReciboAdelantoInicialPDF(datos){
   const { jsPDF } = window.jspdf || {};
   if (!jsPDF) return null;
 
@@ -10323,26 +10323,35 @@ function construirReciboAdelantoInicialPDF(datos){
   };
   const fmtMoneda = (n) => 'S/ ' + n.toLocaleString('es-PE', { minimumFractionDigits: 2 });
 
+  // Jorge pidió explícitamente usar la plantilla real de la empresa (el
+  // membrete con logo, RUC y datos de contacto que ya trae el documento
+  // original) en vez de un encabezado redibujado a mano -- se reutiliza el
+  // mismo membrete_fullpage.png de fondo de página completa que ya usa el
+  // Informe Formal, no un logo distinto inventado para este PDF.
+  const logoBase64 = typeof cargarLogoBase64 === 'function' ? await cargarLogoBase64() : null;
+
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const cNavy = [20, 42, 77], cDim = [107, 114, 128], cInk = [30, 41, 59];
   let y = 18;
+  // El pie de página del membrete (banda ISO 9001 / contacto) empieza
+  // alrededor de los 265mm -- el límite de contenido deja margen para no
+  // invadirlo antes de saltar de página.
+  const limiteInferior = pageHeight - 35;
 
+  // El membrete ya trae impreso el logo, el RUC y los datos de contacto de
+  // la empresa -- solo se estampa la imagen de fondo en cada página, sin
+  // reescribir esa información encima.
   const encabezado = () => {
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(...cNavy);
-    doc.text('CONSTRUCTORA & INMOBILIARIA CASA DORADA S.A.C.', 105, 14, { align: 'center' });
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...cDim);
-    doc.text('RUC: 20611912634 · Proyecto Costa Dorada, La Yarada Los Palos, Tacna', 105, 18.5, { align: 'center' });
-    doc.setDrawColor(200, 155, 60); doc.setLineWidth(0.6); doc.line(16, 21, 194, 21);
+    if (logoBase64) doc.addImage(logoBase64, 'PNG', 0, 0, pageWidth, pageHeight);
   };
   encabezado();
 
   doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(...cNavy);
-  doc.text('RECIBO DE ADELANTO DE INICIAL', 105, 28, { align: 'center' });
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...cDim);
-  doc.text('Contrato de Separación de Lote', 105, 33, { align: 'center' });
+  doc.text('RECIBO DE ADELANTO DE INICIAL', 105, 44, { align: 'center' });
 
-  y = 40;
+  y = 52;
   doc.setFontSize(8.5);
   const campo = (etiqueta, valor, x, yy, anchoEtiqueta = 24) => {
     doc.setFont('helvetica', 'bold'); doc.setTextColor(...cNavy);
@@ -10401,7 +10410,7 @@ function construirReciboAdelantoInicialPDF(datos){
   // reportes) -- un texto de cliente/dirección muy largo no debe empujar
   // una cláusula fuera de la hoja sin que jsPDF avise.
   const clausula = (titulo, texto) => {
-    if (y > pageHeight - 30) { doc.addPage(); encabezado(); y = 28; }
+    if (y > limiteInferior) { doc.addPage(); encabezado(); y = 40; }
     doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(...cNavy);
     const lTit = doc.splitTextToSize(titulo, 178);
     doc.text(lTit, 16, y); y += (lTit.length * 3.8) + 1.5;
@@ -10414,7 +10423,7 @@ function construirReciboAdelantoInicialPDF(datos){
   // CLIENTE se obliga a:") y a veces cierra con una frase adicional
   // después de la lista -- omitirlas sería alterar el texto original.
   const listaClausula = (titulo, items, intro = '', cierre = '') => {
-    if (y > pageHeight - 30) { doc.addPage(); encabezado(); y = 28; }
+    if (y > limiteInferior) { doc.addPage(); encabezado(); y = 40; }
     doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(...cNavy);
     const lTit = doc.splitTextToSize(titulo, 178);
     doc.text(lTit, 16, y); y += (lTit.length * 3.8) + 1.5;
@@ -10424,12 +10433,12 @@ function construirReciboAdelantoInicialPDF(datos){
       doc.text(lIntro, 16, y); y += (lIntro.length * 3.6) + 1;
     }
     for (const item of items) {
-      if (y > pageHeight - 20) { doc.addPage(); encabezado(); y = 28; }
+      if (y > limiteInferior) { doc.addPage(); encabezado(); y = 40; }
       const lItem = doc.splitTextToSize('• ' + item, 176);
       doc.text(lItem, 18, y); y += (lItem.length * 3.6) + 1;
     }
     if (cierre) {
-      if (y > pageHeight - 20) { doc.addPage(); encabezado(); y = 28; }
+      if (y > limiteInferior) { doc.addPage(); encabezado(); y = 40; }
       const lCierre = doc.splitTextToSize(cierre, 178);
       doc.text(lCierre, 16, y); y += (lCierre.length * 3.6) + 1;
     }
@@ -10493,12 +10502,12 @@ function construirReciboAdelantoInicialPDF(datos){
   // numerada del 1 al 6 con una sub-lista de viñetas anidada dentro del
   // punto 3 -- se reproduce con esa misma estructura en vez de aplanarla
   // en un solo párrafo por punto.
-  if (y > pageHeight - 30) { doc.addPage(); encabezado(); y = 28; }
+  if (y > limiteInferior) { doc.addPage(); encabezado(); y = 40; }
   doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(...cNavy);
   doc.text('CONDICIONES DE CONTRATACIÓN', 105, y, { align: 'center' }); y += 6;
 
   const parrafoCondicion = (texto, x, ancho) => {
-    if (y > pageHeight - 20) { doc.addPage(); encabezado(); y = 28; }
+    if (y > limiteInferior) { doc.addPage(); encabezado(); y = 40; }
     doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...cInk);
     const l = doc.splitTextToSize(texto, ancho);
     doc.text(l, x, y); y += (l.length * 3.6) + 1.3;
@@ -10515,7 +10524,10 @@ function construirReciboAdelantoInicialPDF(datos){
   parrafoCondicion('6. En caso de concretarse la compraventa, las arras se imputarán a la cuota inicial.', 16, 178);
   y += 1.5;
 
-  if (y > pageHeight - 45) { doc.addPage(); encabezado(); y = 28; }
+  // El bloque de firmas dibuja ~24mm más después de este punto sin otro
+  // chequeo de salto de página -- necesita más margen que las cláusulas de
+  // texto para no terminar encima del pie del membrete.
+  if (y > limiteInferior - 25) { doc.addPage(); encabezado(); y = 40; }
   y += 10;
   doc.setDrawColor(180, 180, 180); doc.setLineWidth(0.4);
   doc.line(22, y, 95, y);
@@ -10569,7 +10581,7 @@ async function compartirPDFGenerado(doc, nombreArchivo, tituloShare, mensajeWsp)
 // Recibo de Adelanto de Inicial desde el formulario de Separación --
 // incluye cónyuge, socio, medio de pago y N° de operación porque este
 // formulario sí los captura.
-function generarReciboAdelantoInicialPDF(){
+async function generarReciboAdelantoInicialPDF(){
   if (!window.jspdf) { toast('Librería PDF no disponible'); return; }
 
   const nombre = document.getElementById('sp_cliente_nombre')?.value.trim() || '';
@@ -10604,7 +10616,8 @@ function generarReciboAdelantoInicialPDF(){
   const saldo = esFinanciado ? (parseFloat(document.getElementById('sp_saldo')?.value) || 0) : 0;
   const inversionMensual = esFinanciado ? (parseFloat(document.getElementById('sp_inversion_mensual')?.value) || 0) : 0;
 
-  const resultado = construirReciboAdelantoInicialPDF({
+  toast('Generando Recibo de Adelanto de Inicial…');
+  const resultado = await construirReciboAdelantoInicialPDF({
     nombre, dni, celular, direccion, correo, conyugeNombre, conyugeDni, cotizacion, socio,
     manzana, lote, area, valorTotal, fecha, montoSeparacion, medioPago, nOperacion,
     esFinanciado, inicial, saldo, inversionMensual, fechaVencimiento, asesor,
@@ -17899,7 +17912,7 @@ function esCanvasFirmaVacio() {
 // de pago/N° operación (esos quedan "—" aquí y se completan al pasar por
 // "Formalizar Separación"), pero sí trae la firma táctil del canvas, que se
 // estampa sobre la línea de EL CLIENTE.
-function descargarReciboDesdeMinutaPDF() {
+async function descargarReciboDesdeMinutaPDF() {
   if (!window.jspdf) { toast('Librería PDF no disponible'); return; }
 
   const nombre = document.getElementById('min_comprador_nombre')?.value.trim() || '';
@@ -17937,7 +17950,8 @@ function descargarReciboDesdeMinutaPDF() {
   let firmaDataUrl = null;
   try { firmaDataUrl = canvasFirma ? canvasFirma.toDataURL('image/png') : null; } catch (e) { console.warn('No se pudo leer la firma táctil:', e); }
 
-  const resultado = construirReciboAdelantoInicialPDF({
+  toast('Generando Recibo de Adelanto de Inicial…');
+  const resultado = await construirReciboAdelantoInicialPDF({
     nombre, dni, celular, direccion, correo, cotizacion: '', socio: '',
     manzana, lote, area, valorTotal, fecha, montoSeparacion, medioPago: '', nOperacion: '',
     esFinanciado: true, inicial, saldo, inversionMensual, fechaVencimiento, asesor, firmaDataUrl,
