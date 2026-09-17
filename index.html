@@ -1491,9 +1491,6 @@ main.app-content {
           <div style="display:flex; flex-direction:column; gap:8px;">
             <button class="chip-btn gold" id="btnInicioReporteDiario" style="width:100%; justify-content:center; padding:11px; font-size:13px; font-weight:700;" onclick="document.getElementById('btnDescargarReporte').click()">📄 Reporte diario (PDF + WhatsApp)</button>
             <button class="chip-btn" id="btnInicioInformeFormal" style="width:100%; justify-content:center; padding:11px; font-size:13px; border-color:#1A2332; color:#1A2332; font-weight:700;" onclick="document.getElementById('btnAbrirInformeFormal').click()">🗂️ Informe formal (quincenal/mensual)</button>
-            <button class="chip-btn" id="btnInicioReporteEquipo" style="width:100%; justify-content:center; padding:11px; font-size:13px; border-color:#7C6BAF; color:#7C6BAF; font-weight:700;" onclick="irAVista('reporte_equipo')">🧑‍🤝‍🧑 Reporte diario del equipo</button>
-            <button class="chip-btn" id="btnInicioSeguimientoGhl" style="width:100%; justify-content:center; padding:11px; font-size:13px; border-color:#0369A1; color:#0369A1; font-weight:700;" onclick="irAVista('ghl_dia')">📞 Seguimiento de Leads (GoHighLevel)</button>
-            <button class="chip-btn" id="btnInicioRespaldos" style="width:100%; justify-content:center; padding:11px; font-size:13px; border-color:#4C7A5E; color:#4C7A5E; font-weight:700;" onclick="irAVista('sistema')">💾 Respaldos del sistema</button>
           </div>
         </div>
       </div>
@@ -4814,9 +4811,6 @@ function actualizarTarjetaReportesInicio(){
   const mapa = [
     ['btnInicioReporteDiario', 'generar_informes'],
     ['btnInicioInformeFormal', 'generar_informes'],
-    ['btnInicioReporteEquipo', 'ver_reporte_equipo'],
-    ['btnInicioSeguimientoGhl', 'ver_seguimiento_ghl'],
-    ['btnInicioRespaldos', 'descargar_respaldos'],
   ];
   let algunoVisible = false;
   mapa.forEach(([id, permiso]) => {
