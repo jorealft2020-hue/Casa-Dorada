@@ -751,21 +751,23 @@
 /* Brillo que recorre solo las formas opacas del logo (enmascarado con el
    propio PNG como canal alfa), como luz reflejándose sobre una pieza
    metálica/vidrio -- nunca se ve como un cuadro porque fuera del logo el
-   fondo sigue transparente. */
+   fondo sigue transparente. Franja ancha y de opacidad baja + barrido
+   lineal sin pausas para que sea un brillo sutil y continuo, no un
+   destello que interrumpe la vista. */
 .logo-3d-brillo{
   position: absolute; inset: 0; z-index: 2; pointer-events: none;
   mask-mode: alpha; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
   -webkit-mask-size: contain; mask-size: contain;
   -webkit-mask-position: center; mask-position: center;
-  background: linear-gradient(115deg, transparent 32%, rgba(255,255,255,0.95) 50%, transparent 68%);
-  background-size: 300% 300%;
-  background-position: -140% 0;
-  animation: logoBrilloBarrido 3.6s ease-in-out infinite;
+  background: linear-gradient(115deg, transparent 10%, rgba(255,255,255,0.16) 40%, rgba(255,255,255,0.32) 50%, rgba(255,255,255,0.16) 60%, transparent 90%);
+  background-size: 260% 260%;
+  background-position: -120% 0;
+  animation: logoBrilloBarrido 6.5s linear infinite;
 }
-.logo-3d:nth-of-type(2) .logo-3d-brillo{ animation-delay: 0.7s; }
+.logo-3d:nth-of-type(2) .logo-3d-brillo{ animation-delay: 1.2s; }
 @keyframes logoBrilloBarrido{
-  0%, 15%{ background-position: -140% 0; }
-  60%, 100%{ background-position: 140% 0; }
+  0%{ background-position: -120% 0; }
+  100%{ background-position: 120% 0; }
 }
 .logo-3d:hover{
   transform: scale(1.08);
