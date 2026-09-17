@@ -4833,6 +4833,7 @@ const PERMISOS_CATALOGO = [
   { key: 'generar_informes',         label: 'Generar Informes Formales en PDF',       dept: 'Administración', default: false },
 
   // ⚙️ GERENCIA & AJUSTES (EXCLUSIVO SUPERADMIN)
+  { key: 'ver_equipo_completo',      label: 'Ver Datos de Todo el Equipo (no solo lo propio)', dept: 'Gerencia', default: true },
   { key: 'gestionar_equipo',         label: 'Gestión de Equipo y Permisos',           dept: 'Gerencia', default: false },
   { key: 'eliminar_usuarios',        label: 'Eliminar Colaboradores del Sistema',     dept: 'Gerencia', default: false },
   { key: 'eliminar_registros',       label: 'Eliminar Registros del Sistema',         dept: 'Gerencia', default: false },
@@ -5372,7 +5373,7 @@ function aplicarPresetPermisos(prefix, tipo){
       'ver_checklist_legal', 'usar_generador_doc', 'ver_rendimiento', 'ver_solicitudes', 'crear_solicitudes', 'usar_conversor_divisas', 'ver_inventario_lotes', 'ver_comisiones_erp', 'ver_scoring_predictivo_leads', 'ver_simulador_plusvalia', 'ver_portal_propietarios', 'ver_gemelo_digital_3d'
     ],
     supervisor: [
-      'ver_mi_jornada', 'ver_control', 'ver_kpi_desglose', 'ver_ranking_equipo', 'ver_proyeccion_ventas', 'ver_clientes',
+      'ver_mi_jornada', 'ver_equipo_completo', 'ver_control', 'ver_kpi_desglose', 'ver_ranking_equipo', 'ver_proyeccion_ventas', 'ver_clientes',
       'crear_editar_clientes', 'ver_pipeline_kanban', 'asignar_archivar_masivo', 'ver_actividades', 'crear_actividades',
       'ver_agenda', 'crear_eventos_agenda', 'ver_control_visitas', 'agendar_visitas_van', 'ver_separaciones',
       'crear_separaciones', 'ver_planos', 'ver_cotizador', 'ver_comision_cotizador', 'ver_portafolio',
@@ -5381,7 +5382,7 @@ function aplicarPresetPermisos(prefix, tipo){
       'crear_solicitudes', 'aprobar_solicitudes', 'designar_conductor_movilidad', 'ver_reporte_equipo', 'reportes_pasados', 'generar_informes', 'usar_conversor_divisas', 'configurar_tipo_cambio', 'ver_inventario_lotes', 'ver_comisiones_erp'
     ],
     admin: [
-      'ver_mi_jornada', 'ver_control', 'ver_kpi_monto', 'ver_kpi_desglose', 'ver_ranking_equipo', 'ver_proyeccion_ventas',
+      'ver_mi_jornada', 'ver_equipo_completo', 'ver_control', 'ver_kpi_monto', 'ver_kpi_desglose', 'ver_ranking_equipo', 'ver_proyeccion_ventas',
       'ver_clientes', 'crear_editar_clientes', 'ver_pipeline_kanban', 'asignar_archivar_masivo', 'eliminar_clientes',
       'ver_actividades', 'crear_actividades', 'ver_agenda', 'crear_eventos_agenda', 'ver_control_visitas',
       'agendar_visitas_van', 'ver_separaciones', 'crear_separaciones', 'eliminar_separaciones', 'ver_planos',
@@ -5757,6 +5758,19 @@ function esRolDireccion(rol){
   return rol === 'admin' || rol === 'superadmin' || rol === 'director_comercial' || rol === 'gerencia';
 }
 
+// Antes esRolDireccion(rol) por sí solo decidía si alguien veía los datos de
+// TODO el equipo (clientes, agenda, rendimiento, comisiones, notificaciones)
+// en vez de solo lo propio -- el checklist de permisos no tenía ninguna
+// llave para restringir eso, así que un SuperAdmin no podía limitarle esa
+// visibilidad a un admin/supervisor concreto por más que desmarcara todo lo
+// demás en su ficha. 'ver_equipo_completo' por default viene en true para no
+// romper el comportamiento actual de nadie al desplegar esto, pero ahora es
+// un interruptor real: desmarcarlo en el checklist de una persona hace que
+// vuelva a ver solo lo suyo aunque su rol sea de dirección o supervisión.
+function tieneVisibilidadEquipoCompleto(rol){
+  return esRolDireccion(rol) && tienePermiso('ver_equipo_completo');
+}
+
 let cargarPerfilTokenActual = 0;
 async function cargarPerfil(){
   // Esta función la disparan 4 eventos independientes (login, realtime,
@@ -6095,7 +6109,7 @@ async function cargarAvisoClientesRiesgo(){
   const cont = document.getElementById('avisoClientesRiesgo');
   if (!cont) return;
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = esRolDireccion(rol);
+  const esSuperAdminODirector = tieneVisibilidadEquipoCompleto(rol);
 
   // NOT IN excluye la fila si estado_prospecto es NULL (NULL NOT IN (...) da
   // NULL, no true, en SQL) -- eso escondia de este aviso a cualquier cliente
@@ -6122,7 +6136,7 @@ async function cargarComparativoManzana(){
   cont.classList.remove('hidden'); cont.previousElementSibling?.classList.remove('hidden');
 
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = esRolDireccion(rol);
+  const esSuperAdminODirector = tieneVisibilidadEquipoCompleto(rol);
   // Canceladas/vencidas no son ventas validas -- se traen igual (select) para
   // poder filtrarlas, en vez de dejar que infen el total de su manzana como
   // si fueran negocio real (hallazgo M10).
@@ -6167,7 +6181,7 @@ async function cargarProyeccionVentas(){
   cont.innerHTML = `<div class="spinner"></div>`;
 
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = esRolDireccion(rol);
+  const esSuperAdminODirector = tieneVisibilidadEquipoCompleto(rol);
 
   const hoy = new Date();
   const inicioMes = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-01`;
@@ -6359,7 +6373,7 @@ function estadoLabel(e){
 
 async function poblarSelectClientes(selectId){
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = esRolDireccion(rol);
+  const esSuperAdminODirector = tieneVisibilidadEquipoCompleto(rol);
   let query = sb.from('clientes').select('id, nombre').order('nombre');
   if (!esSuperAdminODirector) query = query.eq('vendedor_id', currentUser.id);
   const { data } = await query;
@@ -6508,7 +6522,7 @@ document.getElementById('btnDescargarReporte').addEventListener('click', () => {
   inputF.value = hoy;
 
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = esRolDireccion(rol);
+  const esSuperAdminODirector = tieneVisibilidadEquipoCompleto(rol);
   const puedePasados = esSuperAdminODirector || (currentProfile?.permisos?.reportes_pasados === true);
 
   if (!puedePasados) {
@@ -8074,8 +8088,8 @@ function cargarRendimientoPorArea(area){
 async function cargarRendimiento(){
   const panel = document.getElementById('panelEmbudo');
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = esRolDireccion(rol);
-  const esSupervisor = rol === 'supervisor';
+  const esSuperAdminODirector = tieneVisibilidadEquipoCompleto(rol);
+  const esSupervisor = rol === 'supervisor' && tienePermiso('ver_equipo_completo');
 
   let usuarioIds = [currentUser.id];
   let tituloAlcance = 'Tu rendimiento comercial';
@@ -8307,7 +8321,7 @@ document.getElementById('btnGuardarCliente').addEventListener('click', async () 
 
 async function cargarClientes(){
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = esRolDireccion(rol);
+  const esSuperAdminODirector = tieneVisibilidadEquipoCompleto(rol);
   document.getElementById('tabClientesPipeline')?.classList.toggle('hidden', !tienePermiso('ver_pipeline_kanban'));
 
   let query = sb.from('clientes').select('*').eq('archivado', false);
@@ -8437,7 +8451,7 @@ async function archivarClientesMasivo(){
 
 async function cargarClientesArchivados(){
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = esRolDireccion(rol);
+  const esSuperAdminODirector = tieneVisibilidadEquipoCompleto(rol);
   let query = sb.from('clientes').select('*').eq('archivado', true).order('updated_at', { ascending: false });
   if (!esSuperAdminODirector) query = query.eq('vendedor_id', currentUser.id);
   const { data } = await query;
@@ -9543,7 +9557,7 @@ async function cargarCobranzasCuotas(){
   el.innerHTML = `<div class="spinner"></div>`;
 
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = esRolDireccion(rol);
+  const esSuperAdminODirector = tieneVisibilidadEquipoCompleto(rol);
 
   let query = sb.from('separaciones')
     .select('*, propiedades(codigo), clientes(nombre, celular, telefono)')
@@ -11074,7 +11088,7 @@ document.getElementById('btnGuardarSeparacion').addEventListener('click', async 
 
 async function cargarSeparacionesPorVencer(){
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = esRolDireccion(rol);
+  const esSuperAdminODirector = tieneVisibilidadEquipoCompleto(rol);
 
   let query = sb.from('vista_separaciones_por_vencer').select('*');
   if (!esSuperAdminODirector) {
@@ -11106,7 +11120,7 @@ async function cargarSeparacionesPorVencer(){
 
 async function cargarSeparacionesTodas(){
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = esRolDireccion(rol);
+  const esSuperAdminODirector = tieneVisibilidadEquipoCompleto(rol);
 
   // Esta pestaña se llama "Separaciones Activas": solo debe mostrar
   // separaciones con estado 'activa' que todavia no vencieron -- las ya
@@ -11768,8 +11782,8 @@ async function cargarAgenda(){
   if (!currentUser) return;
 
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = esRolDireccion(rol);
-  const esSupervisor = rol === 'supervisor';
+  const esSuperAdminODirector = tieneVisibilidadEquipoCompleto(rol);
+  const esSupervisor = rol === 'supervisor' && tienePermiso('ver_equipo_completo');
 
   try {
     let query = sb.from('agenda').select('*, usuarios(nombre, area)').order('fecha_inicio', { ascending: false });
@@ -12154,7 +12168,7 @@ function alCambiarSolicitanteSelect(){
 /* ============ REPORTE DIARIO DEL EQUIPO ============ */
 async function obtenerIdsEquipo(){
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = esRolDireccion(rol);
+  const esSuperAdminODirector = tieneVisibilidadEquipoCompleto(rol);
   if (esSuperAdminODirector) {
     const { data } = await sb.from('usuarios').select('id, nombre').eq('activo', true).order('nombre');
     return data || [];
@@ -13773,7 +13787,7 @@ async function cargarNotificacionesBadge(){
     totalAlertas += (seps || []).length;
 
     const rol = currentProfile?.rol;
-    const esSuperAdminODirector = esRolDireccion(rol);
+    const esSuperAdminODirector = tieneVisibilidadEquipoCompleto(rol);
 
     let qAg = sb.from('agenda').select('id', { count: 'exact', head: true }).eq('estado', 'programada');
     if (!esSuperAdminODirector) qAg = qAg.eq('usuario_id', currentUser.id);
@@ -13819,7 +13833,7 @@ async function cargarNotificaciones(asesorIdFiltro){
   el.innerHTML = `<div class="spinner"></div>`;
 
   const rolActual = currentProfile?.rol;
-  const puedeVerEquipo = rolActual === 'admin' || rolActual === 'superadmin' || rolActual === 'director_comercial' || rolActual === 'gerencia';
+  const puedeVerEquipo = tieneVisibilidadEquipoCompleto(rolActual);
   const idObjetivo = puedeVerEquipo ? (asesorIdFiltro || 'todos') : currentUser.id;
 
   const selector = document.getElementById('notifAsesorSelector');
@@ -13877,7 +13891,7 @@ async function cargarNotificaciones(asesorIdFiltro){
     });
 
     const rol = currentProfile?.rol;
-    const esSuperAdminODirector = esRolDireccion(rol);
+    const esSuperAdminODirector = tieneVisibilidadEquipoCompleto(rol);
 
     let qAg = sb.from('agenda')
       .select('*, usuarios(nombre)')
@@ -15235,7 +15249,7 @@ function filtrarClientesEnVivo(texto){
   if (!el || !clientesCache) return;
 
   const rol = currentProfile?.rol;
-  const esSuperAdminODirector = esRolDireccion(rol);
+  const esSuperAdminODirector = tieneVisibilidadEquipoCompleto(rol);
 
   let filtrados = clientesCache.filter(c => {
     if (textoBusquedaClienteActivo) {
@@ -16360,7 +16374,7 @@ async function cargarBilleteraComisiones(){
 
   try {
     const rolCom = currentProfile?.rol;
-    const esAdminSA = rolCom === 'superadmin' || rolCom === 'admin' || rolCom === 'director_comercial' || rolCom === 'gerencia';
+    const esAdminSA = tieneVisibilidadEquipoCompleto(rolCom);
     let query = sb.from('separaciones')
       .select('*, clientes(nombre), usuarios(nombre)')
       .order('created_at', { ascending: false });
