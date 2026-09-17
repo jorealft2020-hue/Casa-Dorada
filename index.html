@@ -2754,6 +2754,18 @@ main.app-content {
           <div class="field"><label>Fecha de vencimiento de la separación</label><input type="date" id="sp_fecha_vencimiento"></div>
         </div>
       </div>
+      <div class="accordion-sec collapsed" id="secUbicacion">
+        <div class="accordion-hdr" onclick="toggleAccordion('secUbicacion')">
+          <span>📍 4. UBICACIÓN DE LA VIVIENDA (GOOGLE MAPS)</span>
+          <span class="arrow">▼</span>
+        </div>
+        <div class="accordion-bdy">
+          <p style="font-size:11px; color:var(--ink-dim); margin:0 0 8px;">Abre Google Maps para que el cliente marque el punto exacto de su vivienda, luego pide que te comparta el enlace y pégalo aquí abajo para generar el anexo de ubicación.</p>
+          <button type="button" class="chip-btn" onclick="abrirGoogleMapsParaUbicacion()" style="width:100%; justify-content:center; font-size:12px; font-weight:700; border-color:var(--gold); color:var(--navy); background:#fff; margin-bottom:8px;">🗺️ Abrir Google Maps</button>
+          <div class="field"><label>Enlace de Google Maps compartido por el cliente</label><input type="url" id="sp_ubicacion_link" placeholder="https://maps.app.goo.gl/..."></div>
+          <button type="button" class="chip-btn gold" onclick="generarAnexoUbicacionPDF()" style="width:100%; justify-content:center; font-size:12px; font-weight:700;">📄 Descargar Anexo de Ubicación (PDF)</button>
+        </div>
+      </div>
       <div class="modal-actions">
         <button class="btn-secondary" data-close="modalSeparacion">Cancelar</button>
         <button type="button" class="btn-primary" id="btnDescargarReciboAdelanto" onclick="generarReciboAdelantoInicialPDF()" style="background:#0F766E; border-color:#0F766E;">📄 Descargar Recibo de Adelanto (PDF)</button>
@@ -9814,7 +9826,8 @@ function prepararModalSeparacion(){
   ['sp_cliente_nombre','sp_cliente_dni','sp_cliente_celular','sp_cliente_direccion','sp_cliente_correo',
    'sp_conyuge_nombre','sp_conyuge_dni','sp_conyuge_celular','sp_conyuge_direccion',
    'sp_cotizacion','sp_socio','sp_lote','sp_area','sp_valor_total','sp_monto_separacion',
-   'sp_medio_pago','sp_n_operacion','sp_valor_inicial','sp_saldo','sp_meses_otro','sp_inversion_mensual'
+   'sp_medio_pago','sp_n_operacion','sp_valor_inicial','sp_saldo','sp_meses_otro','sp_inversion_mensual',
+   'sp_ubicacion_link'
   ].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
 
   document.getElementById('sp_fecha_separacion').value = obtenerHoyLocal();
@@ -9835,6 +9848,7 @@ function prepararModalSeparacion(){
   document.getElementById('secCli').classList.remove('collapsed');
   document.getElementById('secLote').classList.add('collapsed');
   document.getElementById('secPago').classList.add('collapsed');
+  document.getElementById('secUbicacion').classList.add('collapsed');
 
   separacionNotasTransferidas = null;
 }
@@ -10114,6 +10128,156 @@ function generarReciboAdelantoInicialPDF(){
     window.open(`https://wa.me/?text=${encodeURIComponent(wspMsg)}`, '_blank');
   };
   compartirOGuardar();
+}
+
+// Abre Google Maps en una pestaña nueva para que el cliente marque el punto
+// exacto de su vivienda -- usa la URL pública de búsqueda de Maps (sin API
+// key, no requiere cuenta de Google Cloud) centrada en la dirección ya
+// escrita si existe, para no partir de un mapa en blanco.
+function abrirGoogleMapsParaUbicacion(){
+  const direccion = document.getElementById('sp_cliente_direccion')?.value.trim();
+  const url = direccion
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccion + ', Tacna, Perú')}`
+    : 'https://www.google.com/maps';
+  window.open(url, '_blank');
+  toast('Busca o marca el punto exacto, toca "Compartir" en Maps y pega aquí el enlace ✓');
+}
+
+// Trata de leer lat/lng de las URLs típicas de Google Maps (con @lat,lng o
+// ?q=lat,lng) solo para mostrarlas en el PDF -- si el cliente comparte un
+// enlace corto (maps.app.goo.gl) esto no calza y simplemente se omite; el
+// QR y el enlace en texto igual funcionan porque no dependen de parsear
+// coordenadas, solo del enlace tal cual.
+function extraerCoordenadasDeEnlaceMaps(url){
+  const m = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) || url.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/);
+  return m ? { lat: m[1], lng: m[2] } : null;
+}
+
+// Genera el "Anexo de Ubicación" en PDF: no existe una API key de Google
+// Maps configurada en este proyecto (crearla requiere una cuenta de Google
+// Cloud del propio Jorge), así que en vez de incrustar un mapa, el
+// documento lleva el enlace de Google Maps como texto con hipervínculo MÁS
+// un código QR hacia ese mismo enlace -- cualquiera que reciba el PDF
+// (impreso o por WhatsApp) puede escanearlo con la cámara del celular y
+// abrir la ubicación exacta en Maps, sin depender de ninguna credencial.
+async function generarAnexoUbicacionPDF(){
+  const { jsPDF } = window.jspdf || {};
+  if (!jsPDF) { toast('Librería PDF no disponible'); return; }
+
+  const nombre = document.getElementById('sp_cliente_nombre')?.value.trim() || '';
+  const dni = document.getElementById('sp_cliente_dni')?.value.trim() || '';
+  const direccion = document.getElementById('sp_cliente_direccion')?.value.trim() || '';
+  const manzana = document.getElementById('sp_manzana')?.value || '';
+  const lote = document.getElementById('sp_lote')?.value.trim() || '';
+  const enlaceMaps = document.getElementById('sp_ubicacion_link')?.value.trim() || '';
+
+  if (!nombre) { toast('Falta el nombre del cliente'); return; }
+  if (!enlaceMaps) { toast('Pega primero el enlace de Google Maps que te compartió el cliente'); return; }
+  if (!/^https?:\/\//i.test(enlaceMaps)) { toast('El enlace de Google Maps no es válido'); return; }
+
+  const coords = extraerCoordenadasDeEnlaceMaps(enlaceMaps);
+
+  let qrDataUrl = null;
+  try {
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(enlaceMaps)}`;
+    const resp = await fetch(qrUrl);
+    if (resp.ok) {
+      const blob = await resp.blob();
+      qrDataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+  } catch (e) {
+    console.warn('No se pudo generar el código QR (se continúa sin él):', e);
+  }
+
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const cNavy = [20, 42, 77], cDim = [107, 114, 128], cInk = [30, 41, 59];
+
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(...cNavy);
+  doc.text('CONSTRUCTORA & INMOBILIARIA CASA DORADA S.A.C.', 105, 18, { align: 'center' });
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...cDim);
+  doc.text('RUC: 20611912634 · Proyecto Costa Dorada, La Yarada Los Palos, Tacna', 105, 23, { align: 'center' });
+  doc.setDrawColor(200, 155, 60); doc.setLineWidth(0.6); doc.line(16, 26, 194, 26);
+
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(...cNavy);
+  doc.text('ANEXO DE UBICACIÓN DEL CLIENTE', 105, 36, { align: 'center' });
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...cDim);
+  doc.text('Punto de vivienda marcado por el cliente en Google Maps', 105, 41.5, { align: 'center' });
+
+  let y = 54;
+  doc.setFontSize(9.5);
+  const campo = (etiqueta, valor) => {
+    doc.setFont('helvetica', 'bold'); doc.setTextColor(...cNavy); doc.text(etiqueta, 16, y);
+    doc.setFont('helvetica', 'normal'); doc.setTextColor(...cInk);
+    const lineas = doc.splitTextToSize(String(valor || '—'), 140);
+    doc.text(lineas, 55, y);
+    y += Math.max(lineas.length * 4.5, 6.5);
+  };
+  campo('Cliente:', nombre.toUpperCase());
+  campo('DNI:', dni);
+  if (manzana || lote) campo('Lote de referencia:', `Manzana ${manzana} - Lote ${lote}`);
+  campo('Dirección declarada:', direccion);
+  y += 4;
+
+  doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.3); doc.line(16, y, 194, y); y += 8;
+
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(...cNavy);
+  doc.text('Enlace de Google Maps:', 16, y); y += 5.5;
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(37, 99, 235);
+  const lineasEnlace = doc.splitTextToSize(enlaceMaps, 120);
+  if (typeof doc.textWithLink === 'function') {
+    doc.textWithLink(lineasEnlace.join(' '), 16, y, { url: enlaceMaps });
+  } else {
+    doc.text(lineasEnlace, 16, y);
+  }
+  y += (lineasEnlace.length * 4.5) + 3;
+
+  if (coords) {
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(...cDim);
+    doc.text(`Coordenadas aproximadas: ${coords.lat}, ${coords.lng}`, 16, y); y += 5;
+  }
+
+  if (qrDataUrl) {
+    try { doc.addImage(qrDataUrl, 'PNG', 140, 54, 40, 40); } catch (e) { console.warn('Error insertando QR en PDF:', e); }
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(...cDim);
+    doc.text('Escanea para abrir en Maps', 160, 97, { align: 'center' });
+  }
+
+  y += 15;
+  doc.setFillColor(248, 250, 252);
+  doc.roundedRect(16, y, 178, 16, 3, 3, 'F');
+  doc.setFontSize(7.5); doc.setTextColor(...cDim);
+  doc.text('Este anexo registra el punto que el propio cliente marcó en Google Maps como ubicación de su vivienda,', 22, y + 6);
+  doc.text('con fines de referencia comercial y logística del proyecto Costa Dorada.', 22, y + 10.5);
+
+  const nombreArchivo = `Anexo_Ubicacion_${nombre.replace(/\s+/g, '-')}.pdf`;
+  const blob = doc.output('blob');
+  const archivoPDF = new File([blob], nombreArchivo, { type: 'application/pdf' });
+
+  if (navigator.canShare && navigator.canShare({ files: [archivoPDF] })) {
+    try {
+      await navigator.share({ files: [archivoPDF], title: 'Anexo de Ubicación' });
+      toast('Anexo de ubicación generado ✓');
+      return;
+    } catch (e) {
+      if (e?.name === 'AbortError') return;
+      console.warn('navigator.share falló, usando respaldo de descarga:', e);
+    }
+  }
+  const blobUrl = URL.createObjectURL(blob);
+  window.open(blobUrl, '_blank');
+  doc.save(nombreArchivo);
+  toast('Anexo generado y abriendo WhatsApp… ✓');
+  const wspMsgUbic = `📍 *ANEXO DE UBICACIÓN · COSTA DORADA*\n\n` +
+    `• *Cliente:* ${nombre.toUpperCase()}${dni ? ' · DNI: ' + dni : ''}\n` +
+    `• *Dirección:* ${direccion || '—'}\n` +
+    `• *Google Maps:* ${enlaceMaps}\n\n` +
+    `_Documento emitido desde el Planner Corporativo Casa Dorada._`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(wspMsgUbic)}`, '_blank');
 }
 
 document.getElementById('btnGuardarSeparacion').addEventListener('click', async () => {
