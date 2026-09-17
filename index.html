@@ -4013,8 +4013,8 @@ main.app-content {
       <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
         <span style="font-size:24px;">📑</span>
         <div>
-          <h3 style="margin:0; color:var(--navy); font-size:16px;">Formalización de Minuta Legal & Firma Táctil</h3>
-          <p style="margin:2px 0 0; font-size:11.5px; color:var(--ink-dim);">Contrato Preparatorio de Compraventa con Financiamiento Directo · Costa Dorada</p>
+          <h3 style="margin:0; color:var(--navy); font-size:16px;">Formalización de Separación</h3>
+          <p style="margin:2px 0 0; font-size:11.5px; color:var(--ink-dim);">Recibo de Adelanto de Inicial · Firma Táctil · Costa Dorada</p>
         </div>
       </div>
 
@@ -4129,8 +4129,8 @@ main.app-content {
       <!-- BOTONES DE ACCIÓN -->
       <div style="display:flex; gap:10px; flex-wrap:wrap;">
         <button type="button" class="btn-secondary" onclick="closeModal('modalMinutaCompraventa')" style="flex:1; flex-basis:100%;">Cerrar</button>
-        <button type="button" class="btn-primary" onclick="descargarMinutaLegalPDF()" style="flex:1; min-width:180px; background:#0F766E; border-color:#0F766E; font-weight:800; font-size:13px;">
-          📑 Descargar Minuta Firmada (PDF)
+        <button type="button" class="btn-primary" onclick="descargarReciboDesdeMinutaPDF()" style="flex:1; min-width:180px; background:#0F766E; border-color:#0F766E; font-weight:800; font-size:13px;">
+          📄 Descargar Recibo de Adelanto (PDF)
         </button>
         <button type="button" class="btn-primary" onclick="formalizarSeparacionDesdeMinuta()" style="flex:1; min-width:180px; background:var(--gold); border-color:var(--gold); font-weight:800; font-size:13px;">
           🏷️ Formalizar Separación
@@ -9892,40 +9892,23 @@ function calcularFinanciamiento(){
 // de contratación. Se llena con los datos ya cargados en el formulario de
 // Separación (modalSeparacion) -- no duplica un formulario nuevo, usa el que
 // ya existe y ya se prueba al guardar.
-function generarReciboAdelantoInicialPDF(){
+// Construye el PDF del "Recibo de Adelanto de Inicial" a partir de un
+// objeto de datos plano -- lo usan tanto el botón de Separación (con todos
+// los campos: cónyuge, socio, medio de pago, N° operación) como el botón
+// de la Minuta (que no captura esos campos pero sí trae la firma táctil
+// capturada en el canvas, que aquí se estampa sobre la línea de EL
+// CLIENTE). Un solo formato de documento sin importar por cuál de los dos
+// flujos se generó, que es justo lo que Jorge reportó que faltaba.
+function construirReciboAdelantoInicialPDF(datos){
   const { jsPDF } = window.jspdf || {};
-  if (!jsPDF) { toast('Librería PDF no disponible'); return; }
+  if (!jsPDF) return null;
 
-  const nombre = document.getElementById('sp_cliente_nombre')?.value.trim() || '';
-  const dni = document.getElementById('sp_cliente_dni')?.value.trim() || '';
-  const celular = document.getElementById('sp_cliente_celular')?.value.trim() || '';
-  const direccion = document.getElementById('sp_cliente_direccion')?.value.trim() || '';
-  const correo = document.getElementById('sp_cliente_correo')?.value.trim() || '';
-  const tieneConyuge = document.getElementById('sp_tiene_conyuge')?.checked;
-  const conyugeNombre = tieneConyuge ? (document.getElementById('sp_conyuge_nombre')?.value.trim() || '') : '';
-  const conyugeDni = tieneConyuge ? (document.getElementById('sp_conyuge_dni')?.value.trim() || '') : '';
-  const cotizacion = document.getElementById('sp_cotizacion')?.value.trim() || '';
-  const socio = document.getElementById('sp_socio')?.value.trim() || '';
-  const manzana = document.getElementById('sp_manzana')?.value || '';
-  const lote = document.getElementById('sp_lote')?.value.trim() || '';
-  const area = document.getElementById('sp_area')?.value || '';
-  const valorTotal = parseFloat(document.getElementById('sp_valor_total')?.value) || 0;
-  const fechaSeparacion = document.getElementById('sp_fecha_separacion')?.value || '';
-  const montoSeparacion = parseFloat(document.getElementById('sp_monto_separacion')?.value) || 0;
-  const medioPago = document.getElementById('sp_medio_pago')?.value.trim() || '';
-  const nOperacion = document.getElementById('sp_n_operacion')?.value.trim() || '';
-  const condicion = document.getElementById('sp_condicion')?.value || 'contado';
-  const fechaVencimiento = document.getElementById('sp_fecha_vencimiento')?.value || '';
-  const asesor = currentUser?.nombre || currentProfile?.nombre || 'Asesor Comercial';
-
-  if (!nombre) { toast('Falta el nombre del cliente'); return; }
-  if (!dni) { toast('Falta el DNI del cliente'); return; }
-  if (!manzana || !lote) { toast('Falta manzana y lote'); return; }
-  if (!montoSeparacion || montoSeparacion <= 0) { toast('Falta el monto de separación'); return; }
-
-  const inicial = condicion === 'financiado' ? (parseFloat(document.getElementById('sp_valor_inicial')?.value) || 0) : valorTotal;
-  const saldo = condicion === 'financiado' ? (parseFloat(document.getElementById('sp_saldo')?.value) || 0) : 0;
-  const inversionMensual = condicion === 'financiado' ? (parseFloat(document.getElementById('sp_inversion_mensual')?.value) || 0) : 0;
+  const {
+    nombre, dni, celular, direccion, correo, conyugeNombre = '', conyugeDni = '',
+    cotizacion = '', socio = '', manzana, lote, area, valorTotal, fecha, montoSeparacion,
+    medioPago = '', nOperacion = '', esFinanciado, inicial, saldo, inversionMensual,
+    fechaVencimiento, asesor, firmaDataUrl,
+  } = datos;
 
   const fmtFecha = (iso) => {
     if (!iso) return '—';
@@ -9961,7 +9944,7 @@ function generarReciboAdelantoInicialPDF(){
     doc.setFont('helvetica', 'normal'); doc.setTextColor(...cInk);
     doc.text(String(valor || '—'), x + anchoEtiqueta, yy);
   };
-  campo('FECHA:', fmtFecha(fechaSeparacion), 16, y);
+  campo('FECHA:', fmtFecha(fecha), 16, y);
   campo('N° COTIZACIÓN:', cotizacion, 108, y, 30); y += 5.5;
   campo('CLIENTE:', nombre.toUpperCase(), 16, y, 20);
   campo('DNI:', dni, 130, y, 10); y += 5.5;
@@ -9984,8 +9967,8 @@ function generarReciboAdelantoInicialPDF(){
   const columnas = [
     ['Mz', manzana], ['Lte', lote], ['Área', area ? `${area} m²` : '—'],
     ['Valor Total', fmtMoneda(valorTotal)], ['Inicial', fmtMoneda(inicial)],
-    ['Saldo Financ.', condicion === 'financiado' ? fmtMoneda(saldo) : 'Al contado'],
-    ['Inv. Mensual', condicion === 'financiado' ? fmtMoneda(inversionMensual) : '—'],
+    ['Saldo Financ.', esFinanciado ? fmtMoneda(saldo) : 'Al contado'],
+    ['Inv. Mensual', esFinanciado ? fmtMoneda(inversionMensual) : '—'],
   ];
   const anchoCol = 178 / columnas.length;
   doc.setFillColor(248, 250, 252);
@@ -10091,6 +10074,14 @@ function generarReciboAdelantoInicialPDF(){
   doc.setDrawColor(180, 180, 180); doc.setLineWidth(0.4);
   doc.line(22, y, 95, y);
   doc.line(115, y, 188, y);
+
+  // Si viene de la Minuta (firma táctil en canvas), se estampa el trazo
+  // capturado justo encima de la línea de EL CLIENTE -- si viene de
+  // Separación no hay canvas y la línea queda para firma física.
+  if (firmaDataUrl) {
+    try { doc.addImage(firmaDataUrl, 'PNG', 30, y - 24, 56, 22); } catch (e) { console.warn('Error estampando firma en Recibo:', e); }
+  }
+
   doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(...cNavy);
   doc.text('EL CLIENTE', 58, y + 5, { align: 'center' });
   doc.text('LA EMPRESA', 151, y + 5, { align: 'center' });
@@ -10101,33 +10092,85 @@ function generarReciboAdelantoInicialPDF(){
   doc.text('CASA DORADA S.A.C.', 151, y + 14, { align: 'center' });
 
   const nombreArchivo = `Recibo_Adelanto_Inicial_Mz${manzana}_Lote${lote}.pdf`;
+  return { doc, nombreArchivo };
+}
+
+// Comparte/descarga el PDF ya construido -- intenta adjuntar el archivo
+// directo al cuadro nativo de compartir (WhatsApp incluido) y, si el
+// navegador no lo soporta, cae a descargar + abrir WhatsApp con el texto
+// (mismo patrón ya usado en reportes e informes de la app).
+async function compartirPDFGenerado(doc, nombreArchivo, tituloShare, mensajeWsp){
   const blob = doc.output('blob');
   const archivoPDF = new File([blob], nombreArchivo, { type: 'application/pdf' });
 
-  const compartirOGuardar = async () => {
-    if (navigator.canShare && navigator.canShare({ files: [archivoPDF] })) {
-      try {
-        await navigator.share({ files: [archivoPDF], title: 'Recibo de Adelanto de Inicial' });
-        toast('Recibo generado ✓');
-        return;
-      } catch (e) {
-        if (e?.name === 'AbortError') return;
-        console.warn('navigator.share falló, usando respaldo de descarga:', e);
-      }
+  if (navigator.canShare && navigator.canShare({ files: [archivoPDF] })) {
+    try {
+      await navigator.share({ files: [archivoPDF], title: tituloShare });
+      toast(`${tituloShare} generado ✓`);
+      return;
+    } catch (e) {
+      if (e?.name === 'AbortError') return;
+      console.warn('navigator.share falló, usando respaldo de descarga:', e);
     }
-    const blobUrl = URL.createObjectURL(blob);
-    window.open(blobUrl, '_blank');
-    doc.save(nombreArchivo);
-    toast('Recibo generado y abriendo WhatsApp… ✓');
-    const wspMsg = `📄 *RECIBO DE ADELANTO DE INICIAL · COSTA DORADA*\n\n` +
-      `• *Cliente:* ${nombre.toUpperCase()} · DNI: ${dni}\n` +
-      `• *Lote:* Manzana ${manzana} - Lote ${lote} (${area || '—'} m²)\n` +
-      `• *Importe de separación:* ${fmtMoneda(montoSeparacion)}\n` +
-      `• *Vencimiento:* ${fmtFecha(fechaVencimiento)}\n\n` +
-      `_Documento emitido desde el Planner Corporativo Casa Dorada._`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(wspMsg)}`, '_blank');
-  };
-  compartirOGuardar();
+  }
+  const blobUrl = URL.createObjectURL(blob);
+  window.open(blobUrl, '_blank');
+  doc.save(nombreArchivo);
+  toast(`${tituloShare} generado y abriendo WhatsApp… ✓`);
+  window.open(`https://wa.me/?text=${encodeURIComponent(mensajeWsp)}`, '_blank');
+}
+
+// Recibo de Adelanto de Inicial desde el formulario de Separación --
+// incluye cónyuge, socio, medio de pago y N° de operación porque este
+// formulario sí los captura.
+function generarReciboAdelantoInicialPDF(){
+  if (!window.jspdf) { toast('Librería PDF no disponible'); return; }
+
+  const nombre = document.getElementById('sp_cliente_nombre')?.value.trim() || '';
+  const dni = document.getElementById('sp_cliente_dni')?.value.trim() || '';
+  const celular = document.getElementById('sp_cliente_celular')?.value.trim() || '';
+  const direccion = document.getElementById('sp_cliente_direccion')?.value.trim() || '';
+  const correo = document.getElementById('sp_cliente_correo')?.value.trim() || '';
+  const tieneConyuge = document.getElementById('sp_tiene_conyuge')?.checked;
+  const conyugeNombre = tieneConyuge ? (document.getElementById('sp_conyuge_nombre')?.value.trim() || '') : '';
+  const conyugeDni = tieneConyuge ? (document.getElementById('sp_conyuge_dni')?.value.trim() || '') : '';
+  const cotizacion = document.getElementById('sp_cotizacion')?.value.trim() || '';
+  const socio = document.getElementById('sp_socio')?.value.trim() || '';
+  const manzana = document.getElementById('sp_manzana')?.value || '';
+  const lote = document.getElementById('sp_lote')?.value.trim() || '';
+  const area = document.getElementById('sp_area')?.value || '';
+  const valorTotal = parseFloat(document.getElementById('sp_valor_total')?.value) || 0;
+  const fecha = document.getElementById('sp_fecha_separacion')?.value || '';
+  const montoSeparacion = parseFloat(document.getElementById('sp_monto_separacion')?.value) || 0;
+  const medioPago = document.getElementById('sp_medio_pago')?.value.trim() || '';
+  const nOperacion = document.getElementById('sp_n_operacion')?.value.trim() || '';
+  const condicion = document.getElementById('sp_condicion')?.value || 'contado';
+  const fechaVencimiento = document.getElementById('sp_fecha_vencimiento')?.value || '';
+  const asesor = currentUser?.nombre || currentProfile?.nombre || 'Asesor Comercial';
+
+  if (!nombre) { toast('Falta el nombre del cliente'); return; }
+  if (!dni) { toast('Falta el DNI del cliente'); return; }
+  if (!manzana || !lote) { toast('Falta manzana y lote'); return; }
+  if (!montoSeparacion || montoSeparacion <= 0) { toast('Falta el monto de separación'); return; }
+
+  const esFinanciado = condicion === 'financiado';
+  const inicial = esFinanciado ? (parseFloat(document.getElementById('sp_valor_inicial')?.value) || 0) : valorTotal;
+  const saldo = esFinanciado ? (parseFloat(document.getElementById('sp_saldo')?.value) || 0) : 0;
+  const inversionMensual = esFinanciado ? (parseFloat(document.getElementById('sp_inversion_mensual')?.value) || 0) : 0;
+
+  const resultado = construirReciboAdelantoInicialPDF({
+    nombre, dni, celular, direccion, correo, conyugeNombre, conyugeDni, cotizacion, socio,
+    manzana, lote, area, valorTotal, fecha, montoSeparacion, medioPago, nOperacion,
+    esFinanciado, inicial, saldo, inversionMensual, fechaVencimiento, asesor,
+  });
+  if (!resultado) { toast('Librería PDF no disponible'); return; }
+
+  const wspMsg = `📄 *RECIBO DE ADELANTO DE INICIAL · COSTA DORADA*\n\n` +
+    `• *Cliente:* ${nombre.toUpperCase()} · DNI: ${dni}\n` +
+    `• *Lote:* Manzana ${manzana} - Lote ${lote} (${area || '—'} m²)\n` +
+    `• *Importe de separación:* S/ ${montoSeparacion.toLocaleString('es-PE', { minimumFractionDigits: 2 })}\n` +
+    `_Documento emitido desde el Planner Corporativo Casa Dorada._`;
+  compartirPDFGenerado(resultado.doc, resultado.nombreArchivo, 'Recibo de Adelanto de Inicial', wspMsg);
 }
 
 // Abre Google Maps en una pestaña nueva para que el cliente marque el punto
@@ -17380,179 +17423,67 @@ function esCanvasFirmaVacio() {
   return true;
 }
 
-function descargarMinutaLegalPDF() {
-  const { jsPDF } = window.jspdf || {};
-  if (!jsPDF) {
-    toast('Librería PDF no disponible');
-    return;
-  }
+// Recibo de Adelanto de Inicial desde la Minuta -- Jorge señaló que este
+// botón debe entregar exactamente el mismo formato de referencia que el de
+// Separación (antes generaba un contrato distinto y solo abría WhatsApp
+// con texto, sin adjuntar el PDF). La Minuta no captura cónyuge/socio/medio
+// de pago/N° operación (esos quedan "—" aquí y se completan al pasar por
+// "Formalizar Separación"), pero sí trae la firma táctil del canvas, que se
+// estampa sobre la línea de EL CLIENTE.
+function descargarReciboDesdeMinutaPDF() {
+  if (!window.jspdf) { toast('Librería PDF no disponible'); return; }
 
   const nombre = document.getElementById('min_comprador_nombre')?.value.trim() || '';
   const dni = document.getElementById('min_comprador_dni')?.value.trim() || '';
-  const estadoCivil = document.getElementById('min_comprador_civil')?.value || 'Soltero(a)';
-  const domicilio = document.getElementById('min_comprador_domicilio')?.value.trim() || 'Tacna, Perú';
-  const mz = document.getElementById('min_lote_mz')?.value.trim() || '';
+  const celular = document.getElementById('min_comprador_tel')?.value.trim() || '';
+  const correo = document.getElementById('min_comprador_correo')?.value.trim() || '';
+  const direccion = document.getElementById('min_comprador_domicilio')?.value.trim() || '';
+  const manzana = document.getElementById('min_lote_mz')?.value.trim() || '';
   const lote = document.getElementById('min_lote_num')?.value.trim() || '';
-  const area = document.getElementById('min_lote_area')?.value || '150';
-  const precio = parseFloat(document.getElementById('min_lote_precio')?.value);
+  const area = document.getElementById('min_lote_area')?.value || '';
+  const valorTotal = parseFloat(document.getElementById('min_lote_precio')?.value);
   const inicial = parseFloat(document.getElementById('min_lote_inicial')?.value);
+  const montoSeparacion = parseFloat(document.getElementById('min_separacion_abonada')?.value) || 0;
   const meses = parseInt(document.getElementById('min_lote_meses')?.value, 10);
+  const fechaVencimiento = document.getElementById('min_fecha_vencimiento')?.value || '';
+  const asesor = currentUser?.nombre || currentProfile?.nombre || 'Asesor Comercial';
 
   // Este documento sale firmado y listo para el cliente -- no debe poder
   // generarse con los datos de ejemplo que trae el formulario en blanco
-  // (nombre "CLIENTE COMPRADOR", precio S/ 22,000, etc; ver hallazgo A5 de
-  // la auditoría).
+  // (ver hallazgo A5 de la auditoría).
   if (!nombre) { toast('Falta el nombre del comprador'); return; }
   if (!dni) { toast('Falta el DNI del comprador'); return; }
-  if (!mz || !lote) { toast('Selecciona manzana y lote'); return; }
-  if (!precio || precio <= 0) { toast('Falta el precio del lote'); return; }
-  if (isNaN(inicial) || inicial < 0) { toast('Falta la inicial abonada'); return; }
+  if (!manzana || !lote) { toast('Selecciona manzana y lote'); return; }
+  if (!valorTotal || valorTotal <= 0) { toast('Falta el valor total del lote'); return; }
+  if (isNaN(inicial) || inicial < 0) { toast('Falta la inicial pactada'); return; }
   if (!meses || meses <= 0) { toast('Falta el plazo en meses'); return; }
+  if (!montoSeparacion || montoSeparacion <= 0) { toast('Falta la separación abonada'); return; }
   if (esCanvasFirmaVacio()) { toast('Falta la firma táctil del comprador'); return; }
 
-  const saldo = Math.max(0, precio - inicial);
-  const cuota = meses > 0 ? (saldo / meses) : 0;
+  const saldo = Math.max(0, valorTotal - inicial);
+  const inversionMensual = meses > 0 ? saldo / meses : 0;
+  const hoy = new Date();
+  const fecha = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
 
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  const pageHeight = doc.internal.pageSize.getHeight();
-  const fechaHoy = new Date().toLocaleDateString('es-PE', { day:'2-digit', month:'long', year:'numeric' });
+  let firmaDataUrl = null;
+  try { firmaDataUrl = canvasFirma ? canvasFirma.toDataURL('image/png') : null; } catch (e) { console.warn('No se pudo leer la firma táctil:', e); }
 
-  // PÁGINA 1: CONTRATO LEGAL
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
-  doc.setTextColor(20, 42, 77);
-  doc.text('CONSTRUCTORA E INMOBILIARIA CASA DORADA S.A.C.', 105, 18, { align: 'center' });
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(107, 114, 128);
-  doc.text('RUC: 20608554129 · Partida Matriz SUNARP Oficina Registral Tacna', 105, 23, { align: 'center' });
+  const resultado = construirReciboAdelantoInicialPDF({
+    nombre, dni, celular, direccion, correo, cotizacion: '', socio: '',
+    manzana, lote, area, valorTotal, fecha, montoSeparacion, medioPago: '', nOperacion: '',
+    esFinanciado: true, inicial, saldo, inversionMensual, fechaVencimiento, asesor, firmaDataUrl,
+  });
+  if (!resultado) { toast('Librería PDF no disponible'); return; }
 
-  doc.setDrawColor(200, 155, 60);
-  doc.setLineWidth(0.6);
-  doc.line(16, 26, 194, 26);
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11.5);
-  doc.setTextColor(20, 42, 77);
-  doc.text('CONTRATO PREPARATORIO DE COMPRAVENTA CON FINANCIAMIENTO DIRECTO', 105, 33, { align: 'center' });
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(30, 41, 59);
-
-  let p1 = `Conste por el presente documento privado, el Contrato Preparatorio de Compraventa de Lote de Terreno que celebran de una parte CONSTRUCTORA E INMOBILIARIA CASA DORADA S.A.C., con RUC N° 20608554129, debidamente representada por su Director Comercial, a quien en adelante se denominará LA VENDEDORA; y de otra parte don(ña) ${nombre.toUpperCase()}, identificado(a) con DNI N° ${dni}, estado civil ${estadoCivil}, domiciliado(a) en ${domicilio}, a quien en adelante se denominará EL(LA) COMPRADOR(A), bajo los términos y condiciones siguientes:`;
-  
-  let linesP1 = doc.splitTextToSize(p1, 178);
-  doc.text(linesP1, 16, 40);
-
-  let y = 40 + (linesP1.length * 4.2) + 4;
-
-  // Salto de pagina defensivo antes de cada clausula (mismo patron que usan
-  // los demas generadores de PDF de la app) -- un nombre/domicilio muy largo
-  // puede alargar el parrafo inicial lo suficiente como para que una clausula
-  // se dibuje fuera de la pagina sin que jsPDF avise (hallazgo A5).
-  if (y > pageHeight - 40) { doc.addPage(); y = 22; }
-  doc.setFont('helvetica', 'bold');
-  doc.text('CLÁUSULA PRIMERA: ANTECEDENTES Y PARTIDA MATRIZ', 16, y); y += 4.5;
-  doc.setFont('helvetica', 'normal');
-  let c1 = `LA VENDEDORA es legítima propietaria del predio matriz debidamente inscrito en el Registro de Predios de la Zona Registral N° XIII - Sede Tacna (SUNARP), sobre el cual se desarrolla el Proyecto Inmobiliario Residencial "COSTA DORADA", ubicado en el distrito de La Yarada Los Palos, departamento de Tacna.`;
-  let lC1 = doc.splitTextToSize(c1, 178);
-  doc.text(lC1, 16, y); y += (lC1.length * 4.2) + 3;
-
-  if (y > pageHeight - 40) { doc.addPage(); y = 22; }
-  doc.setFont('helvetica', 'bold');
-  doc.text('CLÁUSULA SEGUNDA: IDENTIFICACIÓN DEL INMUEBLE', 16, y); y += 4.5;
-  doc.setFont('helvetica', 'normal');
-  let c2 = `Por el presente acto, LA VENDEDORA promete dar en venta real y enajenación perpetua a favor de EL(LA) COMPRADOR(A), el lote de terreno identificado como: MANZANA ${mz}, LOTE ${lote}, con un área total aproximada de ${area} m², independizado y delimitado según el Master Plan del proyecto Costa Dorada.`;
-  let lC2 = doc.splitTextToSize(c2, 178);
-  doc.text(lC2, 16, y); y += (lC2.length * 4.2) + 3;
-
-  if (y > pageHeight - 50) { doc.addPage(); y = 22; }
-  doc.setFont('helvetica', 'bold');
-  doc.text('CLÁUSULA TERCERA: PRECIO Y FINANCIAMIENTO DIRECTO SIN BANCOS', 16, y); y += 4.5;
-  doc.setFont('helvetica', 'normal');
-  let c3 = `El precio pactado de mutuo acuerdo asciende a la suma de S/ ${precio.toLocaleString('es-PE', {minimumFractionDigits:2})} (Nuevos Soles), pagadero bajo la modalidad de Financiamiento Directo a Sola Firma de la siguiente manera:
-a) Cuota Inicial: S/ ${inicial.toLocaleString('es-PE', {minimumFractionDigits:2})} que EL(LA) COMPRADOR(A) abona a la firma del presente acto.
-b) Saldo a Financiar: S/ ${saldo.toLocaleString('es-PE', {minimumFractionDigits:2})} que será amortizado en ${meses} cuotas mensuales y consecutivas de S/ ${cuota.toLocaleString('es-PE', {minimumFractionDigits:2})} cada una, sin intereses bancarios ni reajustes financieros.`;
-  let lC3 = doc.splitTextToSize(c3, 178);
-  doc.text(lC3, 16, y); y += (lC3.length * 4.2) + 3;
-
-  if (y > pageHeight - 40) { doc.addPage(); y = 22; }
-  doc.setFont('helvetica', 'bold');
-  doc.text('CLÁUSULA CUARTA: HABILITACIÓN URBANA Y POSESIÓN', 16, y); y += 4.5;
-  doc.setFont('helvetica', 'normal');
-  let c4 = `LA VENDEDORA se compromete a la ejecución de las obras de urbanización que comprenden: pórtico monumental de ingreso, vías afirmadas y trazado topográfico, así como la factibilidad de servicios. La toma de posesión física se otorgará conforme al cronograma de entrega de obra establecido.`;
-  let lC4 = doc.splitTextToSize(c4, 178);
-  doc.text(lC4, 16, y);
-
-  // PÁGINA 2: JURISDICCIÓN Y FIRMAS TÁCTILES
-  doc.addPage();
-  
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10.5);
-  doc.setTextColor(20, 42, 77);
-  doc.text('CLÁUSULA QUINTA: JURISDICCIÓN Y RESOLUCIÓN DE CONFLICTOS', 16, 22);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(30, 41, 59);
-  let c5 = `Para todos los efectos derivados del presente contrato, ambas partes renuncian expresamente al fuero de sus domicilios y se someten irrevocablemente a la competencia y jurisdicción de los Jueces y Tribunales del Distrito Judicial de Tacna, señalando como sus domicilios los consignados en la introducción del presente instrumento.`;
-  let lC5 = doc.splitTextToSize(c5, 178);
-  doc.text(lC5, 16, 27);
-
-  doc.text(`En señal de plena conformidad, ratificación y aceptación de todas y cada una de las cláusulas precedentes, firman las partes en la ciudad de Tacna, a los ${fechaHoy}.`, 16, 46);
-
-  // ESPACIO DE FIRMAS
-  doc.setDrawColor(180, 180, 180);
-  doc.setLineWidth(0.4);
-
-  // Firma Comprador (Canvas digital)
-  doc.line(22, 105, 95, 105);
-  doc.line(115, 105, 188, 105);
-
-  // Estampar trazo digital capturado en canvas
-  try {
-    if (canvasFirma) {
-      const imgData = canvasFirma.toDataURL('image/png');
-      doc.addImage(imgData, 'PNG', 26, 68, 62, 34);
-    }
-  } catch(e) { console.warn('Error estampar firma:', e); }
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8.5);
-  doc.setTextColor(20, 42, 77);
-  doc.text(nombre.toUpperCase(), 58, 110, { align: 'center' });
-  doc.setFont('helvetica', 'normal');
-  doc.text(`DNI: ${dni}`, 58, 114, { align: 'center' });
-  doc.text('EL(LA) COMPRADOR(A)', 58, 118, { align: 'center' });
-
-  doc.setFont('helvetica', 'bold');
-  doc.text('CASA DORADA S.A.C.', 151, 110, { align: 'center' });
-  doc.setFont('helvetica', 'normal');
-  doc.text('RUC: 20608554129', 151, 114, { align: 'center' });
-  doc.text('LA VENDEDORA', 151, 118, { align: 'center' });
-
-  // Sello de seguridad digital
-  doc.setFillColor(248, 250, 252);
-  doc.roundedRect(16, 135, 178, 22, 3, 3, 'F');
-  doc.setFontSize(8);
-  doc.setTextColor(100, 116, 139);
-  doc.text('VALIDACIÓN DIGITAL · CONTRATO PREPARATORIO COSTA DORADA', 22, 142);
-  doc.text(`Identificador de Transacción: CD-MIN-${Date.now().toString(36).toUpperCase()} · Fecha y Hora: ${new Date().toISOString()}`, 22, 147);
-  doc.text('Documento formal emitido bajo la Ley N° 27269 de Firmas y Certificados Digitales en el Perú.', 22, 152);
-
-  doc.save(`Minuta_Preparatoria_CostaDorada_Mz${mz}_Lote${lote}.pdf`);
-  toast('Minuta firmada descargada y abriendo WhatsApp… ✓');
-
-  // Enrutamiento directo de descarga vía WhatsApp
-  const wspMsgMin = `📑 *CONTRATO PREPARATORIO FIRMADO · COSTA DORADA*\n` +
+  const wspMsgMin = `📄 *RECIBO DE ADELANTO DE INICIAL · COSTA DORADA*\n` +
     `Constructora e Inmobiliaria Casa Dorada S.A.C.\n\n` +
     `• *Comprador:* ${nombre.toUpperCase()} · DNI: ${dni}\n` +
-    `• *Lote Adquirido:* Manzana ${mz} - Lote ${lote} (${area} m²)\n` +
-    `• *Precio:* S/ ${precio.toLocaleString('es-PE')} · *Inicial:* S/ ${inicial.toLocaleString('es-PE')}\n` +
-    `• *Financiamiento:* ${meses} cuotas fijas en soles sin intereses.\n` +
-    `• *Firma Digital:* Formalizado con firma digital táctil bajo la Ley N° 27269 de Firmas Digitales.\n\n` +
-    `_Documento notarial emitido desde el Planner Corporativo Casa Dorada._`;
-  window.open(`https://wa.me/?text=${encodeURIComponent(wspMsgMin)}`, '_blank');
+    `• *Lote:* Manzana ${manzana} - Lote ${lote} (${area || '—'} m²)\n` +
+    `• *Valor total:* S/ ${valorTotal.toLocaleString('es-PE')} · *Inicial pactada:* S/ ${inicial.toLocaleString('es-PE')}\n` +
+    `• *Separación abonada:* S/ ${montoSeparacion.toLocaleString('es-PE')}\n` +
+    `• *Firma Digital:* Formalizado con firma táctil bajo la Ley N° 27269 de Firmas Digitales.\n\n` +
+    `_Documento emitido desde el Planner Corporativo Casa Dorada._`;
+  compartirPDFGenerado(resultado.doc, `Recibo_Adelanto_Inicial_Mz${manzana}_Lote${lote}.pdf`, 'Recibo de Adelanto de Inicial', wspMsgMin);
 }
 
 /* ============================================================== */
