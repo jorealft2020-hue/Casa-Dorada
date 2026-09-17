@@ -396,7 +396,16 @@
   }
   .pl-btn-subir:active{ background: rgba(200,155,60,0.32); }
 
-  .pl-now-playing{ display:flex; align-items:center; gap:12px; margin-top:14px; position:relative; z-index:1; }
+  .pl-tabs{ display:flex; gap:6px; margin-top:14px; overflow-x:auto; position:relative; z-index:1; padding-bottom:2px; }
+  .pl-tab{
+    flex-shrink:0; padding:6px 12px; border-radius:100px; font-size:11px; font-weight:700; cursor:pointer;
+    background: rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.14); color:#C9D3E4; white-space:nowrap;
+    transition: background .15s, color .15s;
+  }
+  .pl-tab.pl-tab-activo{ background: linear-gradient(135deg, #E8CE8F 0%, #C89B3C 100%); color:#142A4D; border-color:transparent; }
+
+  .pl-now-playing{ display:flex; align-items:center; gap:12px; margin-top:14px; position:relative; z-index:1; cursor:pointer; }
+  .pl-chevron{ font-size:14px; color:#B9C3D6; flex-shrink:0; transition: transform .15s; }
   .pl-vinyl{
     width:46px; height:46px; border-radius:50%; flex-shrink:0;
     background: radial-gradient(circle, #C89B3C 0%, #8A6D24 70%, #6B5219 100%);
@@ -429,14 +438,7 @@
   .pl-ctrl-cast{ margin-left:4px; }
   .pl-ctrl-btn.pl-repeat-activo{ background: rgba(200,155,60,0.28); border-color:#E8CE8F; color:#E8CE8F; }
 
-  .pl-lista-toggle{
-    width:100%; margin-top:14px; padding:8px 10px; border-radius:9px; cursor:pointer;
-    background: rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#DCE3F0;
-    font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:space-between;
-    position:relative; z-index:1;
-  }
-  .pl-lista-toggle:active{ background: rgba(255,255,255,0.12); }
-  .pl-tracklist{ margin-top:6px; display:flex; flex-direction:column; gap:4px; max-height:150px; overflow-y:auto; position:relative; z-index:1; }
+  .pl-tracklist{ margin-top:10px; display:flex; flex-direction:column; gap:4px; max-height:150px; overflow-y:auto; position:relative; z-index:1; }
   .pl-track-item{ display:flex; align-items:center; gap:8px; padding:7px 9px; border-radius:9px; cursor:pointer; background: rgba(255,255,255,0.04); transition: background .15s; }
   .pl-track-item:active{ background: rgba(255,255,255,0.1); }
   .pl-track-item.pl-track-activo{ background: rgba(200,155,60,0.18); }
@@ -451,6 +453,10 @@
   .pl-subida{ margin-top:12px; padding-top:12px; border-top:1px dashed rgba(255,255,255,0.15); position:relative; z-index:1; }
   .pl-subida label{ font-size:11px; font-weight:700; color:#E8CE8F; display:block; margin-bottom:4px; }
   .pl-subida input[type=file]{ width:100%; font-size:11px; color:#DCE3F0; }
+  .pl-subida select, .pl-subida input[type=text]{
+    width:100%; font-size:12px; padding:7px 9px; border-radius:8px; margin-bottom:8px;
+    background: rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); color:#F2EFE6;
+  }
   .pl-subida p{ font-size:10.5px; color:#B9C3D6; margin:5px 0 0; }
 
   .ghl-dots{ display:inline-flex; gap:3px; }
@@ -1567,12 +1573,15 @@ main.app-content {
           </div>
 
           <div id="playlist_reproductor" class="hidden">
-            <div class="pl-now-playing">
+            <div id="playlist_tabs" class="pl-tabs"></div>
+
+            <div class="pl-now-playing" onclick="togglePlaylistLista()">
               <div class="pl-vinyl" id="playlist_vinyl">🎧</div>
               <div style="min-width:0; flex:1;">
                 <p id="playlist_titulo_actual" class="pl-title">—</p>
                 <p id="playlist_tipo_actual" class="pl-subtitle"></p>
               </div>
+              <span class="pl-chevron" id="playlist_lista_arrow">▾</span>
             </div>
 
             <div class="pl-progress-row">
@@ -1582,25 +1591,28 @@ main.app-content {
             </div>
 
             <div class="pl-controls">
-              <button class="pl-ctrl-btn" id="btnPlaylistRepeat" onclick="playlistCiclarRepeticion()" title="Modo de repetición">🔁</button>
+              <button class="pl-ctrl-btn" id="btnPlaylistRepeatOne" onclick="playlistToggleRepeatOne()" title="Repetir esta pista">🔂</button>
               <button class="pl-ctrl-btn" onclick="playlistAnterior()" title="Anterior">⏮</button>
               <button class="pl-ctrl-btn pl-ctrl-play" id="btnPlaylistPlayPause" onclick="playlistTogglePlay()" title="Reproducir / Pausar">▶</button>
               <button class="pl-ctrl-btn" onclick="playlistSiguiente()" title="Siguiente">⏭</button>
-              <button class="pl-ctrl-btn pl-ctrl-cast hidden" id="btnPlaylistTransmitir" onclick="playlistTransmitirAPantalla()" title="Transmitir a pantalla">📺</button>
+              <button class="pl-ctrl-btn" id="btnPlaylistRepeatAll" onclick="playlistToggleRepeatAll()" title="Repetir toda la lista">🔁</button>
+            </div>
+            <div style="text-align:center; margin-top:8px;">
+              <button class="pl-ctrl-btn pl-ctrl-cast hidden" id="btnPlaylistTransmitir" onclick="playlistTransmitirAPantalla()" title="Transmitir a pantalla" style="width:auto; height:auto; padding:5px 12px; border-radius:100px; font-size:11px;">📺 Transmitir a pantalla</button>
             </div>
 
             <audio id="playlist_audio" style="display:none;"></audio>
             <video id="playlist_video_oculto" style="display:none;" playsinline></video>
 
-            <button class="pl-lista-toggle" id="btnPlaylistVerLista" onclick="togglePlaylistLista()">
-              <span>📋 Ver lista completa</span><span id="playlist_lista_arrow">▾</span>
-            </button>
             <div id="playlist_lista" class="pl-tracklist hidden"></div>
 
             <p class="pl-hint">🔊 Se reproduce por el altavoz o el Bluetooth que tengas conectado en tu celular.</p>
           </div>
 
           <div id="playlist_subida" class="hidden pl-subida">
+            <label>Playlist de destino</label>
+            <select id="playlist_subida_destino" onchange="document.getElementById('playlist_subida_nueva').classList.toggle('hidden', this.value !== '__nueva__')"></select>
+            <input type="text" id="playlist_subida_nueva" class="hidden" placeholder="Nombre de la nueva playlist (ej: Energía Matutina)">
             <label>Subir nuevas pistas (audio o video — puedes elegir varias a la vez)</label>
             <input type="file" id="playlist_input_archivo" accept="audio/*,video/mp4,video/quicktime,video/webm" multiple>
             <p id="playlist_subida_estado"></p>
@@ -2320,11 +2332,11 @@ main.app-content {
               <button class="chip-btn" onclick="abrirModalDomingoDeCierres()" style="width:100%; justify-content:center; font-size:11px; font-weight:700; background:#FEF3C7; color:#B45309; border-color:#FCD34D; padding:8px;">🎉 Abrir Pantalla Showroom</button>
             </div>
 
-            <!-- 7. Formalización de Separación con Firma Táctil -->
+            <!-- 7. Separación Formal y Firma -->
             <div style="background:#fff; border:1px solid #99F6E4; border-radius:12px; padding:14px; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 2px 8px rgba(15,118,110,0.08);">
               <div>
                 <span style="font-size:22px;">✍️</span>
-                <h4 style="margin:4px 0 2px; font-size:13px; font-weight:800; color:#0F766E;">Formalización de Separación</h4>
+                <h4 style="margin:4px 0 2px; font-size:13px; font-weight:800; color:#0F766E;">Separación Formal y Firma</h4>
                 <p style="margin:0 0 10px; font-size:11px; color:var(--ink-dim); line-height:1.35;">Recibo de Adelanto de Inicial con captura de firma en pantalla táctil y generación de PDF formal.</p>
               </div>
               <button class="chip-btn" onclick="abrirModalMinutaCompraventa()" style="width:100%; justify-content:center; font-size:11px; font-weight:700; background:#CCFBF1; color:#0F766E; border-color:#99F6E4; padding:8px;">✍️ Formalizar Separación</button>
@@ -4116,7 +4128,7 @@ main.app-content {
       <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
         <span style="font-size:24px;">📑</span>
         <div>
-          <h3 style="margin:0; color:var(--navy); font-size:16px;">Formalización de Separación</h3>
+          <h3 style="margin:0; color:var(--navy); font-size:16px;">Separación Formal y Firma</h3>
           <p style="margin:2px 0 0; font-size:11.5px; color:var(--ink-dim);">Recibo de Adelanto de Inicial · Firma Táctil · Costa Dorada</p>
         </div>
       </div>
@@ -4214,6 +4226,18 @@ main.app-content {
             <input type="date" id="min_fecha_vencimiento" style="width:100%; font-size:12px; padding:7px 9px;">
           </div>
         </div>
+      </div>
+
+      <!-- UBICACIÓN DE LA VIVIENDA (GOOGLE MAPS) -->
+      <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:12px; padding:12px; margin-bottom:12px;">
+        <h4 style="margin:0 0 4px; font-size:12.5px; color:var(--navy); font-weight:800;">📍 Ubicación de la Vivienda (Google Maps)</h4>
+        <p style="font-size:11px; color:var(--ink-dim); margin:0 0 8px;">Abre Google Maps para que el cliente marque el punto exacto de su vivienda, luego pide que te comparta el enlace y pégalo aquí abajo para generar el anexo de ubicación.</p>
+        <button type="button" class="chip-btn" onclick="abrirGoogleMapsParaUbicacion(document.getElementById('min_comprador_domicilio')?.value.trim())" style="width:100%; justify-content:center; font-size:12px; font-weight:700; border-color:var(--gold); color:var(--navy); background:#fff; margin-bottom:8px;">🗺️ Abrir Google Maps</button>
+        <div style="margin-bottom:8px;">
+          <label style="font-size:11px; font-weight:700; color:var(--navy);">Enlace de Google Maps compartido por el cliente</label>
+          <input type="url" id="min_ubicacion_link" placeholder="https://maps.app.goo.gl/..." style="width:100%; font-size:12px; padding:7px 9px;">
+        </div>
+        <button type="button" class="chip-btn gold" onclick="generarAnexoUbicacionPDFDesdeMinuta()" style="width:100%; justify-content:center; font-size:12px; font-weight:700;">📄 Descargar Anexo de Ubicación (PDF)</button>
       </div>
 
       <!-- CANVAS DE FIRMA DIGITAL TÁCTIL -->
@@ -4644,7 +4668,7 @@ const PERMISOS_CATALOGO = [
   // 💼 DEPARTAMENTO COMERCIAL (VENTAS & CIERRES)
   { key: 'ver_operaciones_campo',          label: 'Panel Operativo de Campo (Pantalla Exclusiva)',   dept: 'Comercial', default: true },
   { key: 'ver_domingo_cierres',            label: 'Domingo de Cierres (Showroom TV en Terreno)',    dept: 'Comercial', default: true },
-  { key: 'generar_minuta_digital',          label: 'Formalización de Separación y Firma Táctil',    dept: 'Comercial', default: true },
+  { key: 'generar_minuta_digital',          label: 'Separación Formal y Firma',    dept: 'Comercial', default: true },
   { key: 'ver_red_embajadores',            label: 'Red de Embajadores y Referidos (Tracking Bonos)', dept: 'Comercial', default: true },
   { key: 'usar_dictado_voz',               label: 'Dictado por Voz en Campo (Web Speech API)',      dept: 'Comercial', default: true },
   { key: 'usar_pre_reserva_qr',            label: 'Pre-Reserva Digital QR in situ (S/ 500 Offline)', dept: 'Comercial', default: true },
@@ -4726,18 +4750,23 @@ function esUsuarioSuperAdmin(){
 // Bucket publico dedicado (no documentos sensibles) -- lectura abierta para
 // cualquiera con sesion, subida/borrado restringidos a SuperAdmin por RLS
 // de storage.objects (policies playlist_storage_insert_superadmin /
-// playlist_storage_delete_superadmin). No hay tabla en la base de datos: la
-// playlist ES el contenido del bucket, listado en vivo -- asi subir una
-// pista nueva es simplemente arrastrar un archivo, sin un formulario de
-// metadata aparte que mantener sincronizado.
+// playlist_storage_delete_superadmin). No hay tabla en la base de datos: las
+// PLAYLISTS son subcarpetas del bucket (ej. "Energia-Matutina/pista.mp3"),
+// listadas en vivo -- asi crear una playlist nueva es solo elegirle un
+// nombre al subir, sin un formulario de metadata aparte que mantener
+// sincronizado. Los archivos que ya estaban sueltos en la raíz del bucket
+// (de antes de que existieran las playlists por carpeta) se agrupan bajo la
+// pestaña "Costa Dorada" para no perderlos.
 const PLAYLIST_BUCKET = 'playlist-costa-dorada';
 const PLAYLIST_EXT_VIDEO = ['mp4', 'mov', 'webm', 'm4v'];
+const PLAYLIST_RAIZ_ID = '__raiz__';
+const PLAYLIST_RAIZ_NOMBRE = 'Costa Dorada';
+let playlistCarpetas = []; // [{ id, nombre, prefix }]
+let playlistCarpetaActiva = null;
 let playlistPistas = [];
 let playlistIndiceActual = 0;
-// 'all' = al terminar la última pista vuelve a la primera (bucle de toda la
-// lista); 'one' = repite la pista actual indefinidamente; 'none' = se
-// detiene al terminar la última pista.
-let playlistRepeatMode = 'all';
+let playlistRepiteUna = false;
+let playlistRepiteTodas = true;
 
 function playlistTituloDesdeArchivo(nombreArchivo){
   return nombreArchivo
@@ -4756,27 +4785,94 @@ async function cargarPlaylistCostaDorada(){
     const { data, error } = await sb.storage.from(PLAYLIST_BUCKET).list('', { sortBy: { column: 'name', order: 'asc' } });
     if (error) throw error;
 
-    playlistPistas = (data || [])
-      .filter((f) => f.name && !f.name.startsWith('.'))
-      .map((f) => {
-        const ext = (f.name.split('.').pop() || '').toLowerCase();
-        const { data: pub } = sb.storage.from(PLAYLIST_BUCKET).getPublicUrl(f.name);
-        return { path: f.name, url: pub.publicUrl, titulo: playlistTituloDesdeArchivo(f.name), tipo: PLAYLIST_EXT_VIDEO.includes(ext) ? 'video' : 'audio' };
-      });
+    // Supabase Storage no tiene carpetas reales: un objeto con id === null
+    // en el listado de la raíz es una carpeta "virtual" inferida del "/" en
+    // la ruta de subida (ver hallazgo al listar). Todo lo demás es un
+    // archivo suelto en la raíz.
+    const carpetasReales = (data || []).filter((f) => f.id === null && f.name);
+    const archivosRaiz = (data || []).filter((f) => f.id !== null && f.name && !f.name.startsWith('.'));
 
-    if (!playlistPistas.length) {
+    playlistCarpetas = [
+      ...(archivosRaiz.length ? [{ id: PLAYLIST_RAIZ_ID, nombre: PLAYLIST_RAIZ_NOMBRE, prefix: '' }] : []),
+      ...carpetasReales.map((f) => {
+        // get_common_prefix() de Supabase Storage devuelve el nombre de la
+        // carpeta CON el "/" final incluido (ej. "Energia-Matutina/") --
+        // hay que quitarlo antes de usarlo como id/título/prefix o se arma
+        // una doble barra al construir la ruta del archivo más abajo.
+        const limpio = f.name.replace(/\/$/, '');
+        return { id: limpio, nombre: playlistTituloDesdeArchivo(limpio), prefix: limpio };
+      }),
+    ];
+
+    if (!playlistCarpetas.length) {
       if (elEstado) elEstado.textContent = esUsuarioSuperAdmin() ? 'Aún no hay pistas — sube la primera con el botón ⬆️.' : 'Aún no hay pistas cargadas.';
       if (elReproductor) elReproductor.classList.add('hidden');
+      playlistRenderTabs();
       return;
     }
 
-    if (elEstado) elEstado.textContent = `${playlistPistas.length} pista${playlistPistas.length === 1 ? '' : 's'}`;
+    if (elEstado) elEstado.textContent = '';
     if (elReproductor) elReproductor.classList.remove('hidden');
-    playlistRenderLista();
-    playlistCargarPista(0, false);
+    playlistPoblarSelectDestinoSubida();
+    await playlistSeleccionarCarpeta(playlistCarpetaActiva && playlistCarpetas.some((c) => c.id === playlistCarpetaActiva) ? playlistCarpetaActiva : playlistCarpetas[0].id, false);
   } catch (e) {
     console.error('No se pudo cargar la playlist de Costa Dorada:', e);
     if (elEstado) elEstado.textContent = 'No se pudo cargar la playlist en este momento.';
+  }
+}
+
+function playlistRenderTabs(){
+  const cont = document.getElementById('playlist_tabs');
+  if (!cont) return;
+  cont.innerHTML = playlistCarpetas.map((c) => `
+    <div class="pl-tab ${c.id === playlistCarpetaActiva ? 'pl-tab-activo' : ''}" onclick="playlistSeleccionarCarpeta('${c.id}', false)">${escapeHtml(c.nombre)}</div>
+  `).join('');
+}
+
+// Llena el <select> de destino de subida con las playlists ya existentes +
+// una opción para crear una nueva (carpeta nueva en el bucket).
+function playlistPoblarSelectDestinoSubida(){
+  const sel = document.getElementById('playlist_subida_destino');
+  if (!sel) return;
+  const valorPrevio = sel.value;
+  sel.innerHTML = playlistCarpetas.map((c) => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.nombre)}</option>`).join('')
+    + `<option value="__nueva__">+ Nueva playlist…</option>`;
+  if (valorPrevio && [...sel.options].some((o) => o.value === valorPrevio)) sel.value = valorPrevio;
+  document.getElementById('playlist_subida_nueva')?.classList.toggle('hidden', sel.value !== '__nueva__');
+}
+
+// Trae las pistas de una carpeta/playlist puntual y la deja activa. Se
+// separa de cargarPlaylistCostaDorada() para no re-listar la raíz completa
+// cada vez que el asesor solo quiere cambiar de pestaña.
+async function playlistSeleccionarCarpeta(carpetaId, autoplay){
+  const carpeta = playlistCarpetas.find((c) => c.id === carpetaId) || playlistCarpetas[0];
+  if (!carpeta) return;
+  playlistCarpetaActiva = carpeta.id;
+  playlistRenderTabs();
+
+  const elEstado = document.getElementById('playlist_estado');
+  try {
+    const { data, error } = await sb.storage.from(PLAYLIST_BUCKET).list(carpeta.prefix, { sortBy: { column: 'name', order: 'asc' } });
+    if (error) throw error;
+
+    playlistPistas = (data || [])
+      .filter((f) => f.id !== null && f.name && !f.name.startsWith('.'))
+      .map((f) => {
+        const ruta = carpeta.prefix ? `${carpeta.prefix}/${f.name}` : f.name;
+        const ext = (f.name.split('.').pop() || '').toLowerCase();
+        const { data: pub } = sb.storage.from(PLAYLIST_BUCKET).getPublicUrl(ruta);
+        return { path: ruta, url: pub.publicUrl, titulo: playlistTituloDesdeArchivo(f.name), tipo: PLAYLIST_EXT_VIDEO.includes(ext) ? 'video' : 'audio' };
+      });
+
+    if (elEstado) elEstado.textContent = `${carpeta.nombre} · ${playlistPistas.length} pista${playlistPistas.length === 1 ? '' : 's'}`;
+    if (playlistPistas.length) {
+      playlistCargarPista(0, autoplay);
+    } else {
+      playlistRenderLista();
+    }
+  } catch (e) {
+    console.error('No se pudo cargar la carpeta de playlist:', carpeta.prefix, e);
+    if (elEstado) elEstado.textContent = 'No se pudo cargar esta playlist en este momento.';
   }
 }
 
@@ -4832,36 +4928,47 @@ function playlistCargarPista(i, autoplay){
   }
   playlistRenderLista();
   playlistActualizarBotonPlay();
+  playlistActualizarBotonesRepeat();
 }
 
 function playlistAnterior(){ playlistCargarPista(playlistIndiceActual - 1, true); }
 function playlistSiguiente(){ playlistCargarPista(playlistIndiceActual + 1, true); }
 
-const PLAYLIST_REPEAT_ICONOS = { all: '🔁', one: '🔂', none: '➡️' };
-const PLAYLIST_REPEAT_TITULOS = { all: 'Repetir toda la lista', one: 'Repetir esta pista', none: 'Sin repetir' };
-
-function playlistCiclarRepeticion(){
-  const orden = ['all', 'one', 'none'];
-  playlistRepeatMode = orden[(orden.indexOf(playlistRepeatMode) + 1) % orden.length];
-  const btn = document.getElementById('btnPlaylistRepeat');
-  if (btn) {
-    btn.textContent = PLAYLIST_REPEAT_ICONOS[playlistRepeatMode];
-    btn.title = PLAYLIST_REPEAT_TITULOS[playlistRepeatMode];
-    btn.classList.toggle('pl-repeat-activo', playlistRepeatMode !== 'none');
-  }
-  toast(PLAYLIST_REPEAT_TITULOS[playlistRepeatMode] + ' ✓');
+// Dos botones independientes en vez de un solo botón cíclico (pedido de
+// Jorge): "repetir una" y "repetir todas" son mutuamente excluyentes --
+// activar uno apaga el otro -- y volver a tocar el que ya está activo lo
+// apaga, quedando en "sin repetir".
+function playlistActualizarBotonesRepeat(){
+  const btnUna = document.getElementById('btnPlaylistRepeatOne');
+  const btnTodas = document.getElementById('btnPlaylistRepeatAll');
+  if (btnUna) btnUna.classList.toggle('pl-repeat-activo', playlistRepiteUna);
+  if (btnTodas) btnTodas.classList.toggle('pl-repeat-activo', playlistRepiteTodas);
 }
 
-// Al terminar una pista: 'one' la repite, 'all' avanza y da la vuelta al
-// llegar al final (playlistCargarPista ya envuelve el índice con módulo),
-// 'none' avanza solo si no era la última.
+function playlistToggleRepeatOne(){
+  playlistRepiteUna = !playlistRepiteUna;
+  if (playlistRepiteUna) playlistRepiteTodas = false;
+  playlistActualizarBotonesRepeat();
+  toast(playlistRepiteUna ? 'Repitiendo esta pista ✓' : 'Repetir pista desactivado');
+}
+
+function playlistToggleRepeatAll(){
+  playlistRepiteTodas = !playlistRepiteTodas;
+  if (playlistRepiteTodas) playlistRepiteUna = false;
+  playlistActualizarBotonesRepeat();
+  toast(playlistRepiteTodas ? 'Repitiendo toda la lista ✓' : 'Repetir lista desactivado');
+}
+
+// Al terminar una pista: repetir-una la repite, repetir-todas avanza y da
+// la vuelta al llegar al final (playlistCargarPista ya envuelve el índice
+// con módulo), y sin ninguna activada avanza solo si no era la última.
 function playlistAlTerminarPista(){
   const audio = document.getElementById('playlist_audio');
-  if (playlistRepeatMode === 'one') {
+  if (playlistRepiteUna) {
     if (audio) { audio.currentTime = 0; audio.play().catch(() => {}); }
     return;
   }
-  if (playlistRepeatMode === 'none' && playlistIndiceActual >= playlistPistas.length - 1) {
+  if (!playlistRepiteTodas && playlistIndiceActual >= playlistPistas.length - 1) {
     playlistCargarPista(0, false);
     return;
   }
@@ -4903,19 +5010,30 @@ function playlistTogglePlay(){
   const elTotal = document.getElementById('playlist_tiempo_total');
   if (!audio || !seek) return;
 
+  // Relleno dorado de la barra: un input[type=range] no se rellena solo con
+  // CSS al avanzar, así que se pinta un gradiente de dos colores cuyo corte
+  // se recalcula en cada tick según el % ya reproducido.
+  function pintarRelleno(){
+    const max = Number(seek.max) || 0;
+    const pct = max > 0 ? (Number(seek.value) / max) * 100 : 0;
+    seek.style.background = `linear-gradient(90deg, #E8CE8F 0%, #C89B3C ${pct}%, rgba(255,255,255,0.18) ${pct}%, rgba(255,255,255,0.18) 100%)`;
+  }
+
   let arrastrando = false;
-  audio.addEventListener('loadedmetadata', () => { seek.max = audio.duration || 0; if (elTotal) elTotal.textContent = playlistFmtTiempo(audio.duration); });
+  audio.addEventListener('loadedmetadata', () => { seek.max = audio.duration || 0; if (elTotal) elTotal.textContent = playlistFmtTiempo(audio.duration); pintarRelleno(); });
   audio.addEventListener('timeupdate', () => {
     if (arrastrando) return;
     seek.value = audio.currentTime || 0;
     if (elActual) elActual.textContent = playlistFmtTiempo(audio.currentTime);
+    pintarRelleno();
   });
   audio.addEventListener('play', playlistActualizarBotonPlay);
   audio.addEventListener('pause', playlistActualizarBotonPlay);
   audio.addEventListener('ended', playlistAlTerminarPista);
 
-  seek.addEventListener('input', () => { arrastrando = true; if (elActual) elActual.textContent = playlistFmtTiempo(Number(seek.value)); });
+  seek.addEventListener('input', () => { arrastrando = true; if (elActual) elActual.textContent = playlistFmtTiempo(Number(seek.value)); pintarRelleno(); });
   seek.addEventListener('change', () => { audio.currentTime = Number(seek.value); arrastrando = false; });
+  pintarRelleno();
 })();
 
 // Transmitir a pantalla: la Remote Playback API (Chrome/Android, Chromecast)
@@ -4950,18 +5068,33 @@ document.getElementById('playlist_input_archivo')?.addEventListener('change', as
   const archivos = Array.from(e.target.files || []);
   if (!archivos.length) return;
   const elEstadoSubida = document.getElementById('playlist_subida_estado');
+  const selDestino = document.getElementById('playlist_subida_destino');
+  const inputNueva = document.getElementById('playlist_subida_nueva');
+
+  let carpetaDestino = selDestino ? selDestino.value : '';
+  if (carpetaDestino === '__nueva__') {
+    const nombreNueva = (inputNueva?.value || '').trim();
+    if (!nombreNueva) {
+      toast('Escribe un nombre para la nueva playlist.');
+      return;
+    }
+    carpetaDestino = nombreNueva.replace(/[^a-zA-Z0-9.\-_ ]/g, '').replace(/\s+/g, '-');
+  } else if (carpetaDestino === PLAYLIST_RAIZ_ID || !carpetaDestino) {
+    carpetaDestino = '';
+  }
 
   let subidas = 0, fallidas = 0;
   for (let i = 0; i < archivos.length; i++) {
     const archivo = archivos[i];
     const nombreLimpio = archivo.name.trim().replace(/[^a-zA-Z0-9.\-_ ]/g, '').replace(/\s+/g, '-');
+    const ruta = carpetaDestino ? `${carpetaDestino}/${nombreLimpio}` : nombreLimpio;
     if (elEstadoSubida) elEstadoSubida.textContent = `Subiendo ${i + 1} de ${archivos.length}: ${nombreLimpio}…`;
     try {
-      const { error } = await sb.storage.from(PLAYLIST_BUCKET).upload(nombreLimpio, archivo, { upsert: true, contentType: archivo.type || undefined });
+      const { error } = await sb.storage.from(PLAYLIST_BUCKET).upload(ruta, archivo, { upsert: true, contentType: archivo.type || undefined });
       if (error) throw error;
       subidas++;
     } catch (err) {
-      console.error('Error subiendo pista a la playlist:', nombreLimpio, err);
+      console.error('Error subiendo pista a la playlist:', ruta, err);
       fallidas++;
     }
   }
@@ -4969,6 +5102,8 @@ document.getElementById('playlist_input_archivo')?.addEventListener('change', as
   if (elEstadoSubida) elEstadoSubida.textContent = fallidas ? `✓ ${subidas} subida(s), ${fallidas} con error.` : `✓ ${subidas} pista(s) subida(s).`;
   toast(fallidas ? `Subidas ${subidas} de ${archivos.length} pistas` : `${subidas} pista(s) subida(s) a la playlist ✓`);
   e.target.value = '';
+  if (inputNueva) inputNueva.value = '';
+  playlistCarpetaActiva = carpetaDestino || PLAYLIST_RAIZ_ID;
   await cargarPlaylistCostaDorada();
 });
 
@@ -10395,8 +10530,11 @@ function generarReciboAdelantoInicialPDF(){
 // exacto de su vivienda -- usa la URL pública de búsqueda de Maps (sin API
 // key, no requiere cuenta de Google Cloud) centrada en la dirección ya
 // escrita si existe, para no partir de un mapa en blanco.
-function abrirGoogleMapsParaUbicacion(){
-  const direccion = document.getElementById('sp_cliente_direccion')?.value.trim();
+// direccionOverride permite reusar este mismo botón desde la Minuta (que
+// guarda la dirección en min_comprador_domicilio, no en sp_cliente_direccion)
+// sin duplicar la función.
+function abrirGoogleMapsParaUbicacion(direccionOverride){
+  const direccion = direccionOverride !== undefined ? direccionOverride : document.getElementById('sp_cliente_direccion')?.value.trim();
   const url = direccion
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccion + ', Tacna, Perú')}`
     : 'https://www.google.com/maps';
@@ -10421,16 +10559,22 @@ function extraerCoordenadasDeEnlaceMaps(url){
 // un código QR hacia ese mismo enlace -- cualquiera que reciba el PDF
 // (impreso o por WhatsApp) puede escanearlo con la cámara del celular y
 // abrir la ubicación exacta en Maps, sin depender de ninguna credencial.
-async function generarAnexoUbicacionPDF(){
+// datosOverride permite reusar este generador desde la Minuta (campos
+// min_*) sin duplicar todo el dibujo del PDF -- si no se pasa, lee los
+// campos de Separación como hacía antes.
+async function generarAnexoUbicacionPDF(datosOverride){
   const { jsPDF } = window.jspdf || {};
   if (!jsPDF) { toast('Librería PDF no disponible'); return; }
 
-  const nombre = document.getElementById('sp_cliente_nombre')?.value.trim() || '';
-  const dni = document.getElementById('sp_cliente_dni')?.value.trim() || '';
-  const direccion = document.getElementById('sp_cliente_direccion')?.value.trim() || '';
-  const manzana = document.getElementById('sp_manzana')?.value || '';
-  const lote = document.getElementById('sp_lote')?.value.trim() || '';
-  const enlaceMaps = document.getElementById('sp_ubicacion_link')?.value.trim() || '';
+  const d = datosOverride || {
+    nombre: document.getElementById('sp_cliente_nombre')?.value.trim() || '',
+    dni: document.getElementById('sp_cliente_dni')?.value.trim() || '',
+    direccion: document.getElementById('sp_cliente_direccion')?.value.trim() || '',
+    manzana: document.getElementById('sp_manzana')?.value || '',
+    lote: document.getElementById('sp_lote')?.value.trim() || '',
+    enlaceMaps: document.getElementById('sp_ubicacion_link')?.value.trim() || '',
+  };
+  const { nombre, dni, direccion, manzana, lote, enlaceMaps } = d;
 
   if (!nombre) { toast('Falta el nombre del cliente'); return; }
   if (!enlaceMaps) { toast('Pega primero el enlace de Google Maps que te compartió el cliente'); return; }
@@ -10539,6 +10683,20 @@ async function generarAnexoUbicacionPDF(){
     `• *Google Maps:* ${enlaceMaps}\n\n` +
     `_Documento emitido desde el Planner Corporativo Casa Dorada._`;
   window.open(`https://wa.me/?text=${encodeURIComponent(wspMsgUbic)}`, '_blank');
+}
+
+// Mismo anexo de ubicación pero leyendo los campos de la Minuta (comprador,
+// manzana/lote, enlace propio min_ubicacion_link) -- Jorge pidió que esta
+// misma opción también esté disponible ahí, no solo en Separación.
+function generarAnexoUbicacionPDFDesdeMinuta(){
+  generarAnexoUbicacionPDF({
+    nombre: document.getElementById('min_comprador_nombre')?.value.trim() || '',
+    dni: document.getElementById('min_comprador_dni')?.value.trim() || '',
+    direccion: document.getElementById('min_comprador_domicilio')?.value.trim() || '',
+    manzana: document.getElementById('min_lote_mz')?.value.trim() || '',
+    lote: document.getElementById('min_lote_num')?.value.trim() || '',
+    enlaceMaps: document.getElementById('min_ubicacion_link')?.value.trim() || '',
+  });
 }
 
 document.getElementById('btnGuardarSeparacion').addEventListener('click', async () => {
@@ -16378,7 +16536,7 @@ const SUBMENUS_DATA = {
       { key: 'ver_herramientas_tacna', icono: '🏛️', titulo: 'Cierre Rápido Tacna', desc: 'Partida SUNARP, Pórtico y Vías', permiso: 'ver_herramientas_tacna', accion: () => { abrirModalHerramientasTacna(); cerrarDrawer(); } },
       { key: 'ver_cadencias_seguimiento', icono: '🎯', titulo: 'Cadencias 1-Toque', desc: 'Scripts para Ferias, Chile y Visitas', permiso: 'ver_cadencias_seguimiento', accion: () => { abrirModalCadencias('Carlos Mamani', '952123456'); cerrarDrawer(); } },
       { key: 'ver_domingo_cierres', icono: '🎉', titulo: 'Domingo de Cierres TV', desc: 'Campana acústica y confeti en vivo', permiso: 'ver_domingo_cierres', accion: () => { abrirModalDomingoDeCierres(); cerrarDrawer(); } },
-      { key: 'generar_minuta_digital', icono: '✍️', titulo: 'Formalización de Separación', desc: 'Recibo de Adelanto de Inicial en pantalla táctil', permiso: 'generar_minuta_digital', accion: () => { abrirModalMinutaCompraventa(); cerrarDrawer(); } },
+      { key: 'generar_minuta_digital', icono: '✍️', titulo: 'Separación Formal y Firma', desc: 'Recibo de Adelanto de Inicial en pantalla táctil', permiso: 'generar_minuta_digital', accion: () => { abrirModalMinutaCompraventa(); cerrarDrawer(); } },
       { key: 'ver_control_visitas', icono: '🚐', titulo: 'Movilidad Van (14 Asientos)', desc: 'Control de salidas a La Yarada', permiso: 'ver_control_visitas', accion: () => { irAVista('visitas'); cerrarDrawer(); } }
     ]
   },
