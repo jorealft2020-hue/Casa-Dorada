@@ -716,41 +716,36 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 22px;
+  gap: 18px;
   perspective: 800px;
-  margin: 0 0 10px;
+  margin: 0 0 12px;
 }
 
-.logo-3d-flotante{
-  width: 108px;
-  height: 62px;
-  max-width: 42%;
-  object-fit: contain;
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
-  padding: 0 !important;
-  border-radius: 0 !important;
-  filter: drop-shadow(0 4px 8px rgba(14, 26, 48, 0.42));
+/* Placa blanca detrás de cada logo -- antes los logos iban directo sobre
+   el degradado del atardecer sin ningún fondo, y con colores similares
+   (dorado/azul) se perdían contra el fondo en vez de resaltar. */
+.logo-badge{
+  width: 132px;
+  height: 82px;
+  max-width: 45%;
+  background: #fff;
+  border-radius: 14px;
+  padding: 10px 14px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 16px rgba(14, 26, 48, 0.35), 0 0 0 1px rgba(255,255,255,0.6);
   animation: logoFlotar3D 4.5s ease-in-out infinite;
   transition: transform 0.3s ease;
 }
-.logo-3d-flotante:hover{
+.logo-badge img{
+  width: 100%; height: 100%; object-fit: contain;
+}
+.logo-badge:hover{
   transform: scale(1.08);
 }
 @media (min-width: 600px){
-  .logo-3d-flotante{ width: 190px; height: 98px; }
-  .welcome-logos-3d{ gap: 40px; }
+  .logo-badge{ width: 210px; height: 120px; padding: 14px 20px; }
+  .welcome-logos-3d{ gap: 32px; }
 }
-  @media (min-width: 600px){
-    .logo-3d-flotante{
-      width: 195px; height: 115px; padding: 10px 20px;
-    }
-    .welcome-logos-3d{
-      gap: 28px;
-    }
-  }
   @keyframes logoFlotar3D{
     0%, 100% { transform: translateY(0) rotateY(0deg) rotateX(0deg); }
     25% { transform: translateY(-6px) rotateY(8deg) rotateX(3deg); }
@@ -1508,15 +1503,14 @@ main.app-content {
         <div class="wc-nubes-stream wc-nubes-profunda"></div>
         <div class="wc-nubes-stream wc-nubes-frontal"></div>
 
-        <!-- Contenido en Primer Plano (Logos limpios sin marcos y textos) -->
+        <!-- Contenido en Primer Plano (Logos con placa blanca de contraste) -->
         <div class="welcome-card-contenido">
           <div class="welcome-logos-3d">
-            <img src="logo-casa-dorada.png" alt="Casa Dorada" class="logo-3d-flotante" style="animation-delay:0s;">
-            <img src="logo-costa-dorada.png" alt="Costa Dorada" class="logo-3d-flotante" style="animation-delay:0.5s;">
+            <div class="logo-badge" style="animation-delay:0s;"><img src="logo-casa-dorada.png" alt="Casa Dorada"></div>
+            <div class="logo-badge" style="animation-delay:0.5s;"><img src="logo-costa-dorada.png" alt="Costa Dorada"></div>
           </div>
-          <div style="margin-top:4px; margin-bottom:2px;">
+          <div style="margin-top:2px; margin-bottom:2px;">
             <span style="font-size:24px; font-weight:900; color:#fff; letter-spacing:1px; line-height:1; display:block; text-shadow:0 2px 10px rgba(0,0,0,0.35);">MAJO</span>
-            <span style="font-size:11px; font-weight:800; color:var(--gold-soft); letter-spacing:2.5px; text-transform:uppercase; display:block; margin-top:2px;">CRM / ERP</span>
           </div>
           <h2 class="welcome-title" id="wb_saludo" style="margin-top:6px;">¡Buenos días!</h2>
           <p class="welcome-sub" id="wb_subtitulo" style="margin-bottom:0;">Bienvenido a tu jornada comercial y de gestión. Enfoque total en metas y cierres.</p>
