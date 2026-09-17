@@ -1483,6 +1483,16 @@ main.app-content {
           <p style="font-size:11.5px; color:var(--ink-dim); margin:-6px 0 12px;">Metas diarias: 30 leads prospección · 10 referidos · 70 llamadas · 2 citas mín. · Meta semanal: 5 clientes filtrados al domingo.</p>
           <div id="listaRankingEquipo"></div>
         </div>
+
+        <!-- REPORTES E INFORMES: al final de Inicio para acceso rápido sin
+             tener que entrar primero a Administración → Control. -->
+        <div class="card" id="cardReportesInicio" style="margin-top:14px; border:1.5px solid #E2E8F0;">
+          <div class="section-title" style="margin-top:0;">📊 Reportes e Informes</div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <button class="chip-btn gold" id="btnInicioReporteDiario" style="width:100%; justify-content:center; padding:11px; font-size:13px; font-weight:700;" onclick="document.getElementById('btnDescargarReporte').click()">📄 Reporte diario (PDF + WhatsApp)</button>
+            <button class="chip-btn" id="btnInicioInformeFormal" style="width:100%; justify-content:center; padding:11px; font-size:13px; border-color:#1A2332; color:#1A2332; font-weight:700;" onclick="document.getElementById('btnAbrirInformeFormal').click()">🗂️ Informe formal (quincenal/mensual)</button>
+          </div>
+        </div>
       </div>
 
       <!-- VISTA: Control -->
@@ -3099,7 +3109,13 @@ main.app-content {
       <input type="hidden" id="eu_id">
       
       <div class="field"><label>Nombre completo</label><input type="text" id="eu_nombre"></div>
-      <div class="field"><label>Correo de Google</label><input type="text" id="eu_email" disabled></div>
+      <div class="field">
+        <label>Correo de Google (acceso al sistema)</label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="eu_email" disabled style="flex:1;">
+          <button type="button" class="chip-btn" style="flex:0 0 auto;" onclick="abrirCambiarCorreoUsuario()">✏️ Cambiar</button>
+        </div>
+      </div>
       <div class="field"><label>Número de DNI</label><input type="text" id="eu_dni" placeholder="DNI del colaborador"></div>
       <div class="field"><label>Celular / WhatsApp</label><input type="tel" id="eu_celular" placeholder="Número para alertas"></div>
       
@@ -4784,6 +4800,25 @@ function cargarPortadaInicio(){
   if (elVidTit) elVidTit.textContent = videoObj.t;
   const elIframe = document.getElementById('vd_iframe');
   if (elIframe) elIframe.src = `https://www.youtube-nocookie.com/embed/${videoObj.id}`;
+
+  actualizarTarjetaReportesInicio();
+}
+
+// Igual que el resto del drawer: cada botón de reporte se oculta si el
+// usuario no tiene el permiso correspondiente, y toda la tarjeta se oculta
+// si no le queda ningún reporte visible.
+function actualizarTarjetaReportesInicio(){
+  const mapa = [
+    ['btnInicioReporteDiario', 'generar_informes'],
+    ['btnInicioInformeFormal', 'generar_informes'],
+  ];
+  let algunoVisible = false;
+  mapa.forEach(([id, permiso]) => {
+    const visible = tienePermiso(permiso);
+    document.getElementById(id)?.classList.toggle('hidden', !visible);
+    if (visible) algunoVisible = true;
+  });
+  document.getElementById('cardReportesInicio')?.classList.toggle('hidden', !algunoVisible);
 }
 
 function toast(msg){
@@ -6247,7 +6282,13 @@ document.getElementById('btnConfirmarDescargaReporte').addEventListener('click',
         });
         toast('Informe generado ✓');
         return;
-      } catch (e) {}
+      } catch (e) {
+        // AbortError = el usuario canceló el cuadro nativo de compartir a
+        // propósito -- no hay que forzarle igual una descarga + WhatsApp
+        // que no pidió. Cualquier otro error sí cae al respaldo de abajo.
+        if (e?.name === 'AbortError') return;
+        console.warn('navigator.share falló, usando respaldo de descarga:', e);
+      }
     }
 
     const blobUrl = URL.createObjectURL(blob);
@@ -6665,9 +6706,29 @@ document.getElementById('btnGenerarInformeFormal').addEventListener('click', asy
     }
 
     const nombreArchivo = `informe-${tipo}-${nombreVendedor.replace(/\s+/g,'-').toLowerCase()}-${fechaInicio}.pdf`;
-    doc.save(nombreArchivo);
-    toast('Informe formal generado ✓');
+    const blobInf = doc.output('blob');
+    const archivoInfPDF = new File([blobInf], nombreArchivo, { type: 'application/pdf' });
     closeModal('modalInformeFormal');
+
+    if (navigator.canShare && navigator.canShare({ files: [archivoInfPDF] })) {
+      try {
+        await navigator.share({ files: [archivoInfPDF], title: 'Informe Formal de Actividades' });
+        toast('Informe formal generado ✓');
+        return;
+      } catch (e) {
+        if (e?.name === 'AbortError') return;
+        console.warn('navigator.share falló, usando respaldo de descarga:', e);
+      }
+    }
+
+    doc.save(nombreArchivo);
+    toast('Informe generado y abriendo WhatsApp… ✓');
+    const wspMsgInf = `📄 *INFORME FORMAL ${tipo.toUpperCase()} · CASA DORADA*\n` +
+      `• *Colaborador:* ${nombreVendedor}\n` +
+      `• *Periodo:* ${fmtFecha(fechaInicio)} – ${fmtFecha(fechaFin)}\n\n` +
+      `_📎 Adjunta el PDF que se descargó a tu carpeta de Descargas._\n\n` +
+      `_Informe oficial emitido desde Planner Corporativo Casa Dorada._`;
+    location.href = `https://wa.me/?text=${encodeURIComponent(wspMsgInf)}`;
   } catch (e) {
     toast('Error al generar el informe');
     console.error(e);
@@ -6764,13 +6825,29 @@ async function cargarPreautorizados(){
           ${p.celular ? `<p class="card-sub">📱 WhatsApp: ${escapeHtml(p.celular)}</p>` : ''}
           ${p.area ? `<p class="card-sub">🏢 Área: ${escapeHtml(p.area)}</p>` : ''}
         </div>
+        <span class="badge ${p.activo === false ? 'badge-vencida' : 'badge-completada'}">${p.activo === false ? 'Inactivo' : 'Pendiente'}</span>
       </div>
       <div class="card-actions" style="margin-top:10px;">
         <button class="chip-btn gold" onclick="abrirEditarPreautorizado('${p.email.replace(/'/g,"\\\\'")}');">✏️ Editar ficha y permisos</button>
+        <button class="chip-btn" style="${p.activo === false ? 'color:#2E7D32; border-color:#2E7D32;' : 'color:var(--danger); border-color:var(--danger);'}" onclick="toggleActivoPreautorizado('${p.email.replace(/'/g,"\\\\'")}', ${p.activo === false}, '${(p.nombre || p.email).replace(/'/g,"\\\\'")}');">${p.activo === false ? '✅ Activar' : '🚫 Desactivar'}</button>
         <button class="chip-btn" style="color:var(--danger); border-color:var(--danger);" onclick="eliminarPreautorizado('${p.email.replace(/'/g,"\\\\'")}');">🗑️ Eliminar</button>
       </div>
     </div>
   `).join('');
+}
+
+// Revoca (o restaura) una invitación pendiente sin borrar el perfil/permisos
+// ya cargados -- antes "Eliminar" era la única forma de bloquear a alguien
+// que todavía no inició sesión, perdiendo todo lo ya configurado si después
+// había que volver a invitarlo.
+async function toggleActivoPreautorizado(email, nuevoEstadoActivo, nombre){
+  const verbo = nuevoEstadoActivo ? 'activar' : 'desactivar';
+  if (!confirm(`¿Deseas ${verbo} la invitación de ${nombre || email}?${!nuevoEstadoActivo ? '\n\nNo podrá completar su primer ingreso hasta que la reactives.' : ''}`)) return;
+
+  const { error } = await sb.from('usuarios_preautorizados').update({ activo: nuevoEstadoActivo }).eq('email', email);
+  if (error) { toast('Error al ' + verbo + ': ' + error.message); console.error(error); return; }
+  toast(`Invitación ${nuevoEstadoActivo ? 'activada' : 'desactivada'} ✓`);
+  cargarPreautorizados();
 }
 
 async function abrirEditarPreautorizado(email){
@@ -6782,7 +6859,6 @@ async function abrirEditarPreautorizado(email){
   document.getElementById('btnGuardarPreautorizado').textContent = 'Guardar cambios';
   document.getElementById('pa_nombre').value = p.nombre || '';
   document.getElementById('pa_email').value = p.email;
-  document.getElementById('pa_email').disabled = true;
   document.getElementById('pa_dni').value = p.dni || '';
   document.getElementById('pa_celular').value = p.celular || '';
   
@@ -6808,7 +6884,11 @@ async function eliminarPreautorizado(email){
 
 document.getElementById('btnGuardarPreautorizado').addEventListener('click', async () => {
   const nombre = document.getElementById('pa_nombre').value.trim();
-  const email = (editandoEmailPreautorizado || document.getElementById('pa_email').value).trim().toLowerCase();
+  // Se lee siempre del campo (antes, al editar, se ignoraba lo que el
+  // admin escribiera aquí y se reusaba el correo original sin cambios --
+  // por eso no se podía corregir un correo mal tipeado en una invitación
+  // pendiente).
+  const email = document.getElementById('pa_email').value.trim().toLowerCase();
   const dni = document.getElementById('pa_dni').value.trim();
   const celular = document.getElementById('pa_celular').value.trim();
   const area = document.getElementById('pa_area').value;
@@ -6872,9 +6952,14 @@ document.getElementById('btnGuardarPreautorizado').addEventListener('click', asy
 
     if (error) { toast('Error al guardar: ' + error.message); console.error(error); return; }
     // Sincronizar también con la tabla usuarios si el colaborador ya inició sesión previamente.
+    // Busca por el correo ORIGINAL (con el que existiría esa fila, si existe)
+    // y también actualiza el correo ahí si se corrigió -- si nunca inició
+    // sesión, esto simplemente no encuentra ninguna fila y no hace nada.
     // No bloquea el resto del guardado si falla: ya se persistió lo importante (usuarios_preautorizados).
-    if (email) {
+    const emailOriginal = editandoEmailPreautorizado || email;
+    if (emailOriginal) {
       const { error: errorUsuario } = await sb.from('usuarios').update({
+        email,
         nombre,
         dni: dni || null,
         celular: celular || null,
@@ -6884,7 +6969,7 @@ document.getElementById('btnGuardarPreautorizado').addEventListener('click', asy
         cargo,
         rol,
         permisos
-      }).eq('email', email);
+      }).eq('email', emailOriginal);
       if (errorUsuario) console.warn('No se pudo sincronizar usuarios:', errorUsuario.message);
     }
 
@@ -7010,6 +7095,37 @@ async function abrirEditarUsuario(id){
   renderizarBloquePermisos('eu', perm, data.rol);
 
   openModal('modalEditarUsuario');
+}
+
+// El campo "Correo de Google" queda deshabilitado a propósito (ver arriba):
+// es el correo con el que esa persona INICIA SESIÓN, así que cambiarlo no es
+// un simple UPDATE de la fila -- hay que actualizar también su cuenta en
+// Supabase Auth, lo que requiere el service_role key (por eso pasa por la
+// función admin-actualizar-email en vez de hacerse directo desde aquí).
+async function abrirCambiarCorreoUsuario(){
+  const id = document.getElementById('eu_id').value;
+  const correoActual = document.getElementById('eu_email').value;
+  if (!id) return;
+
+  const nuevoEmail = prompt(`Nuevo correo de acceso para reemplazar:\n${correoActual}`, '');
+  if (!nuevoEmail) return;
+  const limpio = nuevoEmail.trim().toLowerCase();
+  if (!limpio || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(limpio)) { toast('Ingresa un correo válido'); return; }
+  if (limpio === correoActual.trim().toLowerCase()) { toast('Ese ya es su correo actual'); return; }
+  if (!confirm(`¿Cambiar el correo de acceso a ${limpio}?\n\nA partir de ahora deberá iniciar sesión con esa cuenta de Google.`)) return;
+
+  toast('Actualizando correo…');
+  try {
+    const resp = await invocarEdgeFunction('admin-actualizar-email', { body: { usuarioId: id, nuevoEmail: limpio } });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok || !data.ok) throw new Error(data.error || 'No se pudo actualizar el correo.');
+    document.getElementById('eu_email').value = limpio;
+    toast('Correo actualizado ✓');
+    cargarUsuariosAdmin();
+  } catch (e) {
+    toast('Error: ' + (e.message || e));
+    console.error(e);
+  }
 }
 
 document.getElementById('btnGuardarUsuario').addEventListener('click', async () => {
@@ -11030,6 +11146,19 @@ async function vincularLeadGhlACliente(contactId, clienteId){
   }
 }
 
+// Últimos 2 mensajes de la conversación (con hora), tal como los expone el
+// campo "ultimosMensajes" de ghl-reporte-dia -- así se ve en la tarjeta sin
+// tener que abrir "Ver conversación completa" para lo mínimo (qué se dijo y
+// cuándo).
+function ghlUltimosMensajesHtml(ultimosMensajes){
+  if (!ultimosMensajes || !ultimosMensajes.length) return '';
+  const filas = ultimosMensajes.map(m => {
+    const quien = m.direction === 'inbound' ? '🗣️ Cliente' : '🧑/🤖 Respuesta';
+    return `<p class="card-sub" style="margin:2px 0 0;"><b>${quien}</b> (${ghlFmtHora(m.dateAdded)}): ${escapeHtml(m.body || '(sin texto)')}</p>`;
+  }).join('');
+  return `<div style="margin-top:6px; border-top:1px dashed var(--border); padding-top:6px;">${filas}</div>`;
+}
+
 function ghlRenderLeadsList(containerEl, leads, vacioTexto){
   containerEl.innerHTML = (leads || []).length ? leads.map(l => {
     const vinculo = buscarClienteVinculadoGhl(l);
@@ -11084,6 +11213,7 @@ function ghlRenderLeadsList(containerEl, leads, vacioTexto){
         ${l.acuerdo ? `<p class="card-sub" style="margin:8px 0 0; font-style:italic; border-top:1px dashed var(--border); padding-top:6px;">💭 "${escapeHtml(l.acuerdo)}"</p>` : ''}
         ${l.resumenIA ? `<p class="card-sub" style="margin:6px 0 0; border-top:1px dashed var(--border); padding-top:6px;">🧠 ${escapeHtml(l.resumenIA)}</p>` : ''}
         ${l.alertaIA ? `<p class="card-sub" style="margin:6px 0 0; color:var(--warning); font-weight:700;">⚠️ ${escapeHtml(l.alertaIA)}</p>` : ''}
+        ${ghlUltimosMensajesHtml(l.ultimosMensajes)}
         <button class="chip-btn ghl-ver-conv" data-contact-id="${escapeHtml(l.contactId || '')}" data-nombre="${escapeHtml(l.name || '')}" style="margin-top:8px; width:100%; justify-content:center;">💬 Ver conversación completa</button>
       </div>`;
   }).join('') : `<div class="card"><p class="card-sub" style="margin:0;">${vacioTexto}</p></div>`;
@@ -11540,7 +11670,7 @@ async function generarYCompartirPdfGhl(scopeData, tituloPeriodo, subtituloFecha,
 
   leads.forEach((l) => {
     saltoDePagina(70);
-    const lineasExtraGhl = (l.interesIA ? 1 : 0) + (l.acuerdo ? 1 : 0) + (l.resumenIA ? 1 : 0);
+    const lineasExtraGhl = (l.interesIA ? 1 : 0) + (l.acuerdo ? 1 : 0) + (l.resumenIA ? 1 : 0) + (l.ultimosMensajes ? l.ultimosMensajes.length : 0);
     const alturaCaja = 54 + lineasExtraGhl * 16;
     doc.setFillColor(255, 255, 255);
     doc.setDrawColor(...cBorder);
@@ -11602,6 +11732,15 @@ async function generarYCompartirPdfGhl(scopeData, tituloPeriodo, subtituloFecha,
       doc.text(`IA: ${quitarEmojis(l.resumenIA)}`, marginX + 8, cursorYGhl, { maxWidth: anchoUtil - 16 });
     }
 
+    (l.ultimosMensajes || []).forEach((m) => {
+      cursorYGhl += 12;
+      const quienMsg = m.direction === 'inbound' ? 'Cliente' : 'Respuesta';
+      doc.setTextColor(...cDim);
+      doc.setFontSize(7.2);
+      doc.setFont(undefined, 'normal');
+      doc.text(`${quienMsg} (${ghlFmtHora(m.dateAdded)}): ${quitarEmojis(m.body || '(sin texto)')}`, marginX + 8, cursorYGhl, { maxWidth: anchoUtil - 16 });
+    });
+
     y += alturaCaja + 8;
   });
 
@@ -11622,7 +11761,10 @@ async function generarYCompartirPdfGhl(scopeData, tituloPeriodo, subtituloFecha,
       await navigator.share({ files: [archivoPDF], title: 'Seguimiento de Leads · ' + tituloPeriodo });
       toast('Reporte generado ✓');
       return;
-    } catch (e) {}
+    } catch (e) {
+      if (e?.name === 'AbortError') return;
+      console.warn('navigator.share falló, usando respaldo de descarga:', e);
+    }
   }
 
   doc.save(nombreArchivo);
@@ -11703,21 +11845,37 @@ document.getElementById('btnGenerarReporteGhlRango').addEventListener('click', a
   toast('Generando reporte…');
 
   try {
-    const { data, error } = await invocarGhlReporte({ desde, hasta });
-    if (error) throw error;
-    if (!data || data.ok === false) throw new Error(data?.error || 'La función no devolvió datos.');
-    if (!data.rango) throw new Error('No se pudo calcular el rango.');
+    let scopeData, asOf, posibleDatosIncompletos = false, detalleCompleto = true;
+    // Si el rango elegido es exactamente "hoy" y la pantalla ya trajo los
+    // datos de hoy (lo normal, ya que esta vista carga "hoy" apenas se
+    // abre), se reusan en vez de repetir toda la consulta a GHL -- eso era
+    // lo que hacía que generar el PDF de "hoy" se sintiera lento (Jorge
+    // reportó demoras), cuando la mayoría de las veces el dato ya estaba
+    // en pantalla. El mismo atajo que ya usa cargarGhlDiaFecha().
+    if (desde === hasta && desde === ghlYmdPeruHoy(0) && ghlUltimoReporte?.today) {
+      scopeData = ghlUltimoReporte.today;
+      asOf = ghlUltimoReporte.asOf;
+    } else {
+      const { data, error } = await invocarGhlReporte({ desde, hasta });
+      if (error) throw error;
+      if (!data || data.ok === false) throw new Error(data?.error || 'La función no devolvió datos.');
+      if (!data.rango) throw new Error('No se pudo calcular el rango.');
+      scopeData = data.rango;
+      asOf = data.asOf;
+      posibleDatosIncompletos = data.rango.posibleDatosIncompletos;
+      detalleCompleto = data.rango.detalleCompleto;
+    }
 
-    if (data.rango.posibleDatosIncompletos) {
+    if (posibleDatosIncompletos) {
       toast('Aviso: este rango puede tener datos incompletos (fuera de las 500 filas más recientes).');
     }
 
     const subtitulo = desde === hasta
-      ? `Corte: ${ghlFmtHora(data.asOf)} · ${ghlFmtFechaLarga(desde)}`
-      : `Corte: ${ghlFmtHora(data.asOf)} · ${ghlFmtFechaLarga(desde)} – ${ghlFmtFechaLarga(hasta)}${!data.rango.detalleCompleto ? ' · (detalle por lead resumido, rango grande)' : ''}`;
+      ? `Corte: ${ghlFmtHora(asOf)} · ${ghlFmtFechaLarga(desde)}`
+      : `Corte: ${ghlFmtHora(asOf)} · ${ghlFmtFechaLarga(desde)} – ${ghlFmtFechaLarga(hasta)}${!detalleCompleto ? ' · (detalle por lead resumido, rango grande)' : ''}`;
     const nombreArchivo = `seguimiento-ghl-${desde}${desde !== hasta ? '_a_' + hasta : ''}.pdf`;
 
-    await generarYCompartirPdfGhl(data.rango, tituloPeriodo, subtitulo, nombreArchivo);
+    await generarYCompartirPdfGhl(scopeData, tituloPeriodo, subtitulo, nombreArchivo);
   } catch (e) {
     console.error(e);
     toast('Error al generar el reporte: ' + (e.message || ''));
