@@ -66,24 +66,29 @@
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    /* Fondo corporativo con acentos azul marino / dorado en las esquinas
-       (en vez de un crema plano) para que las tarjetas blancas resalten
-       en vez de fundirse con el fondo. */
+    /* Fondo base corporativo/inmobiliario: velo azul marino y dorado en
+       diagonal sobre el crema (en vez de un crema plano) para que las
+       tarjetas blancas resalten en vez de fundirse con el fondo. Se aplica
+       igual en mobile y desktop -- antes el bloque de escritorio lo
+       pisaba con una versión demasiado débil para notarse. */
     background:
-      radial-gradient(circle at 100% 0%, rgba(200,155,60,0.14) 0%, rgba(200,155,60,0) 42%),
-      radial-gradient(circle at 0% 100%, rgba(20,42,77,0.10) 0%, rgba(20,42,77,0) 42%),
+      linear-gradient(155deg, rgba(20,42,77,0.07) 0%, rgba(20,42,77,0) 38%),
+      linear-gradient(-25deg, rgba(200,155,60,0.12) 0%, rgba(200,155,60,0) 42%),
       var(--cream);
     position: relative;
     z-index: 1;
     transition: max-width 0.2s ease;
   }
-  /* Textura tipo "plano arquitectónico" (grilla de puntos muy tenue) --
-     guiño a tecnología/inmobiliaria sin competir con el contenido. */
+  /* Textura tipo "plano arquitectónico" (grilla de líneas finas) -- guiño a
+     tecnología + inmobiliaria (blueprint de un proyecto) sin competir con
+     el contenido. */
   #app::after{
     content:'';
     position: absolute; inset:0;
-    background-image: radial-gradient(circle, rgba(20,42,77,0.07) 1px, transparent 1px);
-    background-size: 24px 24px;
+    background-image:
+      linear-gradient(rgba(20,42,77,0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(20,42,77,0.08) 1px, transparent 1px);
+    background-size: 42px 42px;
     pointer-events:none; z-index:0;
   }
 
@@ -131,16 +136,13 @@
   .bottomnav{ display: none !important; }
 
   @media (min-width: 680px){
-    html, body{
-      background: #F7F5EF !important;
-    }
+    /* El fondo base (velo azul marino/dorado + grilla tipo plano
+       arquitectónico) se hereda igual que en mobile -- ya no se pisa aquí
+       con una versión más débil, que era por lo que en pantallas anchas
+       se seguía viendo todo plano/blanco. */
     #app{
       max-width: 100% !important;
       margin: 0 !important;
-      background:
-        radial-gradient(circle at 100% 0%, rgba(200,155,60,0.12) 0%, rgba(200,155,60,0) 30%),
-        radial-gradient(circle at 0% 100%, rgba(20,42,77,0.08) 0%, rgba(20,42,77,0) 30%),
-        #F7F5EF !important;
       box-shadow: none !important;
       border: none !important;
       min-height: 100vh;
@@ -5035,6 +5037,7 @@ async function mostrarApp(){
   actualizarItemsDockHorizontal();
   suscribirCambiosPerfilEnTiempoReal();
   inicializarTiposCambio();
+  cargarModuloDepartamentoOverrides();
 
   cargarPortadaInicio();
   cargarPendientesInicio();
@@ -12395,64 +12398,61 @@ async function eliminarSpeech(id){
 }
 
 /* ============ DEPARTAMENTOS ============ */
+// El menú lateral actual es el submenú en cascada (SUBMENUS_DATA +
+// itemsVisiblesSubMenu, ver más abajo) -- ya no hay elementos .dr-dept-group
+// en el DOM (eran de un diseño de drawer anterior). Esta función ahora
+// simplemente refresca el caché de reasignaciones de departamento y, si hay
+// un submenú abierto, lo vuelve a pintar para reflejar el cambio al toque.
 async function reorganizarDrawerPorDepartamentos(){
-  try {
-    const { data, error } = await sb.from('modulo_departamentos').select('*').order('orden');
-    if (!error && data && data.length > 0) {
-      const grupos = {};
-      document.querySelectorAll('.dr-dept-group').forEach(g => { grupos[g.dataset.dept] = g.querySelector('.dr-dept-items'); });
-
-      data.forEach(m => {
-        const btn = document.querySelector(`[data-modkey="${m.modulo_key}"]`);
-        const destino = grupos[m.departamento];
-        if (btn && destino) destino.appendChild(btn);
-      });
-    }
-  } catch(e) {
-    console.warn('Error reorganizando departamentos:', e);
-  }
-
-  // Ocultar cabeceras de departamentos si todos sus módulos están ocultos
-  document.querySelectorAll('.dr-dept-group').forEach(g => {
-    const items = g.querySelector('.dr-dept-items');
-    if (items) {
-      const algunoVisible = [...items.children].some(el => !el.classList.contains('hidden'));
-      g.classList.toggle('dr-dept-vacio', !algunoVisible);
-      g.classList.toggle('hidden', !algunoVisible);
-    }
-  });
+  await cargarModuloDepartamentoOverrides();
+  if (subMenuCategoriaActiva) abrirSubMenuLateral(subMenuCategoriaActiva);
 }
 
+// Reescrito para usar el catálogo REAL de 36 módulos del menú lateral
+// (MODULOS_CATALOGO_DEPTOS, construido desde SUBMENUS_DATA) y las 5
+// categorías reales (campo/comercial/finanzas/operativa/sistema) en vez de
+// las 4 categorías viejas (comercial/marketing/administracion/legal) que
+// ya no existen en la barra lateral y de una tabla que solo tenía 11 filas
+// con claves que no correspondían a nada -- de ahí que la pantalla no
+// mostrara todos los módulos ni reflejara las categorías reales.
 async function cargarConfigDepartamentos(){
   const el = document.getElementById('listaConfigDepartamentos');
   if (!el) return;
   el.innerHTML = `<div class="spinner"></div>`;
 
-  const { data, error } = await sb.from('modulo_departamentos').select('*').order('orden');
-  if (error || !data) { el.innerHTML = emptyState('⚠️', 'No se pudo cargar.'); return; }
+  await cargarModuloDepartamentoOverrides();
 
   const deptos = [
-    { key: 'comercial', label: '💼 Comercial' },
-    { key: 'marketing', label: '📣 Marketing' },
-    { key: 'administracion', label: '🗂️ Administración' },
-    { key: 'legal', label: '⚖️ Legal' },
+    { key: 'campo', label: '🚀 Operaciones de Campo' },
+    { key: 'comercial', label: '💼 Ventas & Cierres' },
+    { key: 'finanzas', label: '💰 Finanzas & ERP' },
+    { key: 'operativa', label: '📋 Gestión & Equipo' },
+    { key: 'sistema', label: '⚙️ Gerencia & Legal' },
   ];
 
-  el.innerHTML = data.map(m => `
-    <div class="card" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; padding:12px 14px;">
-      <span style="font-size:13px; font-weight:700;">${escapeHtml(m.modulo_label)}</span>
-      <select onchange="cambiarDepartamentoModulo('${m.modulo_key}', this.value)" style="padding:6px 10px; border-radius:8px; border:1.5px solid #E5DFCF; font-size:12px;">
-        ${deptos.map(d => `<option value="${d.key}" ${d.key === m.departamento ? 'selected' : ''}>${d.label}</option>`).join('')}
-      </select>
-    </div>
-  `).join('');
+  el.innerHTML = `<p style="font-size:12px; color:var(--ink-dim); margin:0 0 10px;">Elige en qué sección del menú lateral aparece cada módulo. Los ${MODULOS_CATALOGO_DEPTOS.length} módulos existentes están todos aquí.</p>` +
+    MODULOS_CATALOGO_DEPTOS.map(m => {
+      const actual = moduloDepartamentoOverrides[m.key] || m.categoriaOriginal;
+      return `
+        <div class="card" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; padding:12px 14px; gap:8px;">
+          <span style="font-size:13px; font-weight:700;">${m.icono} ${escapeHtml(m.titulo)}</span>
+          <select onchange="cambiarDepartamentoModulo('${m.key}', '${escapeHtml(m.titulo).replace(/'/g,"\\\\'")}', this.value)" style="padding:6px 10px; border-radius:8px; border:1.5px solid #E5DFCF; font-size:12px; flex-shrink:0;">
+            ${deptos.map(d => `<option value="${d.key}" ${d.key === actual ? 'selected' : ''}>${d.label}</option>`).join('')}
+          </select>
+        </div>
+      `;
+    }).join('');
 }
 
-async function cambiarDepartamentoModulo(moduloKey, nuevoDepto){
-  const { error } = await sb.from('modulo_departamentos').update({ departamento: nuevoDepto }).eq('modulo_key', moduloKey);
+async function cambiarDepartamentoModulo(moduloKey, moduloLabel, nuevoDepto){
+  const { error } = await sb.from('modulo_departamentos').upsert({
+    modulo_key: moduloKey,
+    modulo_label: moduloLabel,
+    departamento: nuevoDepto,
+  }, { onConflict: 'modulo_key' });
   if (error) { toast('Error al guardar'); console.error(error); return; }
-  toast('Actualizado ✓');
-  reorganizarDrawerPorDepartamentos();
+  moduloDepartamentoOverrides[moduloKey] = nuevoDepto;
+  toast('Actualizado ✓ — ya se refleja en el menú lateral');
 }
 
 /* ============ RESPALDOS AUTOMÁTICOS ============ */
@@ -15507,15 +15507,15 @@ const SUBMENUS_DATA = {
     icono: '🚀',
     subtitulo: 'Herramientas in situ para La Yarada',
     items: [
-      { icono: '🚀', titulo: 'Panel de Campo Completo', desc: 'Pantalla única con los 9 módulos', permiso: 'ver_operaciones_campo', accion: () => { irAVista('operaciones_campo'); cerrarDrawer(); } },
-      { icono: '⚡', titulo: 'Speed to Lead (<90s)', desc: 'Alerta reactiva y cronómetro 300s', accion: () => { simularAlertaSpeedToLead(); cerrarDrawer(); } },
-      { icono: '🎙️', titulo: 'Dictado por Voz', desc: 'Bitácora de acuerdos en terreno', permiso: 'usar_dictado_voz', accion: () => { abrirModalDictadoVoz(); cerrarDrawer(); } },
-      { icono: '📱', titulo: 'Pre-Reserva QR (S/ 500)', desc: 'Generador offline BCP/Yape/Chile', permiso: 'usar_pre_reserva_qr', accion: () => { abrirModalPreReservaEnTerreno('B','12',500); cerrarDrawer(); } },
-      { icono: '🏛️', titulo: 'Cierre Rápido Tacna', desc: 'Partida SUNARP, Pórtico y Vías', permiso: 'ver_herramientas_tacna', accion: () => { abrirModalHerramientasTacna(); cerrarDrawer(); } },
-      { icono: '🎯', titulo: 'Cadencias 1-Toque', desc: 'Scripts para Ferias, Chile y Visitas', permiso: 'ver_cadencias_seguimiento', accion: () => { abrirModalCadencias('Carlos Mamani', '952123456'); cerrarDrawer(); } },
-      { icono: '🎉', titulo: 'Domingo de Cierres TV', desc: 'Campana acústica y confeti en vivo', permiso: 'ver_domingo_cierres', accion: () => { abrirModalDomingoDeCierres(); cerrarDrawer(); } },
-      { icono: '✍️', titulo: 'Minuta Legal & Firma', desc: 'Contrato preparatorio en pantalla táctil', permiso: 'generar_minuta_digital', accion: () => { abrirModalMinutaCompraventa(); cerrarDrawer(); } },
-      { icono: '🚐', titulo: 'Movilidad Van (14 Asientos)', desc: 'Control de salidas a La Yarada', permiso: 'ver_control_visitas', accion: () => { irAVista('visitas'); cerrarDrawer(); } }
+      { key: 'ver_operaciones_campo', icono: '🚀', titulo: 'Panel de Campo Completo', desc: 'Pantalla única con los 9 módulos', permiso: 'ver_operaciones_campo', accion: () => { irAVista('operaciones_campo'); cerrarDrawer(); } },
+      { key: 'speed_to_lead', icono: '⚡', titulo: 'Speed to Lead (<90s)', desc: 'Alerta reactiva y cronómetro 300s', accion: () => { simularAlertaSpeedToLead(); cerrarDrawer(); } },
+      { key: 'usar_dictado_voz', icono: '🎙️', titulo: 'Dictado por Voz', desc: 'Bitácora de acuerdos en terreno', permiso: 'usar_dictado_voz', accion: () => { abrirModalDictadoVoz(); cerrarDrawer(); } },
+      { key: 'usar_pre_reserva_qr', icono: '📱', titulo: 'Pre-Reserva QR (S/ 500)', desc: 'Generador offline BCP/Yape/Chile', permiso: 'usar_pre_reserva_qr', accion: () => { abrirModalPreReservaEnTerreno('B','12',500); cerrarDrawer(); } },
+      { key: 'ver_herramientas_tacna', icono: '🏛️', titulo: 'Cierre Rápido Tacna', desc: 'Partida SUNARP, Pórtico y Vías', permiso: 'ver_herramientas_tacna', accion: () => { abrirModalHerramientasTacna(); cerrarDrawer(); } },
+      { key: 'ver_cadencias_seguimiento', icono: '🎯', titulo: 'Cadencias 1-Toque', desc: 'Scripts para Ferias, Chile y Visitas', permiso: 'ver_cadencias_seguimiento', accion: () => { abrirModalCadencias('Carlos Mamani', '952123456'); cerrarDrawer(); } },
+      { key: 'ver_domingo_cierres', icono: '🎉', titulo: 'Domingo de Cierres TV', desc: 'Campana acústica y confeti en vivo', permiso: 'ver_domingo_cierres', accion: () => { abrirModalDomingoDeCierres(); cerrarDrawer(); } },
+      { key: 'generar_minuta_digital', icono: '✍️', titulo: 'Minuta Legal & Firma', desc: 'Contrato preparatorio en pantalla táctil', permiso: 'generar_minuta_digital', accion: () => { abrirModalMinutaCompraventa(); cerrarDrawer(); } },
+      { key: 'ver_control_visitas', icono: '🚐', titulo: 'Movilidad Van (14 Asientos)', desc: 'Control de salidas a La Yarada', permiso: 'ver_control_visitas', accion: () => { irAVista('visitas'); cerrarDrawer(); } }
     ]
   },
   comercial: {
@@ -15523,15 +15523,15 @@ const SUBMENUS_DATA = {
     icono: '💼',
     subtitulo: 'Pipeline comercial y clientes',
     items: [
-      { icono: '📊', titulo: 'Tablero de Control & KPIs', desc: 'Métricas de ventas y rendimiento', permiso: 'ver_control', accion: () => { irAVista('control'); cerrarDrawer(); } },
-      { icono: '👥', titulo: 'Cartera de Clientes & Kanban', desc: 'Pipeline de prospectos y estados', permiso: 'ver_clientes', accion: () => { irAVista('clientes'); cerrarDrawer(); } },
-      { icono: '🧮', titulo: 'Cotizador Rápido de Lotes', desc: 'Cuotas dobles, Dúo y financiamiento', permiso: 'ver_cotizador', accion: () => { abrirModalCotizador(); cerrarDrawer(); } },
-      { icono: '🗺️', titulo: 'Planos Interactivos', desc: 'Disponibilidad y Master Plan 360°', permiso: 'ver_planos', accion: () => { irAVista('planos'); cerrarDrawer(); } },
-      { icono: '🏷️', titulo: 'Separaciones de Lotes', desc: 'Lotes reservados y control de pagos', permiso: 'ver_separaciones', accion: () => { irAVista('separaciones'); cerrarDrawer(); } },
-      { icono: '🏖️', titulo: 'Portal del Propietario', desc: 'Área para clientes de Costa Dorada', permiso: 'ver_portal_propietarios', accion: () => { abrirPortalPropietario(); cerrarDrawer(); } },
-      { icono: '🤝', titulo: 'Red de Embajadores', desc: 'Código de referido con bono S/ 500', permiso: 'ver_red_embajadores', accion: () => { abrirModalEmbajadores(); cerrarDrawer(); } },
-      { icono: '📁', titulo: 'Portafolio Multimedia', desc: 'Brochure, videos de dron y fotos', permiso: 'ver_portafolio', accion: () => { irAVista('portafolio'); cerrarDrawer(); } },
-      { icono: '🎯', titulo: 'Manual de Ventas & Speeches', desc: 'Argumentarios y objeciones', permiso: 'ver_manualventas', accion: () => { irAVista('manualventas'); cerrarDrawer(); } }
+      { key: 'ver_control', icono: '📊', titulo: 'Tablero de Control & KPIs', desc: 'Métricas de ventas y rendimiento', permiso: 'ver_control', accion: () => { irAVista('control'); cerrarDrawer(); } },
+      { key: 'ver_clientes', icono: '👥', titulo: 'Cartera de Clientes & Kanban', desc: 'Pipeline de prospectos y estados', permiso: 'ver_clientes', accion: () => { irAVista('clientes'); cerrarDrawer(); } },
+      { key: 'ver_cotizador', icono: '🧮', titulo: 'Cotizador Rápido de Lotes', desc: 'Cuotas dobles, Dúo y financiamiento', permiso: 'ver_cotizador', accion: () => { abrirModalCotizador(); cerrarDrawer(); } },
+      { key: 'ver_planos', icono: '🗺️', titulo: 'Planos Interactivos', desc: 'Disponibilidad y Master Plan 360°', permiso: 'ver_planos', accion: () => { irAVista('planos'); cerrarDrawer(); } },
+      { key: 'ver_separaciones', icono: '🏷️', titulo: 'Separaciones de Lotes', desc: 'Lotes reservados y control de pagos', permiso: 'ver_separaciones', accion: () => { irAVista('separaciones'); cerrarDrawer(); } },
+      { key: 'ver_portal_propietarios', icono: '🏖️', titulo: 'Portal del Propietario', desc: 'Área para clientes de Costa Dorada', permiso: 'ver_portal_propietarios', accion: () => { abrirPortalPropietario(); cerrarDrawer(); } },
+      { key: 'ver_red_embajadores', icono: '🤝', titulo: 'Red de Embajadores', desc: 'Código de referido con bono S/ 500', permiso: 'ver_red_embajadores', accion: () => { abrirModalEmbajadores(); cerrarDrawer(); } },
+      { key: 'ver_portafolio', icono: '📁', titulo: 'Portafolio Multimedia', desc: 'Brochure, videos de dron y fotos', permiso: 'ver_portafolio', accion: () => { irAVista('portafolio'); cerrarDrawer(); } },
+      { key: 'ver_manualventas', icono: '🎯', titulo: 'Manual de Ventas & Speeches', desc: 'Argumentarios y objeciones', permiso: 'ver_manualventas', accion: () => { irAVista('manualventas'); cerrarDrawer(); } }
     ]
   },
   finanzas: {
@@ -15539,12 +15539,12 @@ const SUBMENUS_DATA = {
     icono: '💰',
     subtitulo: 'Caja, comisiones y cobranzas',
     items: [
-      { icono: '💵', titulo: 'Billetera de Comisiones', desc: 'Liquidación y escala de comisiones', permiso: 'ver_comisiones_erp', accion: () => { abrirModalComisionesERP(); cerrarDrawer(); } },
-      { icono: '🧾', titulo: 'Caja & Vouchers Oficiales', desc: 'Arqueo de caja y emisión de recibos', permiso: 'gestionar_caja_tesoreria', accion: () => { abrirModalCajaTesoreria(); cerrarDrawer(); } },
-      { icono: '🏦', titulo: 'Inventario de Lotes (ERP)', desc: 'Control de manzanas y precios m²', permiso: 'ver_inventario_lotes', accion: () => { abrirModalInventarioLotes(); cerrarDrawer(); } },
-      { icono: '💳', titulo: 'Control de Cobranzas', desc: 'Letras mensuales y cuotas directas', permiso: 'ver_cobranzas', accion: () => { irACobranzas(); cerrarDrawer(); } },
-      { icono: '💱', titulo: 'Conversor Multidivisa', desc: 'Tipo de cambio Soles, Dólares y CLP', permiso: 'usar_conversor_divisas', accion: () => { abrirModalConversorDivisas(); cerrarDrawer(); } },
-      { icono: '📈', titulo: 'Simulador Plusvalía & ROI', desc: 'Proyección de valorización a 10 años', permiso: 'ver_simulador_plusvalia', accion: () => { abrirModalPlusvalia(); cerrarDrawer(); } }
+      { key: 'ver_comisiones_erp', icono: '💵', titulo: 'Billetera de Comisiones', desc: 'Liquidación y escala de comisiones', permiso: 'ver_comisiones_erp', accion: () => { abrirModalComisionesERP(); cerrarDrawer(); } },
+      { key: 'gestionar_caja_tesoreria', icono: '🧾', titulo: 'Caja & Vouchers Oficiales', desc: 'Arqueo de caja y emisión de recibos', permiso: 'gestionar_caja_tesoreria', accion: () => { abrirModalCajaTesoreria(); cerrarDrawer(); } },
+      { key: 'ver_inventario_lotes', icono: '🏦', titulo: 'Inventario de Lotes (ERP)', desc: 'Control de manzanas y precios m²', permiso: 'ver_inventario_lotes', accion: () => { abrirModalInventarioLotes(); cerrarDrawer(); } },
+      { key: 'ver_cobranzas', icono: '💳', titulo: 'Control de Cobranzas', desc: 'Letras mensuales y cuotas directas', permiso: 'ver_cobranzas', accion: () => { irACobranzas(); cerrarDrawer(); } },
+      { key: 'usar_conversor_divisas', icono: '💱', titulo: 'Conversor Multidivisa', desc: 'Tipo de cambio Soles, Dólares y CLP', permiso: 'usar_conversor_divisas', accion: () => { abrirModalConversorDivisas(); cerrarDrawer(); } },
+      { key: 'ver_simulador_plusvalia', icono: '📈', titulo: 'Simulador Plusvalía & ROI', desc: 'Proyección de valorización a 10 años', permiso: 'ver_simulador_plusvalia', accion: () => { abrirModalPlusvalia(); cerrarDrawer(); } }
     ]
   },
   operativa: {
@@ -15552,12 +15552,12 @@ const SUBMENUS_DATA = {
     icono: '📋',
     subtitulo: 'Actividades, agenda y equipo',
     items: [
-      { icono: '✓', titulo: 'Actividades y Tareas Hoy', desc: 'Bitácora y horas de trabajo efectivas', permiso: 'ver_actividades', accion: () => { irAVista('actividades'); cerrarDrawer(); } },
-      { icono: '📅', titulo: 'Agenda & Google Calendar', desc: 'Citas y eventos programados', permiso: 'ver_agenda', accion: () => { irAVista('agenda'); cerrarDrawer(); } },
-      { icono: '📝', titulo: 'Solicitudes y Requerimientos', desc: 'Trámites y pedidos a gerencia', permiso: 'ver_solicitudes', accion: () => { irAVista('solicitudes'); cerrarDrawer(); } },
-      { icono: '📈', titulo: 'Rendimiento por Área', desc: 'Métricas diarias de llamadas y citas', permiso: 'ver_rendimiento', accion: () => { irAVista('rendimiento'); cerrarDrawer(); } },
-      { icono: '🧑‍🤝‍🧑', titulo: 'Reporte Diario de Equipo', desc: 'Consolidado de actividades y horas', permiso: 'ver_reporte_equipo', accion: () => { irAVista('reporte_equipo'); cerrarDrawer(); } },
-      { icono: '📞', titulo: 'Seguimiento de Leads (GHL)', desc: 'Asignación, respuesta y tipificación en vivo', permiso: 'ver_seguimiento_ghl', accion: () => { irAVista('ghl_dia'); cerrarDrawer(); } }
+      { key: 'ver_actividades', icono: '✓', titulo: 'Actividades y Tareas Hoy', desc: 'Bitácora y horas de trabajo efectivas', permiso: 'ver_actividades', accion: () => { irAVista('actividades'); cerrarDrawer(); } },
+      { key: 'ver_agenda', icono: '📅', titulo: 'Agenda & Google Calendar', desc: 'Citas y eventos programados', permiso: 'ver_agenda', accion: () => { irAVista('agenda'); cerrarDrawer(); } },
+      { key: 'ver_solicitudes', icono: '📝', titulo: 'Solicitudes y Requerimientos', desc: 'Trámites y pedidos a gerencia', permiso: 'ver_solicitudes', accion: () => { irAVista('solicitudes'); cerrarDrawer(); } },
+      { key: 'ver_rendimiento', icono: '📈', titulo: 'Rendimiento por Área', desc: 'Métricas diarias de llamadas y citas', permiso: 'ver_rendimiento', accion: () => { irAVista('rendimiento'); cerrarDrawer(); } },
+      { key: 'ver_reporte_equipo', icono: '🧑‍🤝‍🧑', titulo: 'Reporte Diario de Equipo', desc: 'Consolidado de actividades y horas', permiso: 'ver_reporte_equipo', accion: () => { irAVista('reporte_equipo'); cerrarDrawer(); } },
+      { key: 'ver_seguimiento_ghl', icono: '📞', titulo: 'Seguimiento de Leads (GHL)', desc: 'Asignación, respuesta y tipificación en vivo', permiso: 'ver_seguimiento_ghl', accion: () => { irAVista('ghl_dia'); cerrarDrawer(); } }
     ]
   },
   sistema: {
@@ -15565,22 +15565,56 @@ const SUBMENUS_DATA = {
     icono: '⚙️',
     subtitulo: 'Inteligencia, ajustes y seguridad',
     items: [
-      { icono: '🤖', titulo: 'MAJO · Inteligencia Corporativa', desc: 'Asistente IA y base de conocimiento', permiso: 'ver_majo_assistant', accion: () => { irAVista('majo_assistant'); cerrarDrawer(); } },
-      { icono: '📋', titulo: 'Checklist Legal de Expedientes', desc: 'Saneamiento y documentos SUNARP', permiso: 'ver_checklist_legal', accion: () => { abrirChecklistLegal(null); cerrarDrawer(); } },
-      { icono: '🧑‍💼', titulo: 'Gestión de Equipo & Permisos', desc: 'Checklist SuperAdmin y roles', permiso: 'gestionar_equipo', accion: () => { irAVista('admin'); cerrarDrawer(); } },
-      { icono: '🛠️', titulo: 'Configuración del Sistema', desc: 'Parámetros generales del CRM', permiso: 'ver_ajustes', accion: () => { irAVista('sistema'); cerrarDrawer(); } },
-      { icono: '💾', titulo: 'Descargar Respaldo JSON', desc: 'Copia de seguridad local', permiso: 'descargar_respaldos', accion: () => { descargarRespaldo(); cerrarDrawer(); } },
-      { icono: '🔄', titulo: 'Sincronización Rápida', desc: 'Actualizar datos con la nube', accion: () => { sincronizacionRapida(); cerrarDrawer(); } }
+      { key: 'ver_majo_assistant', icono: '🤖', titulo: 'MAJO · Inteligencia Corporativa', desc: 'Asistente IA y base de conocimiento', permiso: 'ver_majo_assistant', accion: () => { irAVista('majo_assistant'); cerrarDrawer(); } },
+      { key: 'ver_checklist_legal', icono: '📋', titulo: 'Checklist Legal de Expedientes', desc: 'Saneamiento y documentos SUNARP', permiso: 'ver_checklist_legal', accion: () => { abrirChecklistLegal(null); cerrarDrawer(); } },
+      { key: 'gestionar_equipo', icono: '🧑‍💼', titulo: 'Gestión de Equipo & Permisos', desc: 'Checklist SuperAdmin y roles', permiso: 'gestionar_equipo', accion: () => { irAVista('admin'); cerrarDrawer(); } },
+      { key: 'ver_ajustes', icono: '🛠️', titulo: 'Configuración del Sistema', desc: 'Parámetros generales del CRM', permiso: 'ver_ajustes', accion: () => { irAVista('sistema'); cerrarDrawer(); } },
+      { key: 'descargar_respaldos', icono: '💾', titulo: 'Descargar Respaldo JSON', desc: 'Copia de seguridad local', permiso: 'descargar_respaldos', accion: () => { descargarRespaldo(); cerrarDrawer(); } },
+      { key: 'sincronizacion_rapida', icono: '🔄', titulo: 'Sincronización Rápida', desc: 'Actualizar datos con la nube', accion: () => { sincronizacionRapida(); cerrarDrawer(); } }
     ]
   }
 };
 
+// Catalogo plano de todos los modulos del menu lateral (36), cada uno con
+// su categoria ORIGINAL -- usado tanto para saber que mostrar en cada
+// submenu como para la pantalla de admin "asignar modulos a departamento"
+// (antes esa pantalla se armaba desde una tabla suelta con 11 filas de
+// claves viejas que no correspondian a nada real; ver migracion
+// fix_modulo_departamentos_real_categories).
+const MODULOS_CATALOGO_DEPTOS = [];
+Object.keys(SUBMENUS_DATA).forEach(catKey => {
+  SUBMENUS_DATA[catKey].items.forEach(item => {
+    MODULOS_CATALOGO_DEPTOS.push({ ...item, categoriaOriginal: catKey });
+  });
+});
+
+// Departamento elegido por un SuperAdmin para cada modulo (modulo_key ->
+// departamento), cargado una vez desde modulo_departamentos y consultado
+// en cada render del submenu -- si no hay fila para ese modulo, se usa su
+// categoria original de SUBMENUS_DATA (comportamiento identico al de
+// siempre hasta que alguien lo reasigne).
+let moduloDepartamentoOverrides = {};
+async function cargarModuloDepartamentoOverrides(){
+  try {
+    const { data, error } = await sb.from('modulo_departamentos').select('modulo_key, departamento');
+    if (error) throw error;
+    moduloDepartamentoOverrides = {};
+    (data || []).forEach(r => { moduloDepartamentoOverrides[r.modulo_key] = r.departamento; });
+  } catch (e) {
+    console.warn('No se pudieron cargar las reasignaciones de departamento (se usan las categorías por defecto):', e);
+  }
+}
+
 // Items sin `permiso` (ej. Speed to Lead, Sincronizacion Rapida) son
 // acciones sin dato sensible, visibles para cualquier usuario autenticado.
+// Recorre el catálogo PLANO (no solo SUBMENUS_DATA[categoria].items) para
+// que un módulo reasignado a otro departamento desde "Configuración del
+// Sistema" realmente aparezca ahí -- antes esta función solo miraba la
+// categoría original fija, así que reasignarlo no tenía ningún efecto real.
 function itemsVisiblesSubMenu(categoria){
-  const data = SUBMENUS_DATA[categoria];
-  if (!data) return [];
-  return data.items.filter(item => !item.permiso || tienePermiso(item.permiso));
+  return MODULOS_CATALOGO_DEPTOS
+    .filter(item => (moduloDepartamentoOverrides[item.key] || item.categoriaOriginal) === categoria)
+    .filter(item => !item.permiso || tienePermiso(item.permiso));
 }
 
 function abrirSubMenuLateral(categoria, btnEl) {
