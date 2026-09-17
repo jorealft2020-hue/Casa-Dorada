@@ -11065,6 +11065,19 @@ async function vincularLeadGhlACliente(contactId, clienteId){
   }
 }
 
+// Últimos 2 mensajes de la conversación (con hora), tal como los expone el
+// campo "ultimosMensajes" de ghl-reporte-dia -- así se ve en la tarjeta sin
+// tener que abrir "Ver conversación completa" para lo mínimo (qué se dijo y
+// cuándo).
+function ghlUltimosMensajesHtml(ultimosMensajes){
+  if (!ultimosMensajes || !ultimosMensajes.length) return '';
+  const filas = ultimosMensajes.map(m => {
+    const quien = m.direction === 'inbound' ? '🗣️ Cliente' : '🧑/🤖 Respuesta';
+    return `<p class="card-sub" style="margin:2px 0 0;"><b>${quien}</b> (${ghlFmtHora(m.dateAdded)}): ${escapeHtml(m.body || '(sin texto)')}</p>`;
+  }).join('');
+  return `<div style="margin-top:6px; border-top:1px dashed var(--border); padding-top:6px;">${filas}</div>`;
+}
+
 function ghlRenderLeadsList(containerEl, leads, vacioTexto){
   containerEl.innerHTML = (leads || []).length ? leads.map(l => {
     const vinculo = buscarClienteVinculadoGhl(l);
@@ -11119,6 +11132,7 @@ function ghlRenderLeadsList(containerEl, leads, vacioTexto){
         ${l.acuerdo ? `<p class="card-sub" style="margin:8px 0 0; font-style:italic; border-top:1px dashed var(--border); padding-top:6px;">💭 "${escapeHtml(l.acuerdo)}"</p>` : ''}
         ${l.resumenIA ? `<p class="card-sub" style="margin:6px 0 0; border-top:1px dashed var(--border); padding-top:6px;">🧠 ${escapeHtml(l.resumenIA)}</p>` : ''}
         ${l.alertaIA ? `<p class="card-sub" style="margin:6px 0 0; color:var(--warning); font-weight:700;">⚠️ ${escapeHtml(l.alertaIA)}</p>` : ''}
+        ${ghlUltimosMensajesHtml(l.ultimosMensajes)}
         <button class="chip-btn ghl-ver-conv" data-contact-id="${escapeHtml(l.contactId || '')}" data-nombre="${escapeHtml(l.name || '')}" style="margin-top:8px; width:100%; justify-content:center;">💬 Ver conversación completa</button>
       </div>`;
   }).join('') : `<div class="card"><p class="card-sub" style="margin:0;">${vacioTexto}</p></div>`;
@@ -11575,7 +11589,7 @@ async function generarYCompartirPdfGhl(scopeData, tituloPeriodo, subtituloFecha,
 
   leads.forEach((l) => {
     saltoDePagina(70);
-    const lineasExtraGhl = (l.interesIA ? 1 : 0) + (l.acuerdo ? 1 : 0) + (l.resumenIA ? 1 : 0);
+    const lineasExtraGhl = (l.interesIA ? 1 : 0) + (l.acuerdo ? 1 : 0) + (l.resumenIA ? 1 : 0) + (l.ultimosMensajes ? l.ultimosMensajes.length : 0);
     const alturaCaja = 54 + lineasExtraGhl * 16;
     doc.setFillColor(255, 255, 255);
     doc.setDrawColor(...cBorder);
@@ -11636,6 +11650,15 @@ async function generarYCompartirPdfGhl(scopeData, tituloPeriodo, subtituloFecha,
       doc.setFont(undefined, 'normal');
       doc.text(`IA: ${quitarEmojis(l.resumenIA)}`, marginX + 8, cursorYGhl, { maxWidth: anchoUtil - 16 });
     }
+
+    (l.ultimosMensajes || []).forEach((m) => {
+      cursorYGhl += 12;
+      const quienMsg = m.direction === 'inbound' ? 'Cliente' : 'Respuesta';
+      doc.setTextColor(...cDim);
+      doc.setFontSize(7.2);
+      doc.setFont(undefined, 'normal');
+      doc.text(`${quienMsg} (${ghlFmtHora(m.dateAdded)}): ${quitarEmojis(m.body || '(sin texto)')}`, marginX + 8, cursorYGhl, { maxWidth: anchoUtil - 16 });
+    });
 
     y += alturaCaja + 8;
   });
